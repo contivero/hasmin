@@ -1,0 +1,36 @@
+# Haskell 
+
+dist
+dist-*
+cabal-dev
+*.o
+*.hi
+*.chi
+*.chs.h
+.virtualenv
+*.dyn_o
+*.dyn_hi
+.hpc
+.hsenv
+.cabal-sandbox/
+cabal.sandbox.config
+cabal.config
+*.prof
+*.hp
+*.aux
+*.eventlog
+*stack-work/
+cabal.project.local
+
+# Others
+*-output
+*.csv
+benchmarks/7z/*
+benchmarks/dataset/*
+benchmarks/original-dataset/*
+benchmarks/dataset/*
+Main
+*.pdf
+*~
+*.swp
+notas.txt
