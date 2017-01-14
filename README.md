@@ -31,7 +31,7 @@ disabled, use the appropriate flag. Not every technique can be toggled yet, but
 a good amount of them allow it.
 
 Note: there is a problem in Windows when using the
-`--convert-escaped-characters` flag to disable the conversion of escaped
+`--convert-escaped-characters` flag to enable the conversion of escaped
 characters. A workaround is changing the code page, which can be done by
 running `chcp 65001` in the terminal (whether cmd, or cygwin).
 
