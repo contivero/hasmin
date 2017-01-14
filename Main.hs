@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Main
@@ -9,21 +10,24 @@
 -----------------------------------------------------------------------------
 module Main where
 
-import System.Exit (die)
+import Codec.Compression.Hopfli
 import Control.Monad.Reader
-import qualified Data.Text.IO as TIO
-import qualified Data.Text.Encoding as TE
-import qualified Data.Text.Lazy as TL
+import Data.Attoparsec.Text (parseOnly)
 import Data.Text.Lazy.Builder (toLazyText)
 import Options.Applicative hiding (command)
+import Data.Version (showVersion)
+import Development.GitRev (gitHash)
+import Paths_hasmin (version)
+import qualified Data.ByteString as B
+import qualified Data.Text.Encoding as TE
+import qualified Data.Text.IO as TIO
+import qualified Data.Text.Lazy as TL
+import System.Exit (die)
+import Text.PrettyPrint.Mainland (line, punctuate, putDoc, ppr)
+import Hasmin.Config
 import Hasmin.Parser.Internal
 import Hasmin.Types.Class
 import Hasmin.Types.Stylesheet
-import Hasmin.Config
-import Data.Attoparsec.Text (parseOnly)
-import Text.PrettyPrint.Mainland (line, punctuate, putDoc, ppr)
-import Codec.Compression.Hopfli
-import qualified Data.ByteString as B
 
 command :: Parser Commands
 command = Commands <$> switch (long "beautify"
@@ -88,9 +92,10 @@ config = Config
                            <> help "Disable sorting properties lexicographically")
 
 instructions :: ParserInfo Instructions
-instructions = info (helper <*> ((,) <$> command <*> config))
-    (fullDesc <> progDesc "minify FILE" 
-              <> header "Hasmin - A Haskell CSS minifier")
+instructions = info (helper <*> versionOption <*> ((,) <$> command <*> config))
+    (fullDesc <> header "Hasmin - A Haskell CSS Minifier")
+  where versionOption = infoOption (showVersion version <> " " <> $(gitHash))
+                                   (long "version" <> help "Show version and commit hash")
 
 main :: IO ()
 main = do
@@ -111,5 +116,3 @@ process r comm conf
                        else ruleList
         output = TL.toStrict . toLazyText $ mconcat (fmap toBuilder sheet)
         printBeautified = putDoc . mconcat . punctuate (line <> line)
-
--- testfunc =
