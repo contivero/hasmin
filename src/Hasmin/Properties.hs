@@ -8,14 +8,16 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Properties where
+module Hasmin.Properties (
+    PropertyInfo(..), shorthandAndLonghandsMap, propertiesTraits
+    ) where
 
 import Data.Attoparsec.Text (parseOnly) 
 import Data.Text (Text) 
-import Hasmin.Types.Value
-import Hasmin.Parser.Value
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Hasmin.Types.Value
+import Hasmin.Parser.Value
 
 -- TODO see if this can be extended to contain all the information from a
 -- property (such as initial value). Otherwise, delete it.

@@ -12,7 +12,7 @@ module Hasmin.Types.TimingFunction (
     TimingFunction(..), StepsSecondParam(..)
     ) where
 
-import Control.Monad.Reader
+import Control.Monad.Reader (ask)
 import Data.Semigroup ((<>))
 import Prelude hiding (sin, cos, acos, tan, atan)
 import Data.Maybe (isNothing, fromJust)

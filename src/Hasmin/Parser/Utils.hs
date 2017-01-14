@@ -8,9 +8,12 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Parser.Utils where
+module Hasmin.Parser.Utils (
+    ident, fontfamilyname, nonquotedurl, skipComments, lexeme, functionParser,
+    comma, colon, opt, nmchar
+    ) where
 
-import Control.Applicative
+import Control.Applicative ((<|>), many)
 import Control.Monad (void, mzero)
 import Data.Attoparsec.Text (char,
   option, Parser, satisfy, skipSpace, string, takeWhile1, (<?>))

@@ -8,10 +8,13 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Selector where
+module Hasmin.Selector (
+    Selector(..), SimpleSelector(..), CompoundSelector, Combinator(..),
+    Sign(..), AnPlusB(..), AValue(..), Att(..), specialPseudoElements
+    ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad.Reader
+import Control.Monad.Reader (ask)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Lazy.Builder (fromText, singleton, Builder)
@@ -195,6 +198,8 @@ instance ToText SimpleSelector where
           f (y:ys) = " of " <> toBuilder y 
             <> mconcat (fmap (\z -> singleton ',' <> toBuilder z) ys)
 
+-- Pseudo-elements that support the old pseudo-element syntax of a single
+-- semicolon, as well as the new one of two semicolons.
 specialPseudoElements :: [Text]
 specialPseudoElements = fmap T.toCaseFold 
     ["after", "before", "first-line", "first-letter"]

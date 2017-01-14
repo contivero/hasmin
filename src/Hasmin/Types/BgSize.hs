@@ -11,11 +11,11 @@
 module Hasmin.Types.BgSize (
     BgSize(..), Auto(..)
     ) where
-import Hasmin.Types.Class
-import Hasmin.Types.PercentageLength
+import Control.Monad.Reader (ask)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
-import Control.Monad.Reader (ask)
+import Hasmin.Types.Class
+import Hasmin.Types.PercentageLength
 
 data Auto = Auto
   deriving (Eq, Show)

@@ -7,11 +7,14 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Utils where
+module Hasmin.Utils (
+    isRight, isLeft, epsilon, eps, fromLeft', fromRight', mconcatIntersperse,
+    restrict, textualLength, replaceAt
+    ) where
 
 import Data.Monoid ((<>))
-import Hasmin.Types.Class
 import qualified Data.Text as T
+import Hasmin.Types.Class
 
 textualLength :: ToText a => a -> Int
 textualLength = T.length . toText

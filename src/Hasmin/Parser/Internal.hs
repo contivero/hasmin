@@ -8,11 +8,14 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Parser.Internal where
+module Hasmin.Parser.Internal (
+    stylesheet, atRule, declaration, declarations, selector
+    ) where
  
 import Control.Arrow (first)
 import Control.Applicative ((<|>), many) 
 import Control.Monad (mzero)
+import Data.Functor (($>))
 import Data.Attoparsec.Combinator (lookAhead, sepBy, endOfInput)
 import Data.Attoparsec.Text (asciiCI, char, many1, manyTill, 
   option, Parser, satisfy, string)
@@ -21,11 +24,6 @@ import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Lazy.Builder as LB
-import Hasmin.Parser.Utils
-import Hasmin.Parser.Value
-import Hasmin.Selector
-import Hasmin.Types.Stylesheet
-import Hasmin.Types.Declaration
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -33,23 +31,25 @@ import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import Hasmin.Parser.Utils
+import Hasmin.Parser.Value
+import Hasmin.Selector
+import Hasmin.Types.Stylesheet
+import Hasmin.Types.Declaration
 
--- ---------------------------------------------------------------------------
--- Stylesheet
--- ---------------------------------------------------------------------------
 selector :: Parser Selector
 selector = Selector <$> compoundSelector 
       <*> many ((,) <$> (combinator <* skipComments) <*> compoundSelector)
 
 -- First tries with '>>' (descendant), '>' (child), '+' (adjacent sibling), and
 -- '~' (general sibling) combinators. If those fail, it tries with the
--- descendant (whitespace) combinator. We do this to allow comments in-between.
+-- descendant (whitespace) combinator. This is done to allow comments in-between.
 combinator :: Parser Combinator
-combinator =  (skipComments *> ((string ">>" *> pure Descendant)
-                            <|> (char '>' *> pure Child) 
-                            <|> (char '+' *> pure AdjacentSibling) 
-                            <|> (char '~' *> pure GeneralSibling)))
-          <|> (satisfy ws *> pure Descendant)
+combinator =  (skipComments *> ((string ">>" $> Descendant)
+                            <|> (char '>' $> Child) 
+                            <|> (char '+' $> AdjacentSibling) 
+                            <|> (char '~' $> GeneralSibling)))
+          <|> (satisfy ws $> Descendant)
   where ws c = c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
 
 compoundSelector :: Parser CompoundSelector
@@ -59,11 +59,6 @@ compoundSelector =
                        <|> ((Universal mempty :|) <$> many1 p)
   where p = idSel <|> classSel <|> attributeSel <|> pseudo 
   
-simpleSelector :: Parser SimpleSelector
-simpleSelector = typeSelector <|> universal <|> idSel 
-             <|> classSel <|> attributeSel <|> pseudo  
---idSel :: Parser SimpleSelector
---idSel = idSel <$> (char '#' *> ((TL.toStrict . toLazyText . mconcat) <$> many1 nmchar))
 idSel :: Parser SimpleSelector
 idSel = do
     _ <- char '#' 
@@ -96,12 +91,12 @@ attributeSel = do
     _     <- char ']'
     pure $ AttributeSel (g attId)
   where attValue = do
-          f <- ((string "^=" *> pure (:^=:)) <|> 
-                (string "$=" *> pure (:$=:)) <|>
-                (string "*=" *> pure (:*=:)) <|>
-                (string "="  *> pure (:=:))  <|>
-                (string "~=" *> pure (:~=:)) <|>
-                (string "|=" *> pure (:|=:))) <* skipComments
+          f <- ((string "^=" $> (:^=:)) <|> 
+                (string "$=" $> (:$=:)) <|>
+                (string "*=" $> (:*=:)) <|>
+                (string "="  $> (:=:))  <|>
+                (string "~=" $> (:~=:)) <|>
+                (string "|=" $> (:|=:))) <* skipComments
           attval <- ((Left <$> ident) <|> (Right <$> stringtype)) <* skipComments
           pure (`f` attval)
 
@@ -109,14 +104,8 @@ attributeSel = do
 -- string1: \"([^\n\r\f\\"]|\\{nl}|{escape})*\"
 string1 = char '\"' *> many (o1 <|> o2 <|> escape)
   where o1 = satisfy (c -> c /= '\"' && c /= '\\' && c /= '\n')
-        o2 = char '\\' *> newline *> pure mempty
+        o2 = char '\\' *> newline $> mempty
 -}
-
--- Called n1 in "Selectors Level 3, 10.2 Lexical scanner"
--- newline: \n|\r\n|\r|\f
-newline :: Parser Text
-newline = string "\r\n" <|> (T.singleton <$> satisfy cond)
-  where cond c = c == '\n' || c == '\r' || c == '\f'
 
 -- type_selector: [namespace_prefix]? element_name
 typeSelector :: Parser SimpleSelector
@@ -151,7 +140,7 @@ pseudo = char ':' *> (pseudoElementSelector <|> pseudoClassSelector)
                             Nothing -> functionParser (FunctionalPseudoClass i <$> A.takeWhile (/= ')'))
               _        -> pure $ PseudoClass i
         pseudoElementSelector = do
-            parsedColon <- option False (char ':' *> pure True)
+            parsedColon <- option False (char ':' $> True)
             if parsedColon
                then PseudoElem <$> ident
                else ident >>= handleSpecialCase 
@@ -160,25 +149,26 @@ pseudo = char ':' *> (pseudoElementSelector <|> pseudoClassSelector)
                                          then pure $ PseudoElem t
                                          else mzero
 
+-- \<An+B> microsyntax parser.
 anplusb :: Parser AnPlusB 
-anplusb = (asciiCI "even" *> pure Even)
-      <|> (asciiCI "odd" *> pure Odd) 
+anplusb = (asciiCI "even" $> Even)
+      <|> (asciiCI "odd" $> Odd) 
       <|> do
     s <- option Nothing (Just <$> parseSign)
     x <- option mempty digits
     case x of
       [] -> ciN *> (AB (Nwith s Nothing) <$> (skipComments *> option Nothing (Just <$> bValue)))
-      _  -> do n <- option False (ciN *> pure True)
+      _  -> do n <- option False (ciN $> True)
                let a = read x :: Int
                if n
                   then AB (Nwith s (Just a)) <$> (skipComments *> option Nothing (Just <$> bValue))
                   else pure $ AB NoValue (Just $ getSign s * a)
   where ciN       = satisfy (\c -> c == 'N' || c == 'n')
-        parseSign = (char '-' *> pure Minus) <|> (char '+' *> pure Plus)
+        parseSign = (char '-' $> Minus) <|> (char '+' $> Plus)
         getSign (Just Minus) = -1
         getSign _            = 1
         bValue    = do
-            readPlus <- (char '-' *> pure False) <|> (char '+' *> pure True)
+            readPlus <- (char '-' $> False) <|> (char '+' $> True)
             d        <- skipComments *> digits
             if readPlus
                then pure $ read d
@@ -236,10 +226,10 @@ property = mappend <$> opt ie7orLessHack <*> ident
 -- Parses the "!important" at the end of declarations, ignoring comments after
 -- the '!'.
 important :: Parser Bool
-important = option False (char '!' *> skipComments *> asciiCI "important" *> pure True)
+important = option False (char '!' *> skipComments *> asciiCI "important" $> True)
 
 iehack :: Parser Bool
-iehack = option False (string "\\9" *> pure True)
+iehack = option False (string "\\9" $> True)
 
 -- Accepts empty lists of declaration
 declarations :: Parser [Declaration]
@@ -307,8 +297,8 @@ keyframeBlock = do
     sel  <- skipComments *> kfsList <* skipComments 
     ds   <- char '{' *> skipComments *> declarations <* char '}'
     pure $ KeyframeBlock sel ds
-  where from = asciiCI "from" *> pure From
-        to   = asciiCI "to" *> pure To
+  where from = asciiCI "from" $> From
+        to   = asciiCI "to" $> To
         keyframeSelector = from <|> to <|> (KFPercentage <$> percentage)
         kfsList = (:) <$> keyframeSelector <*> many (comma *> keyframeSelector)
 
@@ -350,17 +340,6 @@ stylesheet = do
   _ <- skipComments -- if there is no charset, import, or namespace at rule we need this here.
   rest <- rules
   pure $ charset <> imports <> namespaces <> rest
-
--- f ('\\':xs) = 
-
-atMost :: Int -> Parser a -> Parser [a]
-atMost 1 p = option [] ((:[]) <$> p)
-atMost n p = do 
-    a  <- option Nothing (Just <$> p)
-    case a of
-      Just x -> do xs <- atMost (n-1) p
-                   pure $ x : xs
-      Nothing -> pure []
 
 -- data AtRule = AtMedia (Maybe [MediaQuery])
 

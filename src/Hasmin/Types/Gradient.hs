@@ -37,8 +37,6 @@ instance ToText Side where
 instance Pretty Side where
   ppr = strictText . toText
 
-type EndingShapeOrSize = (Side, Maybe Side)
-
 -- Possible pair of values, as expected by linear-gradient()
 type SideOrCorner = (Side, Maybe Side)
 

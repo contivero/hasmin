@@ -25,20 +25,20 @@ import Data.Ratio ((%))
 import Data.Text (pack, Text)
 import Data.Text.Lazy.Builder (Builder, singleton, fromText)
 import Data.Word (Word8)
+import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import Hasmin.Config
 import Hasmin.Types.Class
 import Hasmin.Types.Numeric
 import Hasmin.Utils
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
 import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, string, char, (<>), (<+>), comma, rparen)
 
 -- | The \<color\> CSS data type. Specifications:
 --
--- 4. <https://drafts.csswg.org/css-color/#colorunits 
--- 3. <https://drafts.csswg.org/css-color-3/#colorunits CSS3>
--- 2. <https://www.w3.org/TR/CSS2/syndata.html#value-def-color CSS2.1
--- 1. <https://www.w3.org/TR/CSS1/#color-units CSS1 >
+-- 4. <https://drafts.csswg.org/css-color/#colorunits  CSS Color Module Level 4>
+-- 3. <https://drafts.csswg.org/css-color-3/#colorunits CSS Color Module Level 3>
+-- 2. <https://www.w3.org/TR/CSS2/syndata.html#value-def-color CSS2.1>
+-- 1. <https://www.w3.org/TR/CSS1/#color-units CSS1>
 data Color = Hex3     Char Char Char
            | Hex4     Char Char Char Char
            | Hex6     String String String

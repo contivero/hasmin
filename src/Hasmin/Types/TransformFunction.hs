@@ -14,7 +14,8 @@ module Hasmin.Types.TransformFunction (
     TransformFunction(..), mkMat, mkMat3d, combine
     ) where
 
-import Control.Monad.Reader
+import Control.Monad.Reader (mapReader, Reader, ask, local)
+import Control.Applicative (liftA2)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 import Data.Number.FixedFunctions (sin, cos, acos, tan, atan)
@@ -500,7 +501,7 @@ simplify s@(ScaleY _)    = pure s
 simplify (Skew a ma)
       | defaultSecondArgument = do ang <- minifyWith a
                                    simplify $ Skew ang Nothing
-      | otherwise             = liftM2 Skew (minifyWith a) (mapM minifyWith ma)
+      | otherwise             = liftA2 Skew (minifyWith a) (mapM minifyWith ma)
     where defaultSecondArgument = maybe False (== Angle 0 Deg) ma
 simplify (SkewY a)
       | a == Angle 0 Deg = pure $ Skew (Angle 0 Deg) Nothing

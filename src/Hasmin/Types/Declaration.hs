@@ -12,14 +12,17 @@ module Hasmin.Types.Declaration (
     Declaration(..), clean
     ) where
 
-import Control.Monad.Reader
+import Control.Monad.Reader (Reader, ask)
 import Control.Arrow (first)
+import Control.Monad ((>=>))
 import Data.Map.Strict (Map)
 import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe)
 import Data.List (find, delete, minimumBy, (\\))
 import Data.Text (Text) 
 import Data.Text.Lazy.Builder (singleton, fromText)
+import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import Hasmin.Config
 import Hasmin.Types.Class
 import Hasmin.Types.Value
@@ -31,8 +34,6 @@ import Hasmin.Types.Position
 import Hasmin.Types.BgSize
 import Hasmin.Properties
 import Hasmin.Utils
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
 import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, colon, (<+>))
 
 data Declaration = Declaration { propertyName :: Text 

@@ -18,14 +18,14 @@ import Control.Monad.Reader (ask, Reader)
 import Data.Attoparsec.Text (Parser, parse, IResult(..), maybeResult, feed)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Hasmin.Parser.Utils
-import Hasmin.Types.Class
-import Hasmin.Config
+import Data.Text.Lazy.Builder as LB
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Text as T
-import Data.Text.Lazy.Builder as LB
 import qualified Data.Text.Lazy as TL
+import Hasmin.Parser.Utils
+import Hasmin.Types.Class
+import Hasmin.Config
 import Text.PrettyPrint.Mainland (Pretty, ppr, strictText)
 
 -- | The \<string\> data type represents a string, formed by Unicode

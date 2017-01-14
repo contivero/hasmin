@@ -14,9 +14,8 @@ module Hasmin.Types.Value (
     ) where
 
 import Control.Monad.Reader (ask, Reader, mapReader)
-import Control.Applicative (liftA)
 import Data.Monoid ((<>))
-import Data.Maybe (isJust, catMaybes, fromJust, isNothing)
+import Data.Maybe (isJust, catMaybes, isNothing)
 import Data.Text (Text, toCaseFold)
 import qualified Data.Text as T
 import Data.Text.Lazy.Builder (fromText, singleton, Builder)
@@ -179,24 +178,24 @@ instance ToText Value where
        <> maybeToBuilder ml <> maybeToBuilder mc
 
 instance Minifiable Value where
-  minifyWith (ColorV c)       = liftA ColorV $ minifyWith c
-  minifyWith (DistanceV d)    = liftA DistanceV $ minifyWith d
-  minifyWith (AngleV a)       = liftA AngleV $ minifyWith a
-  minifyWith (DurationV d)    = liftA DurationV $ minifyWith d
-  minifyWith (FrequencyV f)   = liftA FrequencyV $ minifyWith f
-  minifyWith (ResolutionV r)  = liftA ResolutionV $ minifyWith r
-  minifyWith (GradientV t g)  = liftA (GradientV t) $ minifyWith g
-  minifyWith (FilterV f)      = liftA FilterV $ minifyWith f
-  minifyWith (ShadowV s)      = liftA ShadowV $ minifyWith s
+  minifyWith (ColorV c)       = ColorV <$> minifyWith c
+  minifyWith (DistanceV d)    = DistanceV <$> minifyWith d
+  minifyWith (AngleV a)       = AngleV <$> minifyWith a
+  minifyWith (DurationV d)    = DurationV <$> minifyWith d
+  minifyWith (FrequencyV f)   = FrequencyV <$> minifyWith f
+  minifyWith (ResolutionV r)  = ResolutionV <$> minifyWith r
+  minifyWith (GradientV t g)  = GradientV t <$> minifyWith g
+  minifyWith (FilterV f)      = FilterV <$> minifyWith f
+  minifyWith (ShadowV s)      = ShadowV <$> minifyWith s
   minifyWith (ShadowText l1 l2 ml mc) = minifyPseudoShadow ShadowText l1 l2 ml mc
-  minifyWith (TransformV tf)  = liftA TransformV $ minifyWith tf
-  minifyWith (TimingFuncV tf) = liftA TimingFuncV $ minifyWith tf
-  minifyWith (StringV s)      = liftA StringV $ minifyWith s
-  minifyWith (UrlV u)         = liftA UrlV $ minifyWith u
-  minifyWith (Format x)       = liftA Format $ mapM minifyWith x
-  minifyWith (PositionV p)    = liftA PositionV $ minifyWith p
-  minifyWith (RepeatStyleV r) = liftA RepeatStyleV $ minifyWith r
-  minifyWith (BgSizeV b)      = liftA BgSizeV $ minifyWith b
+  minifyWith (TransformV tf)  = TransformV <$> minifyWith tf
+  minifyWith (TimingFuncV tf) = TimingFuncV <$> minifyWith tf
+  minifyWith (StringV s)      = StringV <$> minifyWith s
+  minifyWith (UrlV u)         = UrlV <$> minifyWith u
+  minifyWith (Format x)       = Format <$> mapM minifyWith x
+  minifyWith (PositionV p)    = PositionV <$> minifyWith p
+  minifyWith (RepeatStyleV r) = RepeatStyleV <$> minifyWith r
+  minifyWith (BgSizeV b)      = BgSizeV <$> minifyWith b
   minifyWith (BgLayer img pos sz rst att b1 b2) = do
       conf <- ask
       i <- handleImage img
@@ -294,7 +293,7 @@ instance Minifiable Value where
                               else Just <$> minifyWith x
                 y       -> Just <$> minifyWith y
           
-  minifyWith (GenericFunc n vs) = liftA (GenericFunc n) $ minifyWith vs
+  minifyWith (GenericFunc n vs) = GenericFunc n <$> minifyWith vs
   minifyWith (Local x)        = do
       conf <- ask
       v <- lowercaseParameters x
@@ -406,16 +405,6 @@ lowercaseText t = do
 mkValues :: [Value] -> Values
 mkValues (x:xs) = Values x (zip (repeat Space) xs)
 mkValues [ ]    = error "An empty list of values isn't valid"
-
-fromPosition :: Position -> [Value]
-fromPosition (Position a b c d) = fromJust . sequence $ filter isJust [f a, g b, f c, g d]
-  where f (Just x) = Just . mkOther $ toText x
-        f _        = Nothing 
-        g (Just x) = Just $ either PercentageV DistanceV x
-        g _        = Nothing 
-
-valuesSize :: Values -> Int
-valuesSize (Values _ xs) = 1 + length xs
 
 bld :: ToText a => Maybe a -> Maybe Builder
 bld = fmap toBuilder

@@ -21,7 +21,7 @@ module Hasmin.Types.Dimension (
     toInches, toPixels, toRadians, isRelative
     ) where
 
-import Control.Monad.Reader
+import Control.Monad.Reader (asks)
 import Data.Data (Data)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton, fromText)

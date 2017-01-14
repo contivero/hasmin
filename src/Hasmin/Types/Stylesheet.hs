@@ -13,7 +13,7 @@ module Hasmin.Types.Stylesheet (
     KeyframeBlock(..), isEmpty
     ) where
 
-import Control.Monad.Reader
+import Control.Monad.Reader (Reader, ask)
 import Data.Monoid ((<>))
 import Data.Text (Text) 
 import Data.Text.Lazy.Builder (singleton, fromText)

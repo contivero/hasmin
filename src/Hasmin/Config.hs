@@ -7,7 +7,10 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Config where
+module Hasmin.Config (
+    Config(..), defaultConfig, ColorSettings(..), DimensionSettings(..),
+    GradientSettings(..), Instructions, Commands(..)
+    ) where
 
 type Instructions = (Commands, Config)
 
@@ -49,25 +52,25 @@ data Config = Config { colorSettings :: ColorSettings
 
 -- Used for the minify function
 defaultConfig :: Config
-defaultConfig = Config { colorSettings                 = ColorMinOn
-                       , dimensionSettings             = DimMinOn
-                       , gradientSettings              = GradientMinOn
-                       , shouldUsePropertyTraits       = True
-                       , shouldCleanRules              = True
-                       , shouldMinifyTimingFunctions   = True
-                       , shouldMinifyFilterFunctions   = True
-                       , shouldRemoveQuotes            = True
-                       , shouldMinifyFontWeight        = True
-                       , shouldMinifyTransformOrigin   = True
-                       , shouldMinifyMicrosyntax       = True
-                       , shouldMinifyKeyframeSelectors = True
-                       , shouldMinifyTransformFunction = True
-                       , shouldConvertEscaped          = True
-                       , shouldConvertNullPercentages  = True
-                       , shouldRemoveEmptyBlocks       = True
+defaultConfig = Config { colorSettings                  = ColorMinOn
+                       , dimensionSettings              = DimMinOn
+                       , gradientSettings               = GradientMinOn
+                       , shouldUsePropertyTraits        = True
+                       , shouldCleanRules               = True
+                       , shouldMinifyTimingFunctions    = True
+                       , shouldMinifyFilterFunctions    = True
+                       , shouldRemoveQuotes             = True
+                       , shouldMinifyFontWeight         = True
+                       , shouldMinifyTransformOrigin    = True
+                       , shouldMinifyMicrosyntax        = True
+                       , shouldMinifyKeyframeSelectors  = True
+                       , shouldMinifyTransformFunction  = True
+                       , shouldConvertEscaped           = True
+                       , shouldConvertNullPercentages   = True
+                       , shouldRemoveEmptyBlocks        = True
                        , shouldRemoveDuplicateSelectors = True
-                       , shouldNormalizeQuotes         = True
-                       , shouldLowercase               = True
-                       , shouldSortSelectors           = False
-                       , shouldSortProperties          = False
+                       , shouldNormalizeQuotes          = True
+                       , shouldLowercase                = True
+                       , shouldSortSelectors            = False
+                       , shouldSortProperties           = False
                        } 

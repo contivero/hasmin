@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings, TupleSections #-}
-
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Hasmin.Parser.Internal
@@ -11,12 +10,16 @@
 -- Parsers for CSS values.
 --
 -----------------------------------------------------------------------------
+module Hasmin.Parser.Value (
+    values, percentage, value, valuesFallback, stringOrUrl, url, stringtype,
+    digits, textualvalue, stringvalue, shadowList, repeatStyle, position,
+    color, number, fontStyle
+    ) where
 
-module Hasmin.Parser.Value where
-
-import Control.Applicative
+import Control.Applicative ((<|>), many, liftA2, liftA3)
 import Control.Arrow (first, (&&&))
 import Control.Monad (mzero)
+import Data.Functor (($>))
 import Data.Attoparsec.Text (asciiCI, char, choice, count, many1, 
   option, Parser, satisfy, skipSpace, string, digit)
 import Data.Map.Strict (Map)
@@ -25,7 +28,7 @@ import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text) 
 import Data.Word (Word8)
 import Data.Char (isAscii)
-import Text.Parser.Permutation
+import Text.Parser.Permutation ((<|?>), (<$$>), (<$?>), (<||>), permute)
 import qualified Data.Set as Set
 import Hasmin.Parser.Utils
 import Hasmin.Types.Class
@@ -93,14 +96,6 @@ hsla = functionParser p
 alphavalue :: Parser Alphavalue
 alphavalue = mkAlphavalue <$> rational
 
-predefColor :: Parser Color
-predefColor = do
-  s <- A.takeWhile1 C.isAlpha 
-  let namedColor = mkNamed s
-  case namedColor of
-     Just x -> pure x
-     Nothing -> mzero -- If it is not a known color name, make parser fail
-  
 hexvalue :: Parser Value
 hexvalue = ColorV <$> hex
 
@@ -293,54 +288,54 @@ position :: Parser Position
 position = pos4 <|> pos2 <|> pos1
 
 pos1 :: Parser Position
-pos1 =  (asciiCI "left" *> pure (f $ Just PosLeft))
-    <|> (asciiCI "center" *> pure (f $ Just PosCenter))
-    <|> (asciiCI "right" *> pure (f $ Just PosRight))
-    <|> (asciiCI "top" *> pure (f $ Just PosTop))
-    <|> (asciiCI "bottom" *> pure (f $ Just PosBottom))
+pos1 =  (asciiCI "left" $> (f $ Just PosLeft))
+    <|> (asciiCI "center" $> (f $ Just PosCenter))
+    <|> (asciiCI "right" $> (f $ Just PosRight))
+    <|> (asciiCI "top" $> (f $ Just PosTop))
+    <|> (asciiCI "bottom" $> (f $ Just PosBottom))
     <|> ((\a -> Position Nothing a Nothing Nothing) <$> (Just <$> percentageLength))
   where f x = Position x Nothing Nothing Nothing
 
 pos2 :: Parser Position
 pos2 = firstx <|> firsty
   where firstx = do
-            a <- (asciiCI "left" *> pure (Position (Just PosLeft) Nothing))
-                 <|> (asciiCI "center" *> pure (Position (Just PosCenter) Nothing))
-                 <|> (asciiCI "right" *> pure (Position (Just PosRight) Nothing))
+            a <- (asciiCI "left" $> (Position (Just PosLeft) Nothing))
+                 <|> (asciiCI "center" $> (Position (Just PosCenter) Nothing))
+                 <|> (asciiCI "right" $> (Position (Just PosRight) Nothing))
                  <|> ((Position Nothing . Just) <$> percentageLength)
-            skipComments *> ((asciiCI "top" *> pure (a (Just PosTop) Nothing))
-                 <|> (asciiCI "center" *> pure (a (Just PosCenter) Nothing))
-                 <|> (asciiCI "bottom" *> pure (a (Just PosBottom) Nothing))
+            skipComments *> ((asciiCI "top" $> (a (Just PosTop) Nothing))
+                 <|> (asciiCI "center" $> (a (Just PosCenter) Nothing))
+                 <|> (asciiCI "bottom" $> (a (Just PosBottom) Nothing))
                  <|> ((a Nothing . Just) <$> percentageLength))
         firsty = do
-            a <- (asciiCI "top" *> pure (Position (Just PosTop) Nothing))
-                 <|> (asciiCI "center" *> pure (Position (Just PosCenter) Nothing))
-                 <|> (asciiCI "bottom" *> pure (Position (Just PosBottom) Nothing))
+            a <- (asciiCI "top" $> (Position (Just PosTop) Nothing))
+                 <|> (asciiCI "center" $> (Position (Just PosCenter) Nothing))
+                 <|> (asciiCI "bottom" $> (Position (Just PosBottom) Nothing))
                  <|> ((Position Nothing . Just) <$> percentageLength)
-            skipComments *> ((asciiCI "left" *> pure (a (Just PosLeft) Nothing))
-                 <|> (asciiCI "center" *> pure (a (Just PosCenter) Nothing))
-                 <|> (asciiCI "right" *> pure (a (Just PosRight) Nothing))
+            skipComments *> ((asciiCI "left" $> (a (Just PosLeft) Nothing))
+                 <|> (asciiCI "center" $> (a (Just PosCenter) Nothing))
+                 <|> (asciiCI "right" $> (a (Just PosRight) Nothing))
                  <|> ((a Nothing . Just) <$> percentageLength))
 
 pos4 :: Parser Position
 pos4 = firstx <|> firsty
-  where posTop    = asciiCI "top" *> pure (Position (Just PosTop))
-        posRight  = asciiCI "right" *> pure (Position (Just PosRight))
-        posBottom = asciiCI "bottom" *> pure (Position (Just PosBottom))
-        posLeft   = asciiCI "left" *> pure (Position (Just PosLeft))
+  where posTop    = asciiCI "top" $> (Position (Just PosTop))
+        posRight  = asciiCI "right" $> (Position (Just PosRight))
+        posBottom = asciiCI "bottom" $> (Position (Just PosBottom))
+        posLeft   = asciiCI "left" $> (Position (Just PosLeft))
         firstx    = do
-            x <- (asciiCI "center" *> pure (Position (Just PosCenter) Nothing)) 
+            x <- (asciiCI "center" $> (Position (Just PosCenter) Nothing)) 
                  <|> ((posLeft <|> posRight) <*> (skipComments *> option Nothing (Just <$> percentageLength)))
             _ <- skipComments
-            (asciiCI "center" *> pure (x (Just PosCenter) Nothing))
-                <|> (((asciiCI "top" *> pure (x $ Just PosTop)) <|> (asciiCI "bottom" *> pure (x (Just PosBottom))))
+            (asciiCI "center" $> (x (Just PosCenter) Nothing))
+                <|> (((asciiCI "top" $> (x $ Just PosTop)) <|> (asciiCI "bottom" $> (x (Just PosBottom))))
                     <*> (skipComments *> option Nothing (Just <$> percentageLength)))
         firsty = do
-            x <- (asciiCI "center" *> pure (Position (Just PosCenter) Nothing)) 
+            x <- (asciiCI "center" $> (Position (Just PosCenter) Nothing)) 
                  <|> ((posTop <|> posBottom) <*> (skipComments *> option Nothing (Just <$> percentageLength)))
             _ <- skipComments
-            (asciiCI "center" *> pure (x (Just PosCenter) Nothing))
-                <|> (((asciiCI "left" *> pure (x $ Just PosLeft)) <|> (asciiCI "right" *> pure (x (Just PosRight))))
+            (asciiCI "center" $> (x (Just PosCenter) Nothing))
+                <|> (((asciiCI "left" $> (x $ Just PosLeft)) <|> (asciiCI "right" $> (x (Just PosRight))))
                     <*> (skipComments *> option Nothing (Just <$> percentageLength)))
 
 {-
@@ -371,8 +366,8 @@ transformOrigin = twoVal <|> oneVal
 
 bgSize :: Parser BgSize
 bgSize = twovaluesyntax <|> contain <|> cover
-  where cover   = asciiCI "cover" *> pure Cover
-        contain = asciiCI "contain" *> pure Contain
+  where cover   = asciiCI "cover" $> Cover
+        contain = asciiCI "contain" $> Contain
         twovaluesyntax = do
             v1 <- (Left <$> percentageLength) <|> (Right <$> auto)
             _  <- skipComments
@@ -385,7 +380,7 @@ bgAttachment = matchKeywords ["scroll", "fixed", "local"]
 box :: Parser TextV
 box = matchKeywords ["border-box", "padding-box", "content-box"]
 
--- shadow = permute (mkShadow <$?> (False, asciiCI "inset" *> pure True <* skipComments)
+-- shadow = permute (mkShadow <$?> (False, asciiCI "inset" $> True <* skipComments)
   --                          <||> fourLengths
     --                        <|?> (Nothing , Just <$> color <* skipComments))
     --
@@ -524,7 +519,7 @@ backgroundSize :: Parser Values
 backgroundSize = parseCommaSeparated (BgSizeV <$> bgSize)
 
 auto :: Parser Auto
-auto = asciiCI "auto" *> pure Auto
+auto = asciiCI "auto" $> Auto
 
 propertyValueParsersMap :: Map Text (Parser Values)
 propertyValueParsersMap = Map.fromList
@@ -921,7 +916,7 @@ parseCommaSeparated p = do
 
 
 shadow :: Parser Shadow
-shadow = permute (mkShadow <$?> (False, asciiCI "inset" *> pure True <* skipComments)
+shadow = permute (mkShadow <$?> (False, asciiCI "inset" $> True <* skipComments)
                            <||> fourLengths
                            <|?> (Nothing , Just <$> color <* skipComments))
   where mkShadow i (l1,l2,l3,l4) c = Shadow i l1 l2 l3 l4 c
@@ -941,8 +936,8 @@ radialgradient = functionParser $ do
              else comma
     cs <- colorStopList
     pure $ c p cs
-  where circle = asciiCI "circle" *> pure (Just Circle) <* skipComments
-        ellipse = asciiCI "ellipse" *> pure (Just Ellipse) <* skipComments
+  where circle = asciiCI "circle" $> (Just Circle) <* skipComments
+        ellipse = asciiCI "ellipse" $> (Just Ellipse) <* skipComments
         endingShapeAndSize = r1 <|> r2 <|> r3
           where r1 = permute (RadialGradient <$?> (Nothing, ellipse) <||> (Just <$> (PL <$> percentageLength <* skipComments <*> percentageLength <* skipComments)))
                 r2 = permute (RadialGradient <$?> (Nothing, circle) <||> ((Just . SL) <$> distance <* skipComments))
@@ -985,12 +980,12 @@ sideOrCorner = orderOne <|> orderTwo
                        <*> option Nothing (Just <$> leftright)
 
 leftright :: Parser Side
-leftright =  (asciiCI "left" *> pure LeftSide) 
-         <|> (asciiCI "right" *> pure RightSide)
+leftright =  (asciiCI "left" $> LeftSide) 
+         <|> (asciiCI "right" $> RightSide)
 
 topbottom :: Parser Side
-topbottom =  (asciiCI "top" *> pure TopSide) 
-         <|> (asciiCI "bottom" *> pure BottomSide)
+topbottom =  (asciiCI "top" $> TopSide) 
+         <|> (asciiCI "bottom" $> BottomSide)
 
 colorStopList :: Parser [ColorStop]
 colorStopList = do
@@ -1029,9 +1024,6 @@ numberPercentage = do
       NumberV x     -> pure $ Left x
       PercentageV p -> pure $ Right p
       _             -> mzero
-
-defaultGradientAngle :: Angle
-defaultGradientAngle = Angle 180 Deg
 
 -- | Assumes "rect(" has been already parsed
 rect :: Parser Value
@@ -1106,8 +1098,8 @@ steps = functionParser $ do
     i <- int
     s <- option Nothing (comma *> (Just <$> startOrEnd))
     pure $ Steps i s
-  where startOrEnd = (asciiCI "end" *> pure End)
-                 <|> (asciiCI "start" *> pure Start)
+  where startOrEnd = (asciiCI "end" $> End)
+                 <|> (asciiCI "start" $> Start)
 
 -- We use skipSpace instead of skipComments, since comments aren't valid inside
 -- the url-token. From the spec: 
@@ -1136,12 +1128,12 @@ valuesFallback :: Parser Values
 valuesFallback = Values <$> value <*> many ((,) <$> separator <*> value) <* skipComments
 
 separator :: Parser Separator
-separator = lexeme $ (char ',' *> pure Comma) 
-                 <|> (char '/' *> pure Slash) 
+separator = lexeme $ (char ',' $> Comma) 
+                 <|> (char '/' $> Slash) 
                  <|> pure Space
 
 commaSeparator :: Parser Separator
-commaSeparator = lexeme (char ',' *> pure Comma)
+commaSeparator = lexeme (char ',' $> Comma)
 
 -- <string> data type parser
 stringtype :: Parser StringType
@@ -1150,13 +1142,13 @@ stringtype = doubleQuotesString <|> singleQuotesString
 doubleQuotesString :: Parser StringType
 doubleQuotesString =  char '\"' *> (DoubleQuotes <$> untilDoubleQuotes)
   where untilDoubleQuotes = mappend <$> A.takeWhile (\c -> c /= '\\' && c /= '\"') <*> checkCharacter
-        checkCharacter = (string "\"" *> pure mempty) 
+        checkCharacter = (string "\"" $> mempty) 
                       <|> (T.cons <$> char '\\' <*> untilDoubleQuotes)
 
 singleQuotesString :: Parser StringType
 singleQuotesString = char '\'' *> (SingleQuotes <$> untilSingleQuotes)
   where untilSingleQuotes = mappend <$> A.takeWhile (\c -> c /= '\\' && c /= '\'') <*> checkCharacter
-        checkCharacter = (string "\'" *> pure mempty)
+        checkCharacter = (string "\'" $> mempty)
                       <|> (T.cons <$> char '\\' <*> untilSingleQuotes)
 
 -- <single-animation>#

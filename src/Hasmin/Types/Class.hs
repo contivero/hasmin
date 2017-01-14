@@ -11,7 +11,7 @@ module Hasmin.Types.Class (
     ToText(..), Minifiable(..)
     ) where
 
-import Control.Monad.Reader
+import Control.Monad.Reader (Reader, runReader)
 import Data.Word (Word8)
 import Data.Text (pack, Text)
 import Data.Text.Lazy (toStrict)
