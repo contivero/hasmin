@@ -1,21 +1,32 @@
 name:                hasmin
-version:             0.2.1
-synopsis:            "A CSS Minifier"
+version:             0.2.2
 license:             BSD3
 license-file:        LICENSE
-author:              Cristian Adrián Ontivero
+author:              (c) 2017 Cristian Adrián Ontivero <cristianontivero@gmail.com>
 maintainer:          Cristian Adrián Ontivero <cristianontivero@gmail.com>
+synopsis:            "A CSS Minifier"
 homepage:            https://github.com/contivero/hasmin/
+bug-reports:         https://github.com/contivero/hasmin/issues
 category:            Text
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
+description:   
+    A CSS minifier which not only aims at reducing the amount of bytes of the
+    output, but also at improving gzip compression. By default, the output is the
+    minified CSS file, but it can be compressed using Google's Zopfli library
+    (which produces a DEFLATE-compatible stream).
+    .
+    To use it: ./hasmin input.css > output.css
+    .
+    By default, most minification techniques are enabled. For a list of
+    available flags, do: ./hasmin --help
 
 executable hasmin
   ghc-options:         -Wall -fwarn-tabs -fwarn-unused-do-bind
   main-is:             Main.hs
   other-extensions:    DeriveDataTypeable
-  build-depends:       base >=4.7 && <5.1
+  build-depends:       base >=4.8 && <5.1
                      , attoparsec >=0.13 && <0.14
                      , containers >=0.5 && <0.6
                      , optparse-applicative >=0.12
@@ -32,15 +43,8 @@ executable hasmin
   default-language:    Haskell2010
 
 library 
-  exposed-modules:     Hasmin.Utils
-                     , Hasmin.Config
-                     , Hasmin.Selector
-                     , Hasmin.Types.Color
-                     , Hasmin.Types.Dimension
-                     , Hasmin.Types.Class
-                     , Hasmin.Types.Numeric
+  other-modules:       Hasmin.Parser.Utils
                      , Hasmin.Types.Gradient
-                     , Hasmin.Types.TransformFunction
                      , Hasmin.Types.FilterFunction
                      , Hasmin.Types.Shadow
                      , Hasmin.Types.TimingFunction
@@ -49,15 +53,23 @@ library
                      , Hasmin.Types.RepeatStyle
                      , Hasmin.Types.BgSize
                      , Hasmin.Properties
-                     , Hasmin.Types.Value
-                     , Hasmin.Types.Stylesheet
-                     , Hasmin.Types.Declaration
                      , Hasmin.Types.String
+                     , Hasmin.Selector
+  exposed-modules:     Hasmin.Config
                      , Hasmin.Parser.Internal
-                     , Hasmin.Parser.Utils
+                     , Hasmin.Types.Stylesheet
+                     , Hasmin.Types.Class
+                     -- exposed because it is needed by tests:
+                     , Hasmin.Types.Dimension
+                     , Hasmin.Types.Declaration
+                     , Hasmin.Types.Numeric
+                     , Hasmin.Types.Color
+                     , Hasmin.Types.TransformFunction
+                     , Hasmin.Types.Value
                      , Hasmin.Parser.Value
+                       Hasmin.Utils
   hs-source-dirs:      src
-  build-depends:       base >=4.7 && <5.1
+  build-depends:       base >=4.8 && <5.1
                      , attoparsec >=0.13 && <0.14
                      , bytestring
                      , containers >=0.5 && <0.6
@@ -93,7 +105,7 @@ test-suite doctest
   hs-source-dirs:      tests
   main-is:             DocTest.hs
   ghc-options:         -threaded -Wall -fno-warn-orphans
-  build-depends:       base >=4.7 && <5.1
+  build-depends:       base >=4.8 && <5.1
                      , doctest >= 0.10
                      , doctest-discover
                      , hasmin

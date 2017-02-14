@@ -169,9 +169,6 @@ instance Pretty TransformFunction where
   ppr (Mat3d m)           = "matrix3d(" 
       <> mconcatIntersperse ppr (char ',') (M.toList m) <> char ')'
 
-toDoc :: (Pretty a, Pretty b) => Either a b -> Doc
-toDoc = either ppr ppr
-
 maybeToDoc :: Pretty a => Maybe a -> Doc
 maybeToDoc = maybe mempty (\x -> char ',' <> ppr x)
 
@@ -250,7 +247,8 @@ toMatrix3d (RotateZ a) = Just $ rotateIn3d (0,0,1) (fromRadiansToNum a)
 toMatrix3d _ = Nothing
 
 -- Used for the rotate3d(), rotate(), ..., functions. Given an [x,y,z] vector
--- and an alpha, create it's corresponding rotation matrix.
+-- and an angle, create its corresponding rotation matrix.
+{-
 rotateIn3d :: (Number, Number, Number) -> Number -> TransformFunction
 rotateIn3d (b,c,d) a = mkMat3d $ fmap toNumber
     [1-2*(y^2 + z^2)*sq, 2*(x*y*sq - z*sc),  2*(x*z*sq + y*sc),  0,
@@ -263,6 +261,7 @@ rotateIn3d (b,c,d) a = mkMat3d $ fmap toNumber
         y  = toRational c
         z  = toRational d
         α  = toRational a
+-}
 
 -- Code translated from: http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/
 -- TODO: see how to get different representations, so that negative values are
@@ -345,19 +344,19 @@ tangent =  toNumber . tan epsilon . fromNumber . fromRadiansToNum
 arctan :: Number -> Number
 arctan = toNumber . atan epsilon . fromNumber 
 
-sine :: Number -> Number
-sine = toNumber . sin epsilon . fromNumber 
+-- sine :: Number -> Number
+-- sine = toNumber . sin epsilon . fromNumber 
 
-arccos :: Number -> Number
-arccos = toNumber . acos epsilon . fromNumber 
+-- arccos :: Number -> Number
+-- arccos = toNumber . acos epsilon . fromNumber 
 
 getMat :: TransformFunction -> Matrix Number
 getMat (Mat q)   = q
 getMat (Mat3d q) = q
 getMat _         = error "getMat: not a matrix!"
 
-toMat :: TransformFunction -> Matrix Number
-toMat x = getMat . fromJust $ toMatrix3d x
+-- toMat :: TransformFunction -> Matrix Number
+-- toMat x = getMat . fromJust $ toMatrix3d x
 
 ------------------------------------------------------------------------------
 
@@ -552,6 +551,7 @@ simplify x = pure x
 -- percentages or relative units) as they are, in the position they are in the
 -- list (since matrix multiplication isn't conmutative)
 -- Example:
+-- >>> import Control.Monad.Reader
 -- >>> let t10 = Translate (Right (Distance 10 PX)) Nothing
 -- >>> let tp  = Translate (Left (Percentage 100)) Nothing
 -- >>> let s90 = Skew (Angle 90 Deg) Nothing

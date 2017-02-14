@@ -22,7 +22,10 @@ import Hasmin.Config
 class Minifiable a where 
   {-# MINIMAL minifyWith #-}
   minifyWith :: a -> Reader Config a
-  minify :: a -> a -- returns smallest equivalent representation for an element, using a default configuration.
+
+  -- Returns smallest equivalent representation for an element, using a default
+  -- configuration. Mostly used for testing.
+  minify :: a -> a 
   minify x = runReader (minifyWith x) defaultConfig
 
 -- | Class for types that can be converted to Text. Used for priting the

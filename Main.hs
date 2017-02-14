@@ -12,6 +12,7 @@ module Main where
 
 import Codec.Compression.Hopfli
 import Control.Monad.Reader
+import Data.Monoid ((<>))
 import Data.Attoparsec.Text (parseOnly)
 import Data.Text.Lazy.Builder (toLazyText)
 import Options.Applicative hiding (command)
