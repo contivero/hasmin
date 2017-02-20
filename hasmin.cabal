@@ -11,7 +11,7 @@ category:            Text
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
-description:   
+description:
     A CSS minifier which not only aims at reducing the amount of bytes of the
     output, but also at improving gzip compression. By default, the output is the
     minified CSS file, but it can be compressed using Google's Zopfli library
@@ -23,7 +23,7 @@ description:
     available flags, do: ./hasmin --help
 
 executable hasmin
-  ghc-options:         -Wall -fwarn-tabs -fwarn-unused-do-bind
+  ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind
   main-is:             Main.hs
   other-extensions:    DeriveDataTypeable
   build-depends:       base >=4.8 && <5.1
@@ -42,19 +42,8 @@ executable hasmin
                      , hasmin
   default-language:    Haskell2010
 
-library 
-  other-modules:       Hasmin.Parser.Utils
-                     , Hasmin.Types.Gradient
-                     , Hasmin.Types.FilterFunction
-                     , Hasmin.Types.Shadow
-                     , Hasmin.Types.TimingFunction
-                     , Hasmin.Types.PercentageLength
-                     , Hasmin.Types.Position
-                     , Hasmin.Types.RepeatStyle
-                     , Hasmin.Types.BgSize
-                     , Hasmin.Properties
-                     , Hasmin.Types.String
-                     , Hasmin.Selector
+library
+  ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind
   exposed-modules:     Hasmin.Config
                      , Hasmin.Parser.Internal
                      , Hasmin.Types.Stylesheet
@@ -67,7 +56,20 @@ library
                      , Hasmin.Types.TransformFunction
                      , Hasmin.Types.Value
                      , Hasmin.Parser.Value
-                       Hasmin.Utils
+                     , Hasmin.Utils
+                       Paths_hasmin
+  other-modules:       Hasmin.Parser.Utils
+                     , Hasmin.Types.Gradient
+                     , Hasmin.Types.FilterFunction
+                     , Hasmin.Types.Shadow
+                     , Hasmin.Types.TimingFunction
+                     , Hasmin.Types.PercentageLength
+                     , Hasmin.Types.Position
+                     , Hasmin.Types.RepeatStyle
+                     , Hasmin.Types.BgSize
+                     , Hasmin.Properties
+                     , Hasmin.Types.String
+                     , Hasmin.Selector
   hs-source-dirs:      src
   build-depends:       base >=4.8 && <5.1
                      , attoparsec >=0.13 && <0.14
@@ -83,8 +85,9 @@ library
                      , semigroups>=0.16
                      , text >=1.2 && <1.3
   default-language:    Haskell2010
-  
+
 test-suite spec
+  default-language:    Haskell2010
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             Spec.hs
@@ -98,9 +101,9 @@ test-suite spec
                      , mtl >=2.2.1
                      , QuickCheck
                      , text >=1.2 && <1.3
-  default-language:    Haskell2010
 
 test-suite doctest
+  default-language:    Haskell2010
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             DocTest.hs
@@ -109,4 +112,3 @@ test-suite doctest
                      , doctest >= 0.10
                      , doctest-discover
                      , hasmin
-  default-language:    Haskell2010
