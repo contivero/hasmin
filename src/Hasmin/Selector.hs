@@ -5,12 +5,19 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Selector (
-    Selector(..), SimpleSelector(..), CompoundSelector, Combinator(..),
-    Sign(..), AnPlusB(..), AValue(..), Att(..), specialPseudoElements
+      Selector(..)
+    , SimpleSelector(..)
+    , CompoundSelector
+    , Combinator(..)
+    , Sign(..)
+    , AnPlusB(..)
+    , AValue(..)
+    , Att(..)
+    , specialPseudoElements
     ) where
 
 import Control.Applicative (liftA2)
@@ -21,18 +28,19 @@ import Data.Text.Lazy.Builder (fromText, singleton, Builder)
 import Data.Monoid ((<>))
 import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as N
-import Hasmin.Types.String
-import Hasmin.Types.Class
-import Hasmin.Utils
-import Hasmin.Config
 import Text.PrettyPrint.Mainland (Pretty, char, ppr, strictText)
+
+import Hasmin.Config
+import Hasmin.Types.Class
+import Hasmin.Types.String
+import Hasmin.Utils
 
 {-
 class Specificity a where
   specificity :: a -> (Int, Int, Int, Int)
 
-addSpecificity :: (Int, Int, Int, Int) 
-               -> (Int, Int, Int, Int) 
+addSpecificity :: (Int, Int, Int, Int)
+               -> (Int, Int, Int, Int)
                -> (Int, Int, Int, Int)
 addSpecificity (a1,b1,c1,d1) (a2,b2,c2,d2) = (a1 + a2, b1 + b2, c1 + c2, d1 + d2)
 -}
@@ -60,7 +68,6 @@ instance Pretty Combinator where
 
 -- An empty selector, containing no sequence of simple selectors and no
 -- pseudo-element, is an invalid selector.
-
 data Selector = Selector CompoundSelector [(Combinator, CompoundSelector)]
   deriving (Eq, Show)
 
@@ -69,7 +76,7 @@ instance Ord Selector where
   s1 <= s2 = toText s1 <= toText s2
 
 instance Pretty Selector where
-  ppr (Selector cs ccss) = ppr cs 
+  ppr (Selector cs ccss) = ppr cs
                         <> mconcat (fmap toDocument ccss)
     where toDocument (comb, compSel) = ppr comb <> ppr compSel
 instance ToText Selector where
@@ -91,7 +98,7 @@ instance Specificity Selector where
     where f = foldr (addSpecificity . specificity)
           g = foldr (addSpecificity . specificity . snd)
 -}
-                                  
+
 -- | Called <https://www.w3.org/TR/css3-selectors/#grammar simple_sequence_selector>
 -- in CSS2.1, but <https://drafts.csswg.org/selectors-4/#typedef-compound-selector
 -- compound-selector> in CSS Syntax Module Level 3.
@@ -163,14 +170,14 @@ instance Pretty SimpleSelector where
       | T.null n  = char '*'
       | otherwise = strictText n <> strictText "|*"
   ppr (AttributeSel att) = char '[' <> ppr att <> char ']'
-  ppr (ClassSel t)       = char '.' <> strictText t 
+  ppr (ClassSel t)       = char '.' <> strictText t
   ppr (IdSel t)          = char '#' <> strictText t
   ppr (PseudoClass t)    = char ':' <> strictText t
   ppr (PseudoElem t)     = if T.toCaseFold t `elem` specialPseudoElements
                               then strictText ":" <> strictText t
                               else strictText "::" <> strictText t
   ppr (FunctionalPseudoClass i t)   = strictText i <> char '(' <> ppr t <> char ')'
-  -- ppr (FunctionalPseudoClass1 i cs) = strictText i <> 
+  -- ppr (FunctionalPseudoClass1 i cs) = strictText i <>
 
 instance ToText SimpleSelector where
   toBuilder (Type n e)
@@ -180,46 +187,46 @@ instance ToText SimpleSelector where
       | T.null n  = singleton '*'
       | otherwise = fromText n <> fromText "|*"
   toBuilder (AttributeSel att) = singleton '[' <> toBuilder att <> singleton ']'
-  toBuilder (ClassSel t)       = singleton '.' <> fromText t 
+  toBuilder (ClassSel t)       = singleton '.' <> fromText t
   toBuilder (IdSel t)          = singleton '#' <> fromText t
   toBuilder (PseudoClass t)    = singleton ':' <> fromText t
-  toBuilder (PseudoElem t)     = if T.toCaseFold t `elem` specialPseudoElements
-                                    then fromText ":" <> fromText t
-                                    else fromText "::" <> fromText t
+  toBuilder (PseudoElem t)
+      | T.toCaseFold t `elem` specialPseudoElements = fromText ":" <> fromText t
+      | otherwise                                   = fromText "::" <> fromText t
   toBuilder (FunctionalPseudoClass t x) = fromText t <> singleton '(' <> fromText x <> singleton ')'
   toBuilder (FunctionalPseudoClass1 t ss) = singleton ':' <> fromText t <> singleton '('
       <> mconcatIntersperse toBuilder (singleton ',') ss
       <> singleton ')'
-  toBuilder (FunctionalPseudoClass2 t x) = singleton ':' <> fromText t 
+  toBuilder (FunctionalPseudoClass2 t x) = singleton ':' <> fromText t
       <> singleton '(' <> toBuilder x <> singleton ')'
-  toBuilder (FunctionalPseudoClass3 t a xs) = singleton ':' <> fromText t 
+  toBuilder (FunctionalPseudoClass3 t a xs) = singleton ':' <> fromText t
       <> singleton '(' <> toBuilder a <> f xs <> singleton ')'
     where f [] = mempty
-          f (y:ys) = " of " <> toBuilder y 
+          f (y:ys) = " of " <> toBuilder y
             <> mconcat (fmap (\z -> singleton ',' <> toBuilder z) ys)
 
 -- Pseudo-elements that support the old pseudo-element syntax of a single
 -- semicolon, as well as the new one of two semicolons.
 specialPseudoElements :: [Text]
-specialPseudoElements = fmap T.toCaseFold 
+specialPseudoElements = fmap T.toCaseFold
     ["after", "before", "first-line", "first-letter"]
 
 instance Minifiable SimpleSelector where
   minifyWith a@(AttributeSel att) = do
       conf <- ask
-      if shouldRemoveQuotes conf
-         then pure $ AttributeSel (removeAttributeQuotes att)
-         else pure a
+      pure $ if shouldRemoveQuotes conf
+                then AttributeSel (removeAttributeQuotes att)
+                else a
   minifyWith a@(FunctionalPseudoClass2 i n) = do
       conf <- ask
-      if shouldMinifyMicrosyntax conf
-         then pure $ FunctionalPseudoClass2 i (minifyAnPlusB n)
-         else pure a
+      pure $ if shouldMinifyMicrosyntax conf
+                then FunctionalPseudoClass2 i (minifyAnPlusB n)
+                else a
   minifyWith a@(FunctionalPseudoClass3 i n cs) = do
       conf <- ask
-      if shouldMinifyMicrosyntax conf
-         then pure $ FunctionalPseudoClass3 i (minifyAnPlusB n) cs
-         else pure a
+      pure $ if shouldMinifyMicrosyntax conf
+                then FunctionalPseudoClass3 i (minifyAnPlusB n) cs
+                else a
   minifyWith (FunctionalPseudoClass1 i cs) = do
       newcs <- mapM minifyWith cs
       pure $ FunctionalPseudoClass1 i newcs
@@ -263,7 +270,7 @@ minifyAValue NoValue = NoValue
 data AnPlusB = Even
              | Odd
              | AB AValue (Maybe Int)
-  deriving (Eq, Show) 
+  deriving (Eq, Show)
 instance ToText AnPlusB where
   toBuilder Even     = "even"
   toBuilder Odd      = "odd"
@@ -272,7 +279,7 @@ instance ToText AnPlusB where
               | a == NoValue = maybe (singleton '0') toBuilder
               | otherwise    = maybe mempty (\x -> bSign x <> toBuilder x)
           bSign x
-              | x < 0     = mempty 
+              | x < 0     = mempty
               | otherwise = singleton '+'
 
 minifyAnPlusB :: AnPlusB -> AnPlusB

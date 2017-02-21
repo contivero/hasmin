@@ -5,60 +5,71 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -- Parsers for CSS values.
 --
 -----------------------------------------------------------------------------
 module Hasmin.Parser.Value (
-    values, percentage, value, valuesFallback, stringOrUrl, url, stringtype,
-    digits, textualvalue, stringvalue, shadowList, repeatStyle, position,
-    color, number, fontStyle
+      values
+    , percentage
+    , value
+    , valuesFallback
+    , stringOrUrl
+    , url
+    , stringtype
+    , digits
+    , textualvalue
+    , stringvalue
+    , shadowList
+    , repeatStyle
+    , position
+    , color
+    , number
+    , fontStyle
     ) where
 
 import Control.Applicative ((<|>), many, liftA2, liftA3)
 import Control.Arrow (first, (&&&))
 import Control.Monad (mzero)
 import Data.Functor (($>))
-import Data.Attoparsec.Text (asciiCI, char, choice, count, many1, 
+import Data.Attoparsec.Text (asciiCI, char, choice, count, many1,
   option, Parser, satisfy, skipSpace, string, digit)
 import Data.Map.Strict (Map)
 import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe, isNothing)
-import Data.Text (Text) 
+import Data.Text (Text)
 import Data.Word (Word8)
 import Data.Char (isAscii)
 import Text.Parser.Permutation ((<|?>), (<$$>), (<$?>), (<||>), permute)
 import qualified Data.Set as Set
-import Hasmin.Parser.Utils
-import Hasmin.Types.Class
-import Hasmin.Types.Color
-import Hasmin.Types.Dimension
-import Hasmin.Types.Gradient
-import Hasmin.Types.Numeric
-import Hasmin.Types.String
-import Hasmin.Types.TransformFunction
-import Hasmin.Types.TimingFunction
-import Hasmin.Types.PercentageLength
-import Hasmin.Types.FilterFunction
-import Hasmin.Types.Shadow
-import Hasmin.Types.Position
-import Hasmin.Types.RepeatStyle
-import Hasmin.Types.BgSize
-import Hasmin.Types.Value
 import Numeric (readSigned, readFloat)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 
+import Hasmin.Parser.Utils
+import Hasmin.Types.BgSize
+import Hasmin.Types.Class
+import Hasmin.Types.Color
+import Hasmin.Types.Dimension
+import Hasmin.Types.FilterFunction
+import Hasmin.Types.Gradient
+import Hasmin.Types.Numeric
+import Hasmin.Types.PercentageLength
+import Hasmin.Types.Position
+import Hasmin.Types.RepeatStyle
+import Hasmin.Types.Shadow
+import Hasmin.Types.String
+import Hasmin.Types.TimingFunction
+import Hasmin.Types.TransformFunction
+import Hasmin.Types.Value
+
 values :: Text -> Parser Values
 values p = case Map.lookup (T.toLower p) propertyValueParsersMap of
              Just x  -> x <* skipComments -- mappend <$> (x <|> ((:[]) <$> csswideKeyword))
              Nothing -> valuesFallback
-
-numbervalue :: Parser Value 
-numbervalue = NumberV <$> number
 
 number :: Parser Number
 number = Number <$> rational
@@ -71,7 +82,7 @@ number = Number <$> rational
 rgb :: Parser Color
 rgb = functionParser (rgbInt <|> rgbPer)
   where rgbInt = mkRGBInt <$> word8 <* comma <*> word8 <* comma <*> word8
-        rgbPer = mkRGBPer <$> percentage <* comma 
+        rgbPer = mkRGBPer <$> percentage <* comma
                           <*> percentage <* comma <*> percentage
 
 -- Assumes "rgba(" has already been read
@@ -84,13 +95,13 @@ rgba = functionParser (rgbaInt <|> rgbaPer)
 
 -- Assumes "hsl(" has already been read
 hsl :: Parser Color
-hsl = functionParser p 
+hsl = functionParser p
   where p = mkHSL <$> int <* comma <*> percentage <* comma <*> percentage
 
 -- Assumes "hsla(" has already been read
 hsla :: Parser Color
 hsla = functionParser p
-  where p = mkHSLA <$> int <* comma <*> percentage <* comma 
+  where p = mkHSLA <$> int <* comma <*> percentage <* comma
                    <*> percentage <* comma <*> alphavalue
 
 alphavalue :: Parser Alphavalue
@@ -150,19 +161,16 @@ numericalvalue = do
 -- Create a numerical parser based on a Map.
 -- See for instance, the "angle" parser
 dimensionParser :: Map Text (Number -> a) -> a -> Parser a
-dimensionParser m unitlessValue = do 
+dimensionParser m unitlessValue = do
     n <- number
     u <- opt (A.takeWhile1 C.isAlpha)
     if T.null u
-       then if n == 0 
+       then if n == 0
                then pure unitlessValue -- <angle> 0, without units
                else mzero -- Non-zero <number>, fail
        else case Map.lookup (T.toCaseFold u) m of
               Just f  -> pure $ f n
               Nothing -> mzero -- parsed units aren't angle units, fail
-
-distancevalue :: Parser Value
-distancevalue = DistanceV <$> distance 
 
 distance :: Parser Distance
 distance = dimensionParser distanceConstructorsMap (Distance 0 Q)
@@ -191,12 +199,6 @@ angleConstructorsList = fmap (toText &&& flip Angle)
 distanceConstructorsList :: [(Text, Number -> Distance)]
 distanceConstructorsList = fmap (toText &&& flip Distance)
     [EM, EX, CH, VH, VW, VMIN, VMAX, REM, Q, CM, MM, IN, PC, PT, PX]
-                          
--- ---------------------------------------------------------------------------
--- Percentage
--- ---------------------------------------------------------------------------
-percentagevalue :: Parser Value
-percentagevalue = PercentageV <$> percentage
 
 percentage :: Parser Percentage
 percentage = Percentage <$> rational <* char '%'
@@ -216,7 +218,7 @@ int' = do
     '-' -> pure (sign:d)
     _   -> error "int': parsed a number starting with other than [+|-]"
 
--- | Parser for \<integer\>: [+|-][0-9]+ 
+-- | Parser for \<integer\>: [+|-][0-9]+
 int :: Parser Int
 int = read <$> int'
 
@@ -229,7 +231,7 @@ word8 = read <$> digits
 -- Note that many properties that allow an integer or real number as a value
 -- actually restrict the value to some range, often to a non-negative value.
 --
--- | Real numbers parser. \<number\>: <'int' integer> | [0-9]*.[0-9]+ 
+-- | Real numbers parser. \<number\>: <'int' integer> | [0-9]*.[0-9]+
 rational :: Parser Rational
 rational = do
     sign <- option [] (wrapMinus <$> (char '-' <|> char '+'))
@@ -239,13 +241,13 @@ rational = do
     pure $ fst . head $ readSigned readFloat (sign ++ dgts ++ e)
   where fractionalPart = (:) <$> char '.' <*> digits
         expo = (:) <$> satisfy (\c -> c == 'e' || c == 'E') <*> int'
-        wrapMinus x = if x == '-' -- we use this since read fails with leading '+' 
+        wrapMinus x = if x == '-' -- we use this since read fails with leading '+'
                          then [x]
-                         else [] 
+                         else []
 
 fontStyle :: Parser Value
 fontStyle = do
-    k <- ident 
+    k <- ident
     if Set.member k keywords
        then pure $ mkOther k
        else mzero
@@ -254,7 +256,7 @@ fontStyle = do
 {-
 fontWeight :: Parser Value
 fontWeight = do
-    k <- ident 
+    k <- ident
     if Set.member k keywords
        then pure $ mkOther k
        else mzero
@@ -263,9 +265,11 @@ fontWeight = do
 -}
 
 fontSize :: Parser Value
-fontSize = fontSizeKeyword <|> distancevalue <|> percentagevalue
+fontSize = fontSizeKeyword
+        <|> (DistanceV <$> distance)
+        <|> (PercentageV <$> percentage)
   where fontSizeKeyword = do
-            v1 <- ident 
+            v1 <- ident
             if Set.member v1 keywords
                then pure $ mkOther v1
                else mzero
@@ -324,14 +328,14 @@ pos4 = firstx <|> firsty
         posBottom = asciiCI "bottom" $> (Position (Just PosBottom))
         posLeft   = asciiCI "left" $> (Position (Just PosLeft))
         firstx    = do
-            x <- (asciiCI "center" $> (Position (Just PosCenter) Nothing)) 
+            x <- (asciiCI "center" $> (Position (Just PosCenter) Nothing))
                  <|> ((posLeft <|> posRight) <*> (skipComments *> option Nothing (Just <$> percentageLength)))
             _ <- skipComments
             (asciiCI "center" $> (x (Just PosCenter) Nothing))
                 <|> (((asciiCI "top" $> (x $ Just PosTop)) <|> (asciiCI "bottom" $> (x (Just PosBottom))))
                     <*> (skipComments *> option Nothing (Just <$> percentageLength)))
         firsty = do
-            x <- (asciiCI "center" $> (Position (Just PosCenter) Nothing)) 
+            x <- (asciiCI "center" $> (Position (Just PosCenter) Nothing))
                  <|> ((posTop <|> posBottom) <*> (skipComments *> option Nothing (Just <$> percentageLength)))
             _ <- skipComments
             (asciiCI "center" $> (x (Just PosCenter) Nothing))
@@ -342,7 +346,7 @@ pos4 = firstx <|> firsty
 transformOrigin :: Parser Values
 transformOrigin = twoVal <|> oneVal
   where oneVal = (singleValue numericalvalue) <|> offsetKeyword
-        offsetKeyword = do 
+        offsetKeyword = do
           v1 <- ident
           if v1 == "top" || v1 == "right" || v1 == "bottom" || v1 == "left" || v1 == "center"
              then pure $ mkValues [mkOther v1]
@@ -399,7 +403,7 @@ background = do
 
 -- <final-bg-layer> = <bg-image> || <position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <box> || <box> || <'background-color'>
 finalBgLayer :: Parser Value
-finalBgLayer = do 
+finalBgLayer = do
     layer <- permute (mkFinalBgLayer <$?> (Nothing, Just <$> image <* skipComments)
                                      <|?> (Nothing, Just <$> positionAndBgSize <* skipComments)
                                      <|?> (Nothing, Just <$> repeatStyle <* skipComments)
@@ -419,7 +423,7 @@ finalBgLayer = do
 
 -- <bg-layer> =       <bg-image> || <position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <box>{1,2}
 bgLayer :: Parser Value
-bgLayer = do 
+bgLayer = do
     layer <- permute (mkBgLayer <$?> (Nothing, Just <$> image <* skipComments)
                                 <|?> (Nothing, Just <$> positionAndBgSize <* skipComments)
                                 <|?> (Nothing, Just <$> repeatStyle <* skipComments)
@@ -468,7 +472,7 @@ image = do
                          Just x -> x
                          Nothing -> mzero
                   else mzero
-  where possibilities = Set.fromList $ map T.toCaseFold 
+  where possibilities = Set.fromList $ map T.toCaseFold
             ["url", "element", "linear-gradient", "radial-gradient"]
 
 transition :: Parser Values
@@ -514,7 +518,7 @@ timingFunction = do
                                               ,("linear",      pure Linear)
                                               ,("step-end",    pure StepEnd)
                                               ,("step-start",  pure StepStart)]
-    
+
 backgroundSize :: Parser Values
 backgroundSize = parseCommaSeparated (BgSizeV <$> bgSize)
 
@@ -525,9 +529,9 @@ propertyValueParsersMap :: Map Text (Parser Values)
 propertyValueParsersMap = Map.fromList
     [--("color",           (:[]) <$> colorvalue)
     ("display",                     singleValue textualvalue)
-    ,("font",                       singleValue font)  
-    ,("font-size",                  singleValue fontSize)  
-    ,("font-style",                 singleValue fontStyle)  
+    ,("font",                       singleValue font)
+    ,("font-size",                  singleValue fontSize)
+    ,("font-style",                 singleValue fontStyle)
     ,("font-weight",                singleValue numberOrText)
     ,("font-family",                fontFamilyValues)
     ,("background",                 background)
@@ -564,7 +568,7 @@ propertyValueParsersMap = Map.fromList
     -- ,("transform-origin",           transformOrigin)
     -- ,("-ms-transform-origin",       transformOrigin)
     -- ,("-webkit-transform-origin",   transformOrigin)
-    -- ,("font",              
+    -- ,("font",
     -- ,("margin-right",   numberOrText)
     -- ,("margin-top",     numberOrText)
     -- ,("opacity",        someNumericalValue)
@@ -599,7 +603,7 @@ invalidvalue = mkOther <$> A.takeWhile1 (\c -> c /= '\\' && c /= ';' && c /= '}'
 -- <'font-stretch'> ]? <'font-size'> [ / <'line-height'> ]? <'font-family'> ] |
 font :: Parser Value
 font = systemFonts <|> do
-    (fsty, fvar, fwgt, fstr) <- parse4 
+    (fsty, fvar, fwgt, fstr) <- parse4
     (fsz, lh)                <- fontSizeAndLineHeight
     ff                       <- ((:) <$> fontfamily <* skipComments) <*> many (char ',' *> lexeme fontfamily)
     pure $ FontV fsty fvar fwgt fstr fsz lh ff
@@ -609,7 +613,7 @@ font = systemFonts <|> do
             lh  <- option Nothing (Just <$> (char '/' *> lexeme lineHeight))
             pure (fsz, lh)
         lineHeight = let validNum = do n <- numericalvalue
-                                       case n of 
+                                       case n of
                                          NumberV _     -> pure n
                                          PercentageV _ -> pure n
                                          DistanceV _   -> pure n
@@ -633,13 +637,13 @@ font = systemFonts <|> do
                            FontWeight -> pure $ storeProperty' j (mkOther i)
                            _          -> pure $ storeProperty  j x (TextV i)
               Nothing -> mzero
-          where m  = Map.fromList $ zip ["ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded"] (repeat FontStretch) 
+          where m  = Map.fromList $ zip ["ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded"] (repeat FontStretch)
                                  ++ zip ["small-caps"] (repeat FontVariant)
                                  ++ zip ["italic", "oblique"] (repeat FontStyle)
                                  ++ zip ["bold", "bolder", "lighter"] (repeat FontWeight)
                                  ++ [("normal", Ambiguous)]
         parse4 :: Parser (Maybe TextV, Maybe TextV, Maybe Value, Maybe TextV)
-        parse4 = do 
+        parse4 = do
             let initialized = (Nothing, Nothing, Nothing, Nothing, 0)
             w <- option initialized (parseFirstFour initialized <* skipComments)
             x <- option w (parseFirstFour w <* skipComments)
@@ -660,7 +664,7 @@ data FontProperty = FontStyle | FontVariant | FontWeight | FontStretch | Ambiguo
 
 storeProperty :: (Maybe TextV, Maybe TextV, Maybe Value, Maybe TextV, Int) -> FontProperty -> TextV
               -> (Maybe TextV, Maybe TextV, Maybe Value, Maybe TextV, Int)
-storeProperty (a,b,c,d,i) y x = replace y 
+storeProperty (a,b,c,d,i) y x = replace y
   where replace FontStyle   = (Just x,b,c,d,i)
         replace FontVariant = (a, Just x,c,d,i)
         replace FontStretch = (a,b,c, Just x,i)
@@ -703,14 +707,14 @@ unquotedFontFamily = do
 textualvalue :: Parser Value
 textualvalue = do
     i <- ident
-    if i == "\\9" -- iehack 
+    if i == "\\9" -- iehack
        then mzero
        else do c <- A.peekChar
                case c of
                  Just '(' -> functionParsers i
                  Just ':' -> mzero -- invalid
                  _        -> textualParsers i
-    
+
 textualParsers :: Text -> Parser Value
 textualParsers i = let t = T.toCaseFold i
                    in fromMaybe (pure $ mkOther i) (Map.lookup t textualParsersMap)
@@ -730,8 +734,8 @@ csswideKeyword = do
                                   else mzero
 
 csswideKeywordsMap :: Map Text (Parser Value)
-csswideKeywordsMap  = Map.fromList $ map (first T.toCaseFold) 
-                                 [("initial", pure Initial) 
+csswideKeywordsMap  = Map.fromList $ map (first T.toCaseFold)
+                                 [("initial", pure Initial)
                                  ,("inherit", pure Inherit)
                                  ,("unset",   pure Unset)]
 
@@ -739,13 +743,13 @@ stringvalue :: Parser Value
 stringvalue = StringV <$> stringtype
 
 functionParsers :: Text -> Parser Value
-functionParsers i = char '(' *> 
+functionParsers i = char '(' *>
     case Map.lookup (T.toCaseFold i) functionsMap of
-      Just x -> x <|> genericFunc i 
-      Nothing -> genericFunc i 
+      Just x -> x <|> genericFunc i
+      Nothing -> genericFunc i
                  <|> (mkOther <$> (f i "(" <$> someText <*> string ")"))
   where f x y z w = x <> y <> z <> w
-        someText = A.takeWhile (/= ')') 
+        someText = A.takeWhile (/= ')')
 
 genericFunc :: Text -> Parser Value
 genericFunc i = (GenericFunc i <$> valuesInParens) <* char ')'
@@ -768,12 +772,12 @@ repeatStyle = do
   case Map.lookup lowercased singleKeywords of
     Nothing -> case Map.lookup lowercased keywordPairs of
                  Nothing -> mzero
-                 Just y -> do j <- option Nothing secondKeyword 
+                 Just y -> do j <- option Nothing secondKeyword
                               pure $ RSPair y j
     Just x -> pure x
   where secondKeyword = do
             z <- skipComments *> ident
-            case Map.lookup (T.toLower z) keywordPairs of 
+            case Map.lookup (T.toLower z) keywordPairs of
               Nothing -> mzero
               Just a -> pure $ Just a
         singleKeywords = Map.fromList [("repeat-x", RepeatX), ("repeat-y", RepeatY)]
@@ -974,17 +978,17 @@ lineargradient = functionParser (lg <|> oldLg)
 -- <side-or-corner> = [left | right] || [top | bottom]
 sideOrCorner :: Parser (Side, Maybe Side)
 sideOrCorner = orderOne <|> orderTwo
-  where orderOne = (,) <$> leftright <* skipComments 
+  where orderOne = (,) <$> leftright <* skipComments
                        <*> option Nothing (Just <$> topbottom)
         orderTwo = (,) <$> topbottom <* skipComments
                        <*> option Nothing (Just <$> leftright)
 
 leftright :: Parser Side
-leftright =  (asciiCI "left" $> LeftSide) 
+leftright =  (asciiCI "left" $> LeftSide)
          <|> (asciiCI "right" $> RightSide)
 
 topbottom :: Parser Side
-topbottom =  (asciiCI "top" $> TopSide) 
+topbottom =  (asciiCI "top" $> TopSide)
          <|> (asciiCI "bottom" $> BottomSide)
 
 colorStopList :: Parser [ColorStop]
@@ -994,12 +998,12 @@ colorStopList = do
     c2 <- colorStop
     cs <- many (char ',' *> skipComments *> colorStop)
     pure $ c1:c2:cs
-              
+
 colorStop :: Parser ColorStop
 colorStop = ColorStop <$> color <* skipComments
         <*> option Nothing (Just <$> percentageLength <* skipComments)
 
-color :: Parser Color 
+color :: Parser Color
 color = hex <|> othercolor
   where othercolor = do
             t <- textualvalue
@@ -1032,7 +1036,7 @@ rect = functionParser $ do
     length2 <- distance <* comma
     length3 <- distance <* comma
     length4 <- distance
-    pure $ Rect length1 length2 length3 length4 
+    pure $ Rect length1 length2 length3 length4
 
 -- | Assumes "translate(" has been already parsed
 translate :: Parser TransformFunction
@@ -1090,7 +1094,7 @@ cubicbezier = functionParser $ do
     p0 <- number <* comma
     p1 <- number <* comma
     p2 <- number <* comma
-    p3 <- number 
+    p3 <- number
     pure $ CubicBezier p0 p1 p2 p3
 
 steps :: Parser TimingFunction
@@ -1102,7 +1106,7 @@ steps = functionParser $ do
                  <|> (asciiCI "start" $> Start)
 
 -- We use skipSpace instead of skipComments, since comments aren't valid inside
--- the url-token. From the spec: 
+-- the url-token. From the spec:
 -- COMMENT tokens cannot occur within other tokens: thus, "url(/*x*/pic.png)"
 -- denotes the URI "/*x*/pic.png", not "pic.png".
 -- Assumes "url(" has been already parsed
@@ -1114,7 +1118,7 @@ url = Url <$> (skipSpace *> someUri <* skipSpace <* char ')')
 -- format(<string>#)
 -- Assumes "format(" has been already parsed
 format :: Parser Value
-format = Format <$> functionParser p 
+format = Format <$> functionParser p
   where p = (:) <$> stringtype <*> many (comma *> stringtype)
 
 namedColorsParsersMap :: Map Text (Parser Value)
@@ -1128,8 +1132,8 @@ valuesFallback :: Parser Values
 valuesFallback = Values <$> value <*> many ((,) <$> separator <*> value) <* skipComments
 
 separator :: Parser Separator
-separator = lexeme $ (char ',' $> Comma) 
-                 <|> (char '/' $> Slash) 
+separator = lexeme $ (char ',' $> Comma)
+                 <|> (char '/' $> Slash)
                  <|> pure Space
 
 commaSeparator :: Parser Separator
@@ -1142,7 +1146,7 @@ stringtype = doubleQuotesString <|> singleQuotesString
 doubleQuotesString :: Parser StringType
 doubleQuotesString =  char '\"' *> (DoubleQuotes <$> untilDoubleQuotes)
   where untilDoubleQuotes = mappend <$> A.takeWhile (\c -> c /= '\\' && c /= '\"') <*> checkCharacter
-        checkCharacter = (string "\"" $> mempty) 
+        checkCharacter = (string "\"" $> mempty)
                       <|> (T.cons <$> char '\\' <*> untilDoubleQuotes)
 
 singleQuotesString :: Parser StringType
@@ -1153,7 +1157,7 @@ singleQuotesString = char '\'' *> (SingleQuotes <$> untilSingleQuotes)
 
 -- <single-animation>#
 animation :: Parser Values
-animation = parseCommaSeparated singleAnimation 
+animation = parseCommaSeparated singleAnimation
 
 -- <single-animation> = <time> || <timing-function> || <time> || <animation-iteration-count> || <animation-direction> || <animation-fill-mode> || <animation-play-state> || [ none | <keyframes-name> ]
 singleAnimation :: Parser Value
@@ -1173,7 +1177,7 @@ singleAnimation = do
         mkSingleAnimation kf ic t1 t2 tf c d e = SingleAnimation t2 tf t1 ic c d e kf
         saIsEmpty (SingleAnimation Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing) = True
         saIsEmpty _                                                                                 = False
-        iterationCount = (mkOther <$> asciiCI "infinite") <|> numbervalue 
+        iterationCount = (mkOther <$> asciiCI "infinite") <|> (NumberV <$> number)
         animationDirection = parseIdents ["normal", "reverse", "alternate", "alternate-reverse"]
         animationFillMode  = parseIdents ["none", "forwards", "backwards", "both"]
         animationPlayState = parseIdents ["running", "paused"]

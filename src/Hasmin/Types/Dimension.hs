@@ -1,11 +1,11 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Hasmin.Types.Dimension
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -- CSS Dimension data types: \<length\> (distance), \<angle\>, \<duration\>,
 -- \<frequency\>, and \<resolution\>. Provides conversion of absolute
@@ -13,16 +13,23 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.Dimension (
-    Distance(..), DistanceUnit(..),
-    Angle(..), AngleUnit(..),
-    Duration(..), DurationUnit(..),
-    Frequency(..), FrequencyUnit(..),
-    Resolution(..), ResolutionUnit(..),
-    toInches, toPixels, toRadians, isRelative
+      Distance(..)
+    , DistanceUnit(..)
+    , Angle(..)
+    , AngleUnit(..)
+    , Duration(..)
+    , DurationUnit(..)
+    , Frequency(..)
+    , FrequencyUnit(..)
+    , Resolution(..)
+    , ResolutionUnit(..)
+    , toInches
+    , toPixels
+    , toRadians
+    , isRelative
     ) where
 
 import Control.Monad.Reader (asks)
-import Data.Data (Data)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton, fromText)
 import Data.Typeable (Typeable)
@@ -39,7 +46,7 @@ instance Pretty Distance where
   ppr (Distance 0 _) = char '0'
   ppr (Distance r u) = ppr r <> ppr u
 instance Eq Distance where
-  (Distance r1 u1) == (Distance r2 u2) 
+  (Distance r1 u1) == (Distance r2 u2)
     | u1 == u2  = r1 == r2
     | otherwise = toInches r1 u1 == toInches r2 u2
 instance Minifiable Distance where
@@ -47,10 +54,10 @@ instance Minifiable Distance where
       shouldMinifyUnits <- asks ((DimMinOn ==) . dimensionSettings)
       pure $ if (not . isRelative) u && shouldMinifyUnits
                 then minDim Distance r u [Q, CM, MM, IN, PC, PT, PX]
-                else d 
-                
+                else d
+
 isRelative :: DistanceUnit -> Bool
-isRelative x = x == EM || x == EX || x == CH || x == VH 
+isRelative x = x == EM || x == EX || x == CH || x == VH
             || x == VW || x == VMIN || x == VMAX || x == REM
 
 instance ToText Distance where
@@ -64,7 +71,7 @@ instance Pretty Angle where
   ppr (Angle 0 _) = char '0'
   ppr (Angle r u) = ppr r <> ppr u
 instance Eq Angle where
-  (Angle r1 u1) == (Angle r2 u2) 
+  (Angle r1 u1) == (Angle r2 u2)
     | u1 == u2  = r1 == r2
     | otherwise = toDegrees r1 u1 == toDegrees r2 u2
 instance Minifiable Angle where
@@ -124,7 +131,7 @@ data Resolution = Resolution Number ResolutionUnit
 instance Pretty Resolution where
   ppr (Resolution r u) = ppr r <> ppr u
 instance Eq Resolution where
-  (Resolution r1 u1) == (Resolution r2 u2) 
+  (Resolution r1 u1) == (Resolution r2 u2)
     | u1 == u2  = r1 == r2
     | otherwise = toDpi r1 u1 == toDpi r2 u2
 instance Minifiable Resolution where
@@ -136,7 +143,7 @@ instance Minifiable Resolution where
 instance ToText Resolution where
   toBuilder (Resolution r u) = toBuilder r <> toBuilder u
 
--- | Given a constructor, a number, and a unit, returns 
+-- | Given a constructor, a number, and a unit, returns
 -- the shortest equivalent representation. If there is more than one, returns
 -- the latest found to "normalize" values, hopefully improving gzip compression.
 minDim :: (Unit a, ToText a) => (Number -> a -> b) -> Number -> a -> [a] -> b
@@ -153,7 +160,7 @@ class Unit a where
 
 data DistanceUnit = IN | CM | MM | Q | PC | PT | PX            -- absolute
                   | EM | EX | CH | VH | VW | VMIN | VMAX | REM -- relative
-  deriving (Show, Eq, Data, Typeable)
+  deriving (Show, Eq)
 instance ToText DistanceUnit where
   toBuilder IN   = "in"
   toBuilder CM   = "cm"
@@ -183,7 +190,7 @@ instance  Unit DistanceUnit where
   convertTo _  = const
 
 data AngleUnit = Deg | Grad | Rad | Turn
-  deriving (Show, Eq, Data, Typeable)
+  deriving (Show, Eq, Typeable)
 instance ToText AngleUnit where
   toBuilder Deg  = "deg"
   toBuilder Grad = "grad"
@@ -210,7 +217,7 @@ instance Unit DurationUnit where
   convertTo Ms = toMiliseconds
 
 data FrequencyUnit = Hz | Khz
-  deriving (Show, Eq, Data, Typeable)
+  deriving (Show, Eq)
 instance ToText FrequencyUnit where
   toBuilder Hz  = "hz"
   toBuilder Khz = "khz"
@@ -221,7 +228,7 @@ instance Unit FrequencyUnit where
   convertTo Khz = toKilohertz
 
 data ResolutionUnit = Dpi | Dpcm | Dppx
-  deriving (Show, Eq, Data, Typeable)
+  deriving (Show, Eq)
 instance ToText ResolutionUnit where
   toBuilder Dpi  = "dpi"
   toBuilder Dpcm = "dpcm"
@@ -282,7 +289,7 @@ toPica :: Number -> DistanceUnit -> Number
 toPica d IN = d / 6
 toPica d CM = d * (6 / 2.54)
 toPica d MM = d * (6 / 25.4)
-toPica d Q  = d * (6 / 101.6) 
+toPica d Q  = d * (6 / 101.6)
 toPica d PT = d / 12
 toPica d PX = d / 16
 toPica d _  = d

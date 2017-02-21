@@ -5,7 +5,7 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -- \<color> data type.
 --
@@ -27,11 +27,12 @@ import Data.Text.Lazy.Builder (Builder, singleton, fromText)
 import Data.Word (Word8)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
+import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, string, char, (<>), (<+>), comma, rparen)
+
 import Hasmin.Config
 import Hasmin.Types.Class
 import Hasmin.Types.Numeric
 import Hasmin.Utils
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, string, char, (<>), (<+>), comma, rparen)
 
 -- | The \<color\> CSS data type. Specifications:
 --
@@ -52,9 +53,9 @@ data Color = Hex3     Char Char Char
            | HSLA     Int Percentage Percentage Alphavalue
   deriving (Show)
 
--- Equality is slightly relaxed, since we map percentages and real numbers to
--- the [0,255] integer range, and then compare, meaning:
-instance Eq Color where 
+-- | Equality is slightly relaxed, since percentages and real numbers are mapped
+-- to the [0,255] integer range, and then compared
+instance Eq Color where
   (Hex6 r1 g1 b1) == (Hex6 r2 g2 b2) =
     r1 == r2 && g1 == g2 && b1 == b2
   (Hex8 r1 g1 b1 a1) == (Hex8 r2 g2 b2 a2) =
@@ -72,11 +73,11 @@ instance Eq Color where
                       Just a  -> a == c2
                       Nothing -> False
   a == b = toLongHex a == toLongHex b
-  
+
 instance Ord Color where
-  (Hex6 r1 g1 b1) <= (Hex6 r2 g2 b2) = 
+  (Hex6 r1 g1 b1) <= (Hex6 r2 g2 b2) =
     r1 < r2 || r1 == r2 && (g1 < g2 || (g1 == g2 && b1 <= b2))
-  (Hex8 r1 g1 b1 a1) <= (Hex8 r2 g2 b2 a2) = 
+  (Hex8 r1 g1 b1 a1) <= (Hex8 r2 g2 b2 a2) =
     r1 < r2 || r1 == r2 && (g1 < g2 || (g1 == g2 && (b1 < b2 || (b1 == b2 && a1 <= a2))))
   (Hex8 r1 g1 b1 a) <= (Hex6 r2 g2 b2)
     | a == "ff" =  r1 < r2 || r1 == r2 && (g1 < g2 || (g1 == g2 && b1 <= b2))
@@ -110,7 +111,7 @@ instance Pretty Color where
                                      <+> ppr s <> comma
                                      <+> ppr l <> rparen
   ppr (HSLA h s l a) = strictText "hsla(" <> ppr h <> comma
-                                         <+> ppr s <> comma 
+                                         <+> ppr s <> comma
                                          <+> ppr l <> comma
                                          <+> ppr a <> rparen
 
@@ -141,17 +142,17 @@ minifyColor c = case toLongHex c of
 
 instance ToText Color where
   toBuilder (RGBInt r g b)    = "rgb(" <> values <> singleton ')'
-    where values = toBuilderWithCommas [toText r, toText g, toText b] 
+    where values = toBuilderWithCommas [toText r, toText g, toText b]
   toBuilder (RGBAInt r g b a) = "rgba(" <> values <> singleton ')'
-    where values = toBuilderWithCommas [toText r, toText g, toText b, toText a] 
+    where values = toBuilderWithCommas [toText r, toText g, toText b, toText a]
   toBuilder (RGBPer r g b)    = "rgb(" <> values <> singleton ')'
-    where values = toBuilderWithCommas [toText r, toText g, toText b] 
+    where values = toBuilderWithCommas [toText r, toText g, toText b]
   toBuilder (RGBAPer r g b a) = "rgba(" <> values <> singleton ')'
-    where values = toBuilderWithCommas [toText r, toText g, toText b, toText a] 
+    where values = toBuilderWithCommas [toText r, toText g, toText b, toText a]
   toBuilder (HSL h s l)       = "hsl(" <> values <> singleton ')'
-    where values = toBuilderWithCommas [toText h, toText s, toText l] 
+    where values = toBuilderWithCommas [toText h, toText s, toText l]
   toBuilder (HSLA h s l a)    = "hsla(" <> values <> singleton ')'
-    where values = toBuilderWithCommas [toText h, toText s, toText l, toText a] 
+    where values = toBuilderWithCommas [toText h, toText s, toText l, toText a]
   toBuilder (Named a)         = fromText a
   toBuilder (Hex3 r g b)      = singleton '#' <> singleton r <> singleton g <> singleton b
   toBuilder (Hex4 r g b a)    = singleton '#' <> singleton r <> singleton g <> singleton b <> singleton a
@@ -166,12 +167,12 @@ toBuilderWithCommas = mconcatIntersperse fromText (singleton ',')
 -- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 mkHex3 :: Char -> Char -> Char -> Color
-mkHex3 r g b 
+mkHex3 r g b
   | isHexDigit r && isHexDigit g && isHexDigit b = Hex3 (toLower r) (toLower g) (toLower b)
   | otherwise = error "passing non hexadecimal arguments to mkHex3"
 
 mkHex6 :: String -> String -> String -> Color
-mkHex6 r g b 
+mkHex6 r g b
   | allHex r && allHex g && allHex b = Hex6 (strToLower r) (strToLower g) (strToLower b)
   | otherwise = error "passing non hexadecimal arguments to mkHex6"
 
@@ -181,7 +182,7 @@ mkHex4 r g b a
   | otherwise = error "passing non hexadecimal arguments to mkHex4"
 
 mkHex8 :: String -> String -> String -> String -> Color
-mkHex8 r g b a 
+mkHex8 r g b a
   | allHex r && allHex g && allHex b = Hex8 (strToLower r) (strToLower g) (strToLower b) (strToLower a)
   | otherwise = error "passing non hexadecimal arguments to mkHex6"
 
@@ -222,7 +223,7 @@ strToLower :: String -> String
 strToLower = map toLower
 -------------------------------------------------------------------------------
 toHexShorthand :: Color -> Color
-toHexShorthand c@(Hex6 [r1,r2] [g1,g2] [b1,b2]) 
+toHexShorthand c@(Hex6 [r1,r2] [g1,g2] [b1,b2])
   | r1 == r2 && g1 == g2 && b1 == b2 = Hex3 r1 g1 b1
   | otherwise                        = c
 toHexShorthand c@(Hex8 [r1,r2] [g1,g2] [b1,b2] [a1,a2])
@@ -230,7 +231,7 @@ toHexShorthand c@(Hex8 [r1,r2] [g1,g2] [b1,b2] [a1,a2])
   | otherwise                                    = c
 toHexShorthand h = h
 
--- Returns hexadecimal equivalent as a string of two characters 
+-- Returns hexadecimal equivalent as a string of two characters
 -- (i.e. for values in the range [0,15], a leading zero is added).
 word8ToHex :: Word8 -> String
 word8ToHex n | 0 <= n && n < 16 = '0':[intToDigit num]
@@ -257,21 +258,22 @@ toLongHex a              = a
 
 -- This fold works in general to convert hexadecimals into Integers, but we
 -- only need it for Word8
-hexToWord8 :: String -> Word8 
+hexToWord8 :: String -> Word8
 hexToWord8 = fromIntegral . foldl (\s c -> s*16 + digitToInt c) 0
 
 toRGBAInt :: Color -> Color
 toRGBAInt (Named s) = case Map.lookup (T.toLower s) colorMap of
                         Just a  -> toRGBAInt a
-                        Nothing -> error "Invalid color keyword. Can't convert to rgba"
+                        Nothing -> error e
+  where e = T.unpack $ "Invalid color keyword (" <> s <> "). Can't convert to rgba"
 toRGBAInt (Hex3 r g b) = RGBAInt (f [r,r]) (f [g,g]) (f [b,b]) 1
   where f = fromIntegral . hexToWord8
 toRGBAInt (Hex6 r g b) = RGBAInt (hexToWord8 r) (hexToWord8 g) (hexToWord8 b) 1
 toRGBAInt (Hex4 r g b a) = RGBAInt (f [r,r]) (f [g,g]) (f [b,b]) (h [a,a])
   where f = fromIntegral . hexToWord8
         h = toAlphavalue . hexToWord8
-toRGBAInt (Hex8 r g b a) = RGBAInt (hexToWord8 r) (hexToWord8 g) 
-                                   (hexToWord8 b) (toAlphavalue $ toRational (hexToWord8 a) / 255) 
+toRGBAInt (Hex8 r g b a) = RGBAInt (hexToWord8 r) (hexToWord8 g)
+                                   (hexToWord8 b) (toAlphavalue $ toRational (hexToWord8 a) / 255)
 toRGBAInt (RGBInt r g b) = RGBAInt r g b 1
 toRGBAInt (RGBPer r g b) = RGBAInt (f r) (f g) (f b) 1
   where f = round . (2.55*)
@@ -357,7 +359,7 @@ colorMap :: Map.Map Text Color
 colorMap = Map.fromList keywordColors
 
 keywordColors :: [(Text, Color)]
-keywordColors = map (first T.toLower) 
+keywordColors = map (first T.toLower)
   [("aliceblue",            Hex6 "f0" "f8" "ff")
   ,("antiquewhite",         Hex6 "fa" "eb" "d7")
   ,("aqua",                 Hex6 "00" "ff" "ff")

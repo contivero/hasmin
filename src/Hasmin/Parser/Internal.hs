@@ -5,19 +5,23 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Parser.Internal (
-    stylesheet, atRule, declaration, declarations, selector
+      stylesheet
+    , atRule
+    , declaration
+    , declarations
+    , selector
     ) where
- 
+
 import Control.Arrow (first)
-import Control.Applicative ((<|>), many) 
+import Control.Applicative ((<|>), many)
 import Control.Monad (mzero)
 import Data.Functor (($>))
 import Data.Attoparsec.Combinator (lookAhead, sepBy, endOfInput)
-import Data.Attoparsec.Text (asciiCI, char, many1, manyTill, 
+import Data.Attoparsec.Text (asciiCI, char, many1, manyTill,
   option, Parser, satisfy, string)
 import Data.List.NonEmpty (NonEmpty( (:|) ))
 import Data.Monoid ((<>))
@@ -31,6 +35,7 @@ import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+
 import Hasmin.Parser.Utils
 import Hasmin.Parser.Value
 import Hasmin.Selector
@@ -38,30 +43,33 @@ import Hasmin.Types.Stylesheet
 import Hasmin.Types.Declaration
 
 selector :: Parser Selector
-selector = Selector <$> compoundSelector 
+selector = Selector <$> compoundSelector
       <*> many ((,) <$> (combinator <* skipComments) <*> compoundSelector)
 
 -- First tries with '>>' (descendant), '>' (child), '+' (adjacent sibling), and
 -- '~' (general sibling) combinators. If those fail, it tries with the
 -- descendant (whitespace) combinator. This is done to allow comments in-between.
+--
+-- | Parser for selector combinators, i.e. ">>" (descendant), '>' (child), '+'
+-- (adjacent sibling), '~' (general sibling), and ' ' (descendant) combinators.
 combinator :: Parser Combinator
 combinator =  (skipComments *> ((string ">>" $> Descendant)
-                            <|> (char '>' $> Child) 
-                            <|> (char '+' $> AdjacentSibling) 
+                            <|> (char '>' $> Child)
+                            <|> (char '+' $> AdjacentSibling)
                             <|> (char '~' $> GeneralSibling)))
           <|> (satisfy ws $> Descendant)
   where ws c = c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
 
 compoundSelector :: Parser CompoundSelector
-compoundSelector = 
-    (:|) <$> (typeSelector <|> universal) 
+compoundSelector =
+    (:|) <$> (typeSelector <|> universal)
                            <*> many p
                        <|> ((Universal mempty :|) <$> many1 p)
-  where p = idSel <|> classSel <|> attributeSel <|> pseudo 
-  
+  where p = idSel <|> classSel <|> attributeSel <|> pseudo
+
 idSel :: Parser SimpleSelector
 idSel = do
-    _ <- char '#' 
+    _ <- char '#'
     name <- mconcat <$> many1 nmchar
     pure $ IdSel (TL.toStrict (toLazyText name))
 
@@ -85,13 +93,13 @@ attrib
 -- but they should be.
 attributeSel :: Parser SimpleSelector
 attributeSel = do
-    _     <- char '[' *> skipComments 
+    _     <- char '[' *> skipComments
     attId <- ident <* skipComments
     g     <- option Attribute attValue
     _     <- char ']'
     pure $ AttributeSel (g attId)
   where attValue = do
-          f <- ((string "^=" $> (:^=:)) <|> 
+          f <- ((string "^=" $> (:^=:)) <|>
                 (string "$=" $> (:$=:)) <|>
                 (string "*=" $> (:*=:)) <|>
                 (string "="  $> (:=:))  <|>
@@ -135,7 +143,7 @@ pseudo = char ':' *> (pseudoElementSelector <|> pseudoClassSelector)
             i <- ident
             c <- A.peekChar
             case c of
-              Just '(' -> char '(' *> case Map.lookup (T.toCaseFold i) fpcMap of 
+              Just '(' -> char '(' *> case Map.lookup (T.toCaseFold i) fpcMap of
                             Just p  -> functionParser p
                             Nothing -> functionParser (FunctionalPseudoClass i <$> A.takeWhile (/= ')'))
               _        -> pure $ PseudoClass i
@@ -143,16 +151,16 @@ pseudo = char ':' *> (pseudoElementSelector <|> pseudoClassSelector)
             parsedColon <- option False (char ':' $> True)
             if parsedColon
                then PseudoElem <$> ident
-               else ident >>= handleSpecialCase 
+               else ident >>= handleSpecialCase
           where handleSpecialCase :: Text -> Parser SimpleSelector
                 handleSpecialCase t = if T.toCaseFold t `elem` specialPseudoElements
                                          then pure $ PseudoElem t
                                          else mzero
 
 -- \<An+B> microsyntax parser.
-anplusb :: Parser AnPlusB 
+anplusb :: Parser AnPlusB
 anplusb = (asciiCI "even" $> Even)
-      <|> (asciiCI "odd" $> Odd) 
+      <|> (asciiCI "odd" $> Odd)
       <|> do
     s <- option Nothing (Just <$> parseSign)
     x <- option mempty digits
@@ -173,7 +181,7 @@ anplusb = (asciiCI "even" $> Even)
             if readPlus
                then pure $ read d
                else pure $ read ('-':d)
-                    
+
 -- Functional pseudo classes parsers map
 fpcMap :: Map Text (Parser SimpleSelector)
 fpcMap = Map.fromList $ fmap (first T.toCaseFold)
@@ -186,13 +194,13 @@ fpcMap = Map.fromList $ fmap (first T.toCaseFold)
     ,buildTuple "nth-child"        (anbAndSelectors . FunctionalPseudoClass3)
     ,buildTuple "nth-last-child"   (anbAndSelectors . FunctionalPseudoClass3)
     --
-    -- :drop( [ active || valid || invalid ]? ) 
+    -- :drop( [ active || valid || invalid ]? )
     -- The :drop() functional pseudo-class is identical to :drop
     -- ,("drop", anplusb)
     --
     -- It accepts a comma-separated list of one or more language ranges as its
     -- argument. Each language range in :lang() must be a valid CSS <ident> or
-    -- <string>. 
+    -- <string>.
     -- ,("lang", anplusb)
     --
     -- ,("dir", text)
@@ -205,6 +213,8 @@ fpcMap = Map.fromList $ fmap (first T.toCaseFold)
             o <- option [] (asciiCI "of" *> skipComments *> compoundSelectorList)
             pure $ constructor a o
 
+-- | Parse a list of comma-separated selectors, ignoring whitespace and
+-- comments.
 selectors :: Parser [Selector]
 selectors = lexeme selector `sepBy` char ','
 
@@ -216,26 +226,29 @@ declaration = do
     ie <- iehack <* skipComments
     pure $ Declaration p v i ie
 
--- Usually, ident would be enough, but this parser is used to support IE hacks.
--- for example *width:
+-- | Parser for property names. Usually, 'ident' would be enough, but this
+-- parser adds support for IE hacks (e.g. *width), which deviate from the CSS
+-- grammar.
 property :: Parser Text
 property = mappend <$> opt ie7orLessHack <*> ident
   where ie7orLessHack = T.singleton <$> satisfy (`Set.member` ie7orLessHacks)
         ie7orLessHacks = Set.fromList ("!$&*()=%+@,./`[]#~?:<>|" :: String)
 
--- Parses the "!important" at the end of declarations, ignoring comments after
--- the '!'.
+-- | Used to parse the "!important" at the end of declarations, ignoring spaces
+-- and comments after the '!'.
 important :: Parser Bool
 important = option False (char '!' *> skipComments *> asciiCI "important" $> True)
 
 iehack :: Parser Bool
 iehack = option False (string "\\9" $> True)
 
--- Accepts empty lists of declaration
+-- | Parses a list of declarations, ignoring spaces, comments, and empty
+-- declarations (e.g. ; ;)
 declarations :: Parser [Declaration]
 declarations = many (declaration <* handleSemicolons)
   where handleSemicolons = many (string ";" *> skipComments)
 
+-- | Parser for CSS at-rules (e.g. \@keyframes, \@media)
 atRule :: Parser Rule
 atRule = do
     _ <- char '@'
@@ -245,11 +258,17 @@ atRule = do
                          ,("import",            atImport)
                          ,("namespace",         atNamespace)
                          ,("media",             atMedia)
+                         -- ,("supports",          atSupports)
+                         -- ,("document",          atDocument)
+                         -- ,("page",              atPage)
                          ,("font-face",         skipComments *> atBlock "font-face")
                          ,("keyframes",         atKeyframe mempty )
                          ,("-webkit-keyframes", atKeyframe "-webkit-")
                          ,("-moz-keyframes",    atKeyframe "-moz-")
                          ,("-o-keyframes",      atKeyframe "-o-")
+                         -- ,("viewport",              atViewport)
+                         -- ,("counter-style",         atCounterStyle)
+                         -- ,("font-feature-value",    atFontFeatureValue)
                          ]
 -- @import [ <string> | <url> ] [<media-query-list>]?;
 atImport :: Parser Rule
@@ -265,17 +284,17 @@ atCharset = do
     pure $ AtCharset st
 
 -- @namespace <namespace-prefix>? [ <string> | <uri> ];
--- where 
+-- where
 -- <namespace-prefix> = IDENT
 atNamespace :: Parser Rule
 atNamespace = do
     i   <- skipComments *> option mempty ident
     ret <- if T.null i
               then (AtNamespace i . Left) <$> stringtype
-              else decideBasedOn i 
+              else decideBasedOn i
     _ <- skipComments <* char ';'
     pure ret
-  where decideBasedOn x = 
+  where decideBasedOn x =
             let urltext = T.toCaseFold "url"
             in if T.toCaseFold x == urltext
                   then do c <- A.peekChar
@@ -294,7 +313,7 @@ atKeyframe t = do
 
 keyframeBlock :: Parser KeyframeBlock
 keyframeBlock = do
-    sel  <- skipComments *> kfsList <* skipComments 
+    sel  <- skipComments *> kfsList <* skipComments
     ds   <- char '{' *> skipComments *> declarations <* char '}'
     pure $ KeyframeBlock sel ds
   where from = asciiCI "from" $> From
@@ -314,21 +333,26 @@ atMedia = do
 -- the "manyTill .. lookAhead" was added because if we only used "rules", it
 -- doesn't know when to stop, and breaks the parser
 atBlock :: Text -> Parser Rule
-atBlock i = do 
+atBlock i = do
   t <- mappend i <$> A.takeWhile (/= '{') <* char '{'
   r <- skipComments *> ((AtBlockWithDec t <$> declarations) <|> (AtBlockWithRules t <$> manyTill (rule <* skipComments) (lookAhead (char '}'))))
   _ <- char '}'
   pure r
 
+-- | Parses a CSS style rule, e.g. @body { padding: 0; }@
 styleRule :: Parser Rule
 styleRule = do
-    sels <- selectors <* char '{' <* skipComments 
+    sels <- selectors <* char '{' <* skipComments
     decs <- declarations <* char '}'
     pure $ StyleRule sels decs
 
+-- | Parser for a CSS rule, which can be either an at-rule (e.g. \@charset), or a style
+-- rule.
 rule :: Parser Rule
 rule = atRule <|> styleRule
 
+-- | Parser for CSS rules (both style rules, and at-rules), which can be
+-- separated by whitespace or comments.
 rules :: Parser [Rule]
 rules = manyTill (rule <* skipComments) endOfInput
 
@@ -378,22 +402,22 @@ mediaQuery = mediaQuery1 <|> mediaQuery2
 expression :: Parser Expression
 expression = char '(' *> skipComments *> (expr <|> expFallback)
   where expr = do
-             e <- ident <* skipComments 
+             e <- ident <* skipComments
              v <- option Nothing (char ':' *> lexeme (Just <$> value))
              _ <- char ')'
              pure $ Expression e v
         expFallback = InvalidExpression <$> A.takeWhile (/= ')') <* char ')'
-            
-            
+
+
 
 -- Note: The code below pertains to CSS Media Queries Level 4.
 -- Since it is still too new and nobody implements it (afaik),
 -- I leave it here for future reference, when the need to cater for it
 -- arrives.
 {-
-mediaCondition = asciiCI "not" 
-              <|> asciiCI "and" 
-              <|> asciiCI "or" 
+mediaCondition = asciiCI "not"
+              <|> asciiCI "and"
+              <|> asciiCI "or"
               <|> mediaInParens
 
 mediaInParens = char '(' *> skipComments *> mediaCondition <* skipComments <* char ')'
@@ -402,7 +426,7 @@ mediaFeature :: Parser MediaFeature
 mediaFeature = mfPlain <|> mfRange <|> mfBoolean
   where mfBoolean = ident
 
-mfRange = ident 
+mfRange = ident
 
 data MediaFeature = MFPlain Text Value
                   | MFBoolean Text
@@ -422,7 +446,7 @@ data RangeOp = LTOP | GTOP | EQOP | GEQOP | LEQOP
 mfPlain = ident *> skipComments *> char ':' *> skipComments *> mfValue
 
 mfValue :: Parser Value
-mfValue = number <|> dimension <|> ident <|> ratio 
+mfValue = number <|> dimension <|> ident <|> ratio
 
 -- TODO check if both integers are positive (required by the spec)
 ratio :: Parser Value
@@ -448,7 +472,7 @@ ratio = do
 
 data MediaFeatureType = Range | Discrete
 
-t = 
+t =
   [("width",               Range)
   ,("height",              Range)
   ,("aspect-ratio",        Range)

@@ -5,15 +5,17 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Properties (
-    PropertyInfo(..), shorthandAndLonghandsMap, propertiesTraits
+     PropertyInfo(..)
+     , shorthandAndLonghandsMap
+     , propertiesTraits
     ) where
 
-import Data.Attoparsec.Text (parseOnly) 
-import Data.Text (Text) 
+import Data.Attoparsec.Text (parseOnly)
+import Data.Text (Text)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Hasmin.Types.Value
@@ -21,7 +23,7 @@ import Hasmin.Parser.Value
 
 -- TODO see if this can be extended to contain all the information from a
 -- property (such as initial value). Otherwise, delete it.
-data PropertyInfo = 
+data PropertyInfo =
      PropertyInfo { overwrittenBy :: [Text] -- shorthands that overwrite it
                   , subproperties :: [Text] -- longhands that can be merged into it
                   } deriving (Show)
@@ -30,7 +32,7 @@ shorthandAndLonghandsMap :: Map Text PropertyInfo
 shorthandAndLonghandsMap = Map.fromList properties
 
 properties :: [(Text,PropertyInfo)]
-properties = 
+properties =
   [("animation", PropertyInfo mempty ["animation-name","animation-duration","animation-timing-function","animation-delay","animation-iteration-count","animation-direction","animation-fill-mode","animation-play-state"])
   ,("animation-delay",           PropertyInfo ["animation"] mempty)
   ,("animation-direction",       PropertyInfo ["animation"] mempty)
@@ -204,7 +206,7 @@ propertiesTraits = Map.fromList $ replaceTextWithValues
   ,("background-position-block",  (mempty {-not applicable-},  False))
   ,("background-position-y",      ("top",                      False))
   ,("background-repeat",          ("repeat",                   False))
-  ,("background-size",            ("auto",                     False)) 
+  ,("background-size",            ("auto",                     False))
   ,("block-size",                 ("auto",                     False)) -- experimental
   ,("border",                     ("medium none currentcolor", False)) -- shorthand!
   -- border-block-* would go here
@@ -240,14 +242,14 @@ propertiesTraits = Map.fromList $ replaceTextWithValues
   ,("border-top-width",           ("medium",                   False))
   ,("border-top-left-radius",     ("0",                        False))
   ,("border-top-right-radius",    ("0",                        False))
-  -- ,("border-width" -- shorthand 
+  -- ,("border-width" -- shorthand
   ,("bottom",                     ("auto",                     False))
   ,("box-decoration-break",       ("slice",                    False)) -- experimental
   ,("-webkit-box-decoration-break", ("slice",                  False)) -- experimental
   ,("-o-box-decoration-break",    ("slice",                    False)) -- experimental
   ,("box-shadow",                 ("none",                     False))
   ,("-webkit-box-shadow",         ("none",                     False))
-  ,("box-sizing",                 ("content-box",              False)) -- experimental  
+  ,("box-sizing",                 ("content-box",              False)) -- experimental
   ,("-webkit-box-sizing",         ("content-box",              False)) -- experimental
   ,("-moz-box-sizing",            ("content-box",              False)) -- experimental
   ,("break-after",                ("auto",                     False))
@@ -440,7 +442,7 @@ propertiesTraits = Map.fromList $ replaceTextWithValues
   ,("text-decoration-color",              ("currentcolor", False))
   ,("text-decoration-line",               ("none", False))
   ,("text-decoration-style",              ("solid", False))
-  ,("text-emphasis",                      ("none currentcolor", False)) -- shorthand 
+  ,("text-emphasis",                      ("none currentcolor", False)) -- shorthand
   ,("text-emphasis-color",                ("currentcolor", False))
   ,("text-emphasis-position",             (mempty {-"over right"-}, False))
   ,("text-emphasis-style",                ("none", False))

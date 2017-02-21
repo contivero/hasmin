@@ -5,12 +5,20 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Parser.Utils (
-    ident, fontfamilyname, nonquotedurl, skipComments, lexeme, functionParser,
-    comma, colon, opt, nmchar
+    ident
+    , fontfamilyname
+    , nonquotedurl
+    , skipComments
+    , lexeme
+    , functionParser
+    , comma
+    , colon
+    , opt
+    , nmchar
     ) where
 
 import Control.Applicative ((<|>), many)
@@ -50,7 +58,7 @@ nonquotedurl :: Parser Text
 nonquotedurl = do
     t <- many (escape <|> (LB.singleton <$> satisfy validChar))
     pure $ TL.toStrict (toLazyText (mconcat t))
-  where validChar x = x /= '\"' && x /= '\'' && x /= '(' && x /= ')' 
+  where validChar x = x /= '\"' && x /= '\'' && x /= '(' && x /= ')'
                    && x /= '\\' && notWhitespace x && notNonprintable x
         notWhitespace x = x /= '\n' &&  x /= '\t' && x /= ' '
         notNonprintable x = not (C.chr 0 <= x && x <= C.chr 8)
@@ -72,7 +80,7 @@ fontfamilyname = do
 ident :: Parser Text
 ident = do
     dash <- option mempty (LB.singleton <$> char '-')
-    ns   <- nmstart 
+    ns   <- nmstart
     nc   <- mconcat <$> many nmchar
     pure $ TL.toStrict (toLazyText (dash <> ns <> nc))
 
@@ -84,8 +92,7 @@ nmstart = LB.singleton <$> satisfy (\c -> C.isAlpha c || (not . C.isAscii) c || 
 
 -- nmchar: [_a-z0-9-]|{nonascii}|{escape}
 nmchar :: Parser Builder
-nmchar = LB.singleton <$> satisfy cond
-      <|> escape 
+nmchar = LB.singleton <$> satisfy cond <|> escape
   where cond x = C.isAlphaNum x || x == '_' || x == '-'
               || (not . C.isAscii) x
 
@@ -95,7 +102,7 @@ escape :: Parser Builder
 escape =  unicode
       <|> (mappend <$> (LB.singleton <$> char '\\') <*> (LB.singleton <$> satisfy cond))
       <?> "not an escape token: {unicode}|\\\\[^\\n\\r\\f0-9a-f]"
-  where cond c = c /= '\n' 
+  where cond c = c /= '\n'
               && c /= '\r'
               && c /= '\f'
               && (not . C.isHexDigit) c
@@ -103,7 +110,7 @@ escape =  unicode
 -- unicode        \\[0-9a-f]{1,6}(\r\n|[ \n\r\t\f])?
 unicode :: Parser Builder
 unicode = do
-    backslash <- char '\\' 
+    backslash <- char '\\'
     hexChars  <- takeWhile1 C.isHexDigit
     _         <- opt (string "\r\n" <|> (T.singleton <$> satisfy ws))
     if T.length hexChars <= 6
@@ -112,7 +119,7 @@ unicode = do
   where ws x = x == ' ' || x == '\n' || x == '\r' || x == '\t' || x == '\f'
 
 -- | Assumes the identifier and the left parenthesis have been parsed
--- Parses p, ignoring comments before and after it, and consumes the final 
+-- Parses p, ignoring comments before and after it, and consumes the final
 -- right parenthesis
 functionParser :: Parser a -> Parser a
-functionParser p = skipComments *> p <* skipComments <* char ')'
+functionParser p = lexeme p <* char ')'

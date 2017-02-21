@@ -31,7 +31,7 @@ class Minifiable a where
 -- | Class for types that can be converted to Text. Used for priting the
 -- minified results.
 class ToText a where
-  -- {-# MINIMAL toText | toBuilder #-}
+  {-# MINIMAL toText | toBuilder #-}
   toText :: a -> Text
   toBuilder :: a -> Builder
   toText    = toStrict . toLazyText . toBuilder

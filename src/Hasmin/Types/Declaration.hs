@@ -5,11 +5,12 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.Declaration (
-    Declaration(..), clean
+      Declaration(..)
+    , clean
     ) where
 
 import Control.Monad.Reader (Reader, ask)
@@ -23,18 +24,19 @@ import Data.Text (Text)
 import Data.Text.Lazy.Builder (singleton, fromText)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
+import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, colon, (<+>))
+
 import Hasmin.Config
+import Hasmin.Properties
+import Hasmin.Types.BgSize
 import Hasmin.Types.Class
-import Hasmin.Types.Value
 import Hasmin.Types.Dimension
 import Hasmin.Types.Numeric
-import Hasmin.Types.TransformFunction
 import Hasmin.Types.PercentageLength
 import Hasmin.Types.Position
-import Hasmin.Types.BgSize
-import Hasmin.Properties
+import Hasmin.Types.TransformFunction
+import Hasmin.Types.Value
 import Hasmin.Utils
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, colon, (<+>))
 
 data Declaration = Declaration { propertyName :: Text 
                                , valueList :: Values
@@ -77,12 +79,12 @@ propertyTraits d@(Declaration p _ _ _) = do
 -- Map relating properties with specific functions to optimize them
 propertyOptimizations :: Map Text (Declaration -> Reader Config Declaration)
 propertyOptimizations = Map.fromList
-  [("transform",         combineTransformFunctions)
-  ,("-webkit-transform", combineTransformFunctions)
-  ,("-moz-transform",    combineTransformFunctions)
+  [("transform",                  combineTransformFunctions)
+  ,("-webkit-transform",          combineTransformFunctions)
+  ,("-moz-transform",             combineTransformFunctions)
   -- ,("font",              optimizeValues optimizeFontFamily)
-  ,("font-family",       optimizeValues optimizeFontFamily)
-  ,("font-weight",       fontWeightOptimizer)
+  ,("font-family",                optimizeValues optimizeFontFamily)
+  ,("font-weight",                fontWeightOptimizer)
 
   ,("background-size",            nullPercentageToLength)
   ,("width",                      nullPercentageToLength)
@@ -256,7 +258,7 @@ transformOrigin2 x y
         isYoffsetKeyword a = a == Other "top" || a == Other "bottom"
         per50 = PercentageV $ Percentage 50
         per100 = PercentageV $ Percentage 100
-        convertValue (Other t) = fromMaybe (Other t) (Map.lookup (getText t) equivalences)
+        convertValue (Other t) = fromMaybe (Other t) (Map.lookup (getText t) transformOriginKeywords)
         convertValue n@(PercentageV p) = if p == 0
                               then DistanceV (Distance 0 Q)
                               else n
@@ -268,16 +270,17 @@ transformOrigin3 x y z
       || y == Other "left" || y == Other "right" = fmap replaceKeywords [y, x, z]
     | otherwise = fmap replaceKeywords [x, y, z]
   where replaceKeywords :: Value -> Value
-        replaceKeywords (Other t) = fromMaybe x (Map.lookup (getText t) equivalences)
+        replaceKeywords (Other t) = fromMaybe x (Map.lookup (getText t) transformOriginKeywords)
         replaceKeywords e = e
 
 -- transform-origin keyword meanings.
-equivalences :: Map Text Value
-equivalences = Map.fromList [("top", DistanceV (Distance 0 Q))
-                            ,("right", PercentageV (Percentage 100))
-                            ,("bottom", PercentageV (Percentage 100))
-                            ,("left", DistanceV (Distance 0 Q))
-                            ,("center", PercentageV (Percentage 50))] 
+transformOriginKeywords :: Map Text Value
+transformOriginKeywords = Map.fromList 
+    [("top", DistanceV (Distance 0 Q))
+    ,("right", PercentageV (Percentage 100))
+    ,("bottom", PercentageV (Percentage 100))
+    ,("left", DistanceV (Distance 0 Q))
+    ,("center", PercentageV (Percentage 50))]
 
 
 -- | Minifies a declaration, based on the property's specific traits (i.e. if
@@ -545,7 +548,6 @@ reduceTRBL d@(Declaration _ (Values v1 vs) _ _) =
             | tv == rv  = d { valueList = mkValues [tv] }
             | otherwise = d { valueList = mkValues [tv, rv] }
 
--- mapValues :: (Value -> Value) -> Values -> Values
 mapValues :: (Value -> Reader Config Value) -> Values -> Reader Config Values
 mapValues f (Values v1 vs) = do
     x <- f v1

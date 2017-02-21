@@ -4,12 +4,20 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Utils (
-    isRight, isLeft, epsilon, eps, fromLeft', fromRight', mconcatIntersperse,
-    restrict, textualLength, replaceAt
+      isRight
+    , isLeft
+    , epsilon
+    , eps
+    , fromLeft'
+    , fromRight'
+    , mconcatIntersperse
+    , restrict
+    , textualLength
+    , replaceAt
     ) where
 
 import Data.Monoid ((<>))
@@ -27,7 +35,7 @@ restrict minv maxv val | val >= maxv = maxv
 mconcatIntersperse :: Monoid b => (a -> b) -> b -> [a] -> b
 mconcatIntersperse _ _ []            = mempty
 mconcatIntersperse toMonoid y (x:xs) = toMonoid x <> rest
-  where rest | null xs   = mempty 
+  where rest | null xs   = mempty
              | otherwise = y <> mconcatIntersperse toMonoid y xs
 
 replaceAt :: Int -> a -> [a] -> [a]
@@ -52,7 +60,7 @@ isLeft _      = False
 
 -- TODO: Find out how precise is enough.
 -- Can we use double and round when printing?
-epsilon :: Rational 
+epsilon :: Rational
 epsilon = 2.2204460492503131e-30 :: Rational
 
 eps :: Rational
