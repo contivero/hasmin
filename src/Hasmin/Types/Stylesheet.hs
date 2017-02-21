@@ -5,7 +5,7 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.Stylesheet (
@@ -54,26 +54,20 @@ instance Minifiable Expression where
   minifyWith (Expression t mv) = fmap (Expression t) (mapM minifyWith mv)
   minifyWith x = pure x
 instance ToText Expression where
-  toBuilder (Expression t mv) =
+  toBuilder (Expression t mv) = 
       singleton '(' <> fromText t <> v <> singleton ')'
     where v = maybe mempty (\x -> singleton ':' <> toBuilder x) mv
-  toBuilder (InvalidExpression t) =
+  toBuilder (InvalidExpression t) = 
       singleton '(' <> fromText t <> singleton ')'
-
-type Comment = Maybe Text
-data Stylesheet = Stylesheet Comment [Rule]
-  deriving (Show)
-
+  
 data KeyframeSelector = From | To | KFPercentage Percentage
   deriving (Eq, Show)
-
 instance ToText KeyframeSelector where
   toText From             = "from"
   toText To               = "to"
   toText (KFPercentage p) = toText p
 instance Pretty KeyframeSelector where
   ppr = strictText . toText
-
 instance Minifiable KeyframeSelector where
   minifyWith x = do
       conf <- ask
@@ -88,14 +82,12 @@ minifyKFS x = x
 
 data KeyframeBlock = KeyframeBlock [KeyframeSelector] [Declaration]
   deriving (Eq, Show)
-
 instance ToText KeyframeBlock where
-  toBuilder (KeyframeBlock ss ds) =
+  toBuilder (KeyframeBlock ss ds) = 
       mconcatIntersperse toBuilder (singleton ',') ss
-      <> singleton '{'
+      <> singleton '{' 
       <> mconcatIntersperse toBuilder (singleton ';') ds
       <> singleton '}'
-
 instance Minifiable KeyframeBlock where
   minifyWith (KeyframeBlock ss ds) = do
       decs <- mapM minifyWith ds
@@ -109,8 +101,8 @@ data Rule = AtCharset StringType
           | AtNamespace Text (Either StringType Url)
           | AtMedia [MediaQuery] [Rule]
           | AtKeyframes VendorPrefix Text [KeyframeBlock]
-          | AtBlockWithRules Text [Rule]
-          | AtBlockWithDec Text [Declaration]
+          | AtBlockWithRules Text [Rule]                    
+          | AtBlockWithDec Text [Declaration]                    
           | StyleRule [Selector] [Declaration]
  deriving (Show)
 instance Pretty Rule where
@@ -124,33 +116,33 @@ instance Pretty Rule where
   ppr _ = error "not implemented (TODO)"
 
 instance ToText Rule where
-  toBuilder (AtMedia mqs rs) = "@media " <> mconcatIntersperse toBuilder (singleton ',') mqs
+  toBuilder (AtMedia mqs rs) = "@media " <> mconcatIntersperse toBuilder (singleton ',') mqs 
       <> singleton '{' <> mconcat (fmap toBuilder rs) <> singleton '}'
   toBuilder (AtImport esu mqs) = "@import " <> toBuilder esu <> mediaqueries
       <> singleton ';'
-    where mediaqueries =
+    where mediaqueries = 
             case mqs of
               [] -> mempty
-              _  -> singleton ' ' <> mconcatIntersperse toBuilder (singleton ',') mqs
+              _  -> singleton ' ' <> mconcatIntersperse toBuilder (singleton ',') mqs 
   toBuilder (AtCharset s) = "@charset " <> toBuilder s <> singleton ';'
   toBuilder (AtNamespace t esu) = "@namespace "
       <> prefix <> toBuilder esu <> singleton ';'
     where prefix = if T.null t
                       then mempty
                       else toBuilder t <> singleton ' '
-  toBuilder (StyleRule ss ds) =
+  toBuilder (StyleRule ss ds) = 
     mconcat [mconcatIntersperse toBuilder (singleton ',') ss
             ,singleton '{'
             ,mconcatIntersperse toBuilder (singleton ';') ds
             ,singleton '}']
-  toBuilder (AtBlockWithRules t rs) =
+  toBuilder (AtBlockWithRules t rs) = 
     mconcat [singleton '@', fromText t, singleton '{'
             , mconcat (fmap toBuilder rs), singleton '}']
   toBuilder (AtBlockWithDec t ds)   =
     mconcat [singleton '@', fromText t, singleton '{'
             ,mconcatIntersperse id (singleton ';') (fmap toBuilder ds)
             ,singleton '}']
-  toBuilder (AtKeyframes vp n bs) = singleton '@' <> fromText vp <> "keyframes"
+  toBuilder (AtKeyframes vp n bs) = singleton '@' <> fromText vp <> "keyframes" 
             <> singleton ' ' <> fromText n <> singleton '{'
             <> mconcat (fmap toBuilder bs) <> singleton '}'
 
@@ -164,17 +156,13 @@ instance Minifiable Rule where
       pure $ AtKeyframes vp n blocks
   minifyWith (AtBlockWithRules t rs) = do
       rules <- mapM minifyWith rs
-      pure $ AtBlockWithRules t rules
+      pure $ AtBlockWithRules t rules 
   minifyWith (AtBlockWithDec t ds) = do
       conf <- ask
       decs <- cleanRule ds >>= compactLonghands >>= mapM minifyWith
-      pure $ AtBlockWithDec t decs
+      pure $ AtBlockWithDec t decs 
   minifyWith (StyleRule ss ds) = do
-      conf <- ask
-      dcs <- cleanRule ds >>= compactLonghands >>= mapM minifyWith
-      let decs = if shouldSortProperties conf
-                    then sortBy lexico dcs
-                    else dcs
+      decs <- cleanRule ds >>= compactLonghands >>= mapM minifyWith >>= sortDeclarations
       sels <- mapM minifyWith ss >>= removeDuplicateSelectors >>= sortSelectors
       pure $ StyleRule sels decs
   minifyWith (AtImport esu mqs) = fmap (AtImport esu) (mapM minifyWith mqs)
@@ -191,9 +179,15 @@ cleanRule ds = do
 sortSelectors :: [Selector] -> Reader Config [Selector]
 sortSelectors sls = do
     conf <- ask
-    pure $ if shouldSortSelectors conf
-              then sortBy lexico sls
-              else sls
+    pure $ case selectorSorting conf of
+                   Lexicographical -> sortBy lexico sls
+                   NoSorting       -> sls
+sortDeclarations :: [Declaration] -> Reader Config [Declaration]
+sortDeclarations ds = do
+    conf <- ask
+    pure $ case declarationSorting conf of
+             Lexicographical -> sortBy lexico ds
+             NoSorting       -> ds
 
 removeDuplicateSelectors :: [Selector] -> Reader Config [Selector]
 removeDuplicateSelectors sls = do
@@ -255,7 +249,7 @@ isEmpty (AtBlockWithDec _ ds)   = null ds
 isEmpty (AtBlockWithRules _ rs) = null rs || all isEmpty rs
 isEmpty _                       = False
 
--- O(n log n) implementation, vs. O(n^2) which is the normal nub.
+-- O(n log n) implementation, vs. O(n^2) which is the normal nub. 
 -- Note that nub has only an Eq constraint, while this one has an Ord one.
 -- taken from: http://buffered.io/posts/a-better-nub/
 nub' :: (Ord a) => [a] -> [a]

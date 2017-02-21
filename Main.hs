@@ -61,7 +61,7 @@ config = Config
          <*> flag True False (long "no-quotes-removal"
                            <> short 'q'
                            <> help "Disable removing quotes whenever possible")
-         <*> flag True False (long "no-font-weight-minification"
+         <*> flag FontWeightMinOn FontWeightMinOff (long "no-font-weight-minification"
                            <> help "Disable converting normal to 400 and bold to 700 in font-weight")
          <*> flag True False (long "no-transform-origin-minification"
                            <> help "Disable converting left and top to 0%, bottom and right to 100%, and center to 50%")
@@ -84,12 +84,12 @@ config = Config
                            <> help "Disable removal of duplicate selectors")
          <*> flag True False (long "no-quote-normalization"
                            <> help "Disable trying to convert all quotation marks to either \" or \'")
-         <*> flag True False (long "no-lowercasing"
+         <*> flag Lowercase Original (long "no-lowercasing"
                            <> short 'l'
                            <> help "Disable lowercasing everything possible")
-         <*> flag True False (long "no-selector-sorting"
+         <*> flag Lexicographical NoSorting (long "no-selector-sorting"
                            <> help "Disable sorting selectors lexicographically")
-         <*> flag True False (long "no-property-sorting"
+         <*> flag Lexicographical NoSorting (long "no-property-sorting"
                            <> help "Disable sorting properties lexicographically")
 
 instructions :: ParserInfo Instructions

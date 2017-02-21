@@ -57,9 +57,9 @@ instance Minifiable Declaration where
   minifyWith d@(Declaration p vs _ _) = do
       minifiedValues <- minifyWith vs
       conf <- ask
-      let name   = if shouldLowercase conf
-                      then T.toLower p
-                      else p
+      let name   = case letterCase conf of
+                     Lowercase -> T.toLower p
+                     Original  -> p
           newDec = d {propertyName = name, valueList = minifiedValues }
       case Map.lookup (T.toCaseFold p) propertyOptimizations of
            Just f  -> propertyTraits newDec >>= f
@@ -185,9 +185,9 @@ fontWeightOptimizer = optimizeValues f
   where f :: Value -> Reader Config Value
         f x@(Other t) = do
           conf <- ask
-          pure $ if shouldMinifyFontWeight conf
-                    then replaceForSynonym t
-                    else x
+          pure $ case fontweightSettings conf of
+                   FontWeightMinOn  -> replaceForSynonym t
+                   FontWeightMinOff -> x
         f x = pure x 
 
         replaceForSynonym :: TextV -> Value

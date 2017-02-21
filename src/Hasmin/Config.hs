@@ -8,8 +8,16 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Config (
-    Config(..), defaultConfig, ColorSettings(..), DimensionSettings(..),
-    GradientSettings(..), Instructions, Commands(..)
+      Config(..)
+    , ColorSettings(..)
+    , DimensionSettings(..)
+    , GradientSettings(..)
+    , FontWeightSettings(..)
+    , LetterCase(..)
+    , SortingMethod(..)
+    , defaultConfig
+    , Instructions
+    , Commands(..)
     ) where
 
 type Instructions = (Commands, Config)
@@ -25,8 +33,18 @@ data DimensionSettings = DimMinOff | DimMinOn
   deriving (Show, Eq)
 data GradientSettings = GradientMinOff | GradientMinOn
   deriving (Show, Eq)
+data LetterCase = Original  -- ^ Leave letter casing as is.
+                | Lowercase -- ^ Lowercase whatever possible to improve gzip compression.
+  deriving (Show, Eq)
+data SortingMethod = NoSorting | Lexicographical
+  deriving (Show, Eq)
+data FontWeightSettings = FontWeightMinOff | FontWeightMinOn
+  deriving (Show, Eq)
 
--- TODO: avoid boolean blindness?
+-- TODO: * avoid boolean blindness
+--       * Use a more declarative style for the names, e.g. shouldLowercase vs.
+--       preferredCasing, shouldSortSelectors vs. selectorSorting, etc.
+-- | The configuration used for minifying.
 data Config = Config { colorSettings :: ColorSettings
                      , dimensionSettings :: DimensionSettings
                      , gradientSettings :: GradientSettings
@@ -35,7 +53,7 @@ data Config = Config { colorSettings :: ColorSettings
                      , shouldMinifyTimingFunctions :: Bool
                      , shouldMinifyFilterFunctions :: Bool
                      , shouldRemoveQuotes :: Bool
-                     , shouldMinifyFontWeight :: Bool
+                     , fontweightSettings :: FontWeightSettings
                      , shouldMinifyTransformOrigin :: Bool
                      , shouldMinifyMicrosyntax :: Bool
                      , shouldMinifyKeyframeSelectors :: Bool
@@ -45,12 +63,13 @@ data Config = Config { colorSettings :: ColorSettings
                      , shouldRemoveEmptyBlocks :: Bool
                      , shouldRemoveDuplicateSelectors :: Bool
                      , shouldNormalizeQuotes :: Bool
-                     , shouldLowercase :: Bool
-                     , shouldSortSelectors :: Bool
-                     , shouldSortProperties :: Bool
+                     , letterCase :: LetterCase
+                     , selectorSorting :: SortingMethod
+                     , declarationSorting :: SortingMethod
                      } deriving (Show)
 
--- Used for the minify function
+-- | A default config with most settings enabled. Used by the minify function,
+-- mainly for testing purposes.
 defaultConfig :: Config
 defaultConfig = Config { colorSettings                  = ColorMinOn
                        , dimensionSettings              = DimMinOn
@@ -60,7 +79,7 @@ defaultConfig = Config { colorSettings                  = ColorMinOn
                        , shouldMinifyTimingFunctions    = True
                        , shouldMinifyFilterFunctions    = True
                        , shouldRemoveQuotes             = True
-                       , shouldMinifyFontWeight         = True
+                       , fontweightSettings             = FontWeightMinOn
                        , shouldMinifyTransformOrigin    = True
                        , shouldMinifyMicrosyntax        = True
                        , shouldMinifyKeyframeSelectors  = True
@@ -70,7 +89,7 @@ defaultConfig = Config { colorSettings                  = ColorMinOn
                        , shouldRemoveEmptyBlocks        = True
                        , shouldRemoveDuplicateSelectors = True
                        , shouldNormalizeQuotes          = True
-                       , shouldLowercase                = True
-                       , shouldSortSelectors            = False
-                       , shouldSortProperties           = False
-                       } 
+                       , letterCase                     = Lowercase
+                       , selectorSorting                = NoSorting
+                       , declarationSorting             = NoSorting
+                       }

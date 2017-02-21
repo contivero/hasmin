@@ -278,13 +278,13 @@ instance Minifiable Value where
           optimizeFontWeight Nothing = pure Nothing
           optimizeFontWeight (Just x) = do 
               conf <- ask
-              pure $ replaceForSynonym (shouldMinifyFontWeight conf) x 
-          replaceForSynonym enabled (Other t)
-            | t == TextV "normal"            = Nothing
-            | t == TextV "bold"   && enabled = Just $ NumberV 700
-            | otherwise                      = Just $ Other t
-          replaceForSynonym _ (NumberV 400) = Nothing
-          replaceForSynonym _ x = Just x
+              pure $ replaceForSynonym (fontweightSettings conf) x 
+            where replaceForSynonym s (Other t)
+                    | t == TextV "normal"                       = Nothing
+                    | t == TextV "bold" && s == FontWeightMinOn = Just $ NumberV 700
+                    | otherwise                                 = Just $ Other t
+                  replaceForSynonym _ (NumberV 400) = Nothing
+                  replaceForSynonym _ y = Just y
           optimizeLineHeight Nothing = pure Nothing
           optimizeLineHeight (Just x) =
               case x of
@@ -305,11 +305,11 @@ instance Minifiable Value where
     where lowercaseParameters :: Either Text StringType -> Reader Config (Either Text StringType)
           lowercaseParameters y = do
             conf <- ask
-            if shouldLowercase conf
-               then case y of
-                      Left  a -> mapReader Left $ lowercaseText a
-                      Right b -> mapReader Right $ mapString lowercaseText b >>= minifyWith
-               else pure y
+            case letterCase conf of
+              Lowercase -> case y of
+                             Left  a -> mapReader Left $ lowercaseText a
+                             Right b -> mapReader Right $ mapString lowercaseText b >>= minifyWith
+              Original  -> pure y
   minifyWith x = pure x 
 
 handleRepeatStyle :: Maybe RepeatStyle -> Reader Config (Maybe RepeatStyle)
@@ -396,9 +396,9 @@ valuesToList (Values v vs) = v : map snd vs
 lowercaseText :: Text -> Reader Config Text
 lowercaseText t = do
     conf <- ask
-    pure $ if shouldLowercase conf
-              then T.toLower t
-              else t 
+    pure $ case letterCase conf of
+             Lowercase -> T.toLower t
+             Original  -> t
 
 -- Used to rewrap a list of values into the Values data type.
 -- Only call it with non-empty lists!
