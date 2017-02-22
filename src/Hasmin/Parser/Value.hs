@@ -384,14 +384,6 @@ bgAttachment = matchKeywords ["scroll", "fixed", "local"]
 box :: Parser TextV
 box = matchKeywords ["border-box", "padding-box", "content-box"]
 
--- shadow = permute (mkShadow <$?> (False, asciiCI "inset" $> True <* skipComments)
-  --                          <||> fourLengths
-    --                        <|?> (Nothing , Just <$> color <* skipComments))
-    --
-
--- <final-bg-layer> = <bg-image> || <position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <box> || <box> || <'background-color'>
-
-
 -- [ <bg-layer> , ]* <final-bg-layer>
 background :: Parser Values
 background = do
@@ -468,9 +460,7 @@ image = do
        then pure $ mkOther "none"
        else do _ <- char '('
                if Set.member lowercased possibilities
-                  then case Map.lookup lowercased functionsMap of
-                         Just x -> x
-                         Nothing -> mzero
+                  then fromMaybe mzero (Map.lookup lowercased functionsMap)
                   else mzero
   where possibilities = Set.fromList $ map T.toCaseFold
             ["url", "element", "linear-gradient", "radial-gradient"]
@@ -923,7 +913,7 @@ shadow :: Parser Shadow
 shadow = permute (mkShadow <$?> (False, asciiCI "inset" $> True <* skipComments)
                            <||> fourLengths
                            <|?> (Nothing , Just <$> color <* skipComments))
-  where mkShadow i (l1,l2,l3,l4) c = Shadow i l1 l2 l3 l4 c
+  where mkShadow i (l1,l2,l3,l4) = Shadow i l1 l2 l3 l4
         fourLengths = do
             l1 <- distance <* skipComments
             l2 <- distance <* skipComments
@@ -940,8 +930,8 @@ radialgradient = functionParser $ do
              else comma
     cs <- colorStopList
     pure $ c p cs
-  where circle = asciiCI "circle" $> (Just Circle) <* skipComments
-        ellipse = asciiCI "ellipse" $> (Just Ellipse) <* skipComments
+  where circle = asciiCI "circle" $> Just Circle <* skipComments
+        ellipse = asciiCI "ellipse" $> Just Ellipse <* skipComments
         endingShapeAndSize = r1 <|> r2 <|> r3
           where r1 = permute (RadialGradient <$?> (Nothing, ellipse) <||> (Just <$> (PL <$> percentageLength <* skipComments <*> percentageLength <* skipComments)))
                 r2 = permute (RadialGradient <$?> (Nothing, circle) <||> ((Just . SL) <$> distance <* skipComments))

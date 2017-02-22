@@ -5,15 +5,15 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.FilterFunction (
-    FilterFunction(..), minifyPseudoShadow
+      FilterFunction(..)
+    , minifyPseudoShadow
     ) where
 
 import Control.Monad.Reader (Reader, ask)
-import Control.Applicative (liftA)
 import Data.Semigroup ((<>))
 import Data.Text.Lazy.Builder (singleton, Builder)
 import Hasmin.Config
@@ -22,7 +22,7 @@ import Hasmin.Types.Dimension
 import Hasmin.Types.Color
 import Hasmin.Types.Numeric
 
--- Note: In a previous specification, translate3d() took two 
+-- Note: In a previous specification, translate3d() took two
 -- <https://www.w3.org/TR/css-transforms-1/#typedef-translation-value \<translation-value\>>,
 -- however in the <https://drafts.csswg.org/css-transforms/ latest draft>, it
 -- takes two \<length-percentage\> (which makes sense since translateX() and
@@ -53,19 +53,19 @@ instance ToText FilterFunction where
   toBuilder (DropShadow l1 l2 ml mc) =
       let maybeToBuilder :: ToText a => Maybe a -> Builder
           maybeToBuilder = maybe mempty (\x -> singleton ' ' <> toBuilder x)
-      in "drop-shadow(" <> toBuilder l1 <> singleton ' ' <> toBuilder l2 
+      in "drop-shadow(" <> toBuilder l1 <> singleton ' ' <> toBuilder l2
        <> maybeToBuilder ml <> maybeToBuilder mc <> singleton ')'
 
 instance Minifiable FilterFunction where
-  minifyWith (Blur a)       = liftA Blur $ minifyWith a
-  minifyWith (HueRotate a)  = liftA HueRotate $ minifyWith a
-  minifyWith (Contrast x)   = liftA Contrast $ minifyNumberPercentage x
-  minifyWith (Brightness x) = liftA Brightness $ minifyNumberPercentage x
-  minifyWith (Grayscale x)  = liftA Grayscale $ minifyNumberPercentage x
-  minifyWith (Invert x)     = liftA Invert $ minifyNumberPercentage x
-  minifyWith (Opacity x)    = liftA Opacity $ minifyNumberPercentage x
-  minifyWith (Saturate x)   = liftA Saturate $ minifyNumberPercentage x
-  minifyWith (Sepia x)      = liftA Sepia $ minifyNumberPercentage x
+  minifyWith (Blur a)       = Blur <$> minifyWith a
+  minifyWith (HueRotate a)  = HueRotate <$> minifyWith a
+  minifyWith (Contrast x)   = Contrast <$> minifyNumberPercentage x
+  minifyWith (Brightness x) = Brightness <$> minifyNumberPercentage x
+  minifyWith (Grayscale x)  = Grayscale <$> minifyNumberPercentage x
+  minifyWith (Invert x)     = Invert <$> minifyNumberPercentage x
+  minifyWith (Opacity x)    = Opacity <$> minifyNumberPercentage x
+  minifyWith (Saturate x)   = Saturate <$> minifyNumberPercentage x
+  minifyWith (Sepia x)      = Sepia <$> minifyNumberPercentage x
   minifyWith s@(DropShadow a b c d) = do
       conf <- ask
       if shouldMinifyFilterFunctions conf
@@ -83,7 +83,7 @@ minifyPseudoShadow constr a b c d = do
               c2 <- mapM minifyWith d
               pure $ constr x y z c2
 
-minifyNumberPercentage :: Either Number Percentage 
+minifyNumberPercentage :: Either Number Percentage
                        -> Reader Config (Either Number Percentage)
 minifyNumberPercentage x = do
     conf <- ask

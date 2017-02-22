@@ -5,7 +5,7 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.Value (
@@ -41,7 +41,7 @@ data Value = Inherit
            | Initial
            | Unset
            | NumberV Number
-           | PercentageV Percentage 
+           | PercentageV Percentage
            | DistanceV Distance
            | AngleV Angle
            | DurationV Duration
@@ -138,7 +138,7 @@ instance ToText Value where
   toBuilder (TransformV x)  = toBuilder x
   toBuilder (TimingFuncV x) = toBuilder x
   toBuilder (Rect a b c d)  = "rect(" <> funcValues <> singleton ')'
-    where funcValues = mconcatIntersperse toBuilder (singleton ',') [a, b, c, d] 
+    where funcValues = mconcatIntersperse toBuilder (singleton ',') [a, b, c, d]
   toBuilder (PositionV p)   = toBuilder p
   toBuilder (RepeatStyleV r) = toBuilder r
   toBuilder (BgSizeV b)     = toBuilder b
@@ -164,7 +164,7 @@ instance ToText Value where
   toBuilder (SingleAnimation t1 tf t2 ic ad af ap kf) =
       let list = catMaybes [bld t1, bld t2, bld tf, bld ic, bld ad, bld af, bld ap, bld kf]
       in mconcatIntersperse id (singleton ' ') list
-  toBuilder (FontV fsty fvar fwgt fstr fsz lh ff) = 
+  toBuilder (FontV fsty fvar fwgt fstr fsz lh ff) =
       let bldLh = maybe mempty (\x -> singleton '/' <> toBuilder x) lh
           list  = catMaybes [bld fsty, bld fvar, bld fwgt, bld fstr]
           ffam  = singleton ' ' <> mconcatIntersperse toBuilder (singleton ',') ff
@@ -174,7 +174,7 @@ instance ToText Value where
   toBuilder (ShadowText l1 l2 ml mc) =
       let maybeToBuilder :: ToText a => Maybe a -> Builder
           maybeToBuilder = maybe mempty (\x -> singleton ' ' <> toBuilder x)
-      in toBuilder l1 <> singleton ' ' <> toBuilder l2 
+      in toBuilder l1 <> singleton ' ' <> toBuilder l2
        <> maybeToBuilder ml <> maybeToBuilder mc
 
 instance Minifiable Value where
@@ -232,12 +232,12 @@ instance Minifiable Value where
                  then Nothing
                  else prop -- TODO lowercase here
       (tDuration, tDelay) <- handleTime tdur tdel
-      tfunc               <- handleTimingFunction tf 
+      tfunc               <- handleTimingFunction tf
       pure $ if isNothing p && isNothing tDuration && isNothing tDelay && isNothing tfunc
                 then SingleTransition p (Just $ Duration 0 S) tfunc tDelay
                 else SingleTransition p tDuration tfunc tDelay
   minifyWith (SingleAnimation t1 tf t2 ic ad af ap kf) = do
-      (tdur, tdel) <- handleTime t1 t2 
+      (tdur, tdel) <- handleTime t1 t2
       tfunc        <- handleTimingFunction tf
       icount       <- handleIterationCount ic
       (kfrms, adir, afm, p) <- handleKeywords kf ad af ap
@@ -257,7 +257,7 @@ instance Minifiable Value where
                   pure (Just w, x, simplifyFillMode y, simplifyPauseState z)
               | w == mkOther "none" && v == (Other <$> y) =
                   pure (Nothing, simplifyDirection x, Nothing, simplifyPauseState z)
-              | w `elem` fmap mkOther ["forwards", "backwards", "both"] = 
+              | w `elem` fmap mkOther ["forwards", "backwards", "both"] =
                   pure (Just w, simplifyDirection x, y, simplifyPauseState z)
               | w `elem` fmap mkOther ["running", "paused"] =
                   pure (Just w, simplifyDirection x, simplifyFillMode y, z)
@@ -274,11 +274,11 @@ instance Minifiable Value where
       l   <- optimizeLineHeight lh
       fam <- traverse optimizeFontFamily ff
       pure $ FontV sty var wgt str sz l fam
-    where optimizeFontWeight :: (Maybe Value) -> Reader Config (Maybe Value)
+    where optimizeFontWeight :: Maybe Value -> Reader Config (Maybe Value)
           optimizeFontWeight Nothing = pure Nothing
-          optimizeFontWeight (Just x) = do 
+          optimizeFontWeight (Just x) = do
               conf <- ask
-              pure $ replaceForSynonym (fontweightSettings conf) x 
+              pure $ replaceForSynonym (fontweightSettings conf) x
             where replaceForSynonym s (Other t)
                     | t == TextV "normal"                       = Nothing
                     | t == TextV "bold" && s == FontWeightMinOn = Just $ NumberV 700
@@ -288,11 +288,11 @@ instance Minifiable Value where
           optimizeLineHeight Nothing = pure Nothing
           optimizeLineHeight (Just x) =
               case x of
-                Other t -> if t == TextV "normal" 
+                Other t -> if t == TextV "normal"
                               then pure Nothing
                               else Just <$> minifyWith x
                 y       -> Just <$> minifyWith y
-          
+
   minifyWith (GenericFunc n vs) = GenericFunc n <$> minifyWith vs
   minifyWith (Local x)        = do
       conf <- ask
@@ -310,7 +310,7 @@ instance Minifiable Value where
                              Left  a -> mapReader Left $ lowercaseText a
                              Right b -> mapReader Right $ mapString lowercaseText b >>= minifyWith
               Original  -> pure y
-  minifyWith x = pure x 
+  minifyWith x = pure x
 
 handleRepeatStyle :: Maybe RepeatStyle -> Reader Config (Maybe RepeatStyle)
 handleRepeatStyle (Just x)
@@ -349,7 +349,7 @@ handleBgSize (Just b@BgSize{}) = do
     pure $ if minb == BgSize (Right Auto) Nothing
               then Nothing
               else Just minb
-handleBgSize x = pure x 
+handleBgSize x = pure x
 
 handlePosition :: Bool -> Maybe Position -> Reader Config (Maybe Position)
 handlePosition _ Nothing = pure Nothing
@@ -412,7 +412,7 @@ bld = fmap toBuilder
 -- Used for SingleAnimation and SingleTransition minification.
 handleTimingFunction :: Maybe TimingFunction -> Reader Config (Maybe TimingFunction)
 handleTimingFunction Nothing = pure Nothing
-handleTimingFunction (Just tfunc) 
+handleTimingFunction (Just tfunc)
     | tfunc == Ease = pure Nothing
     | otherwise = Just <$> minifyWith tfunc
 
@@ -449,6 +449,6 @@ optimizeFontFamily (StringV s) = do
     ffamily <- mapString lowercaseText s
     pure $ if shouldRemoveQuotes conf
               then either mkOther StringV (unquoteFontFamily ffamily)
-              else StringV ffamily 
+              else StringV ffamily
 optimizeFontFamily x = pure x
 

@@ -39,8 +39,8 @@ data MediaQuery = MediaQuery1 Text Text [Expression]  -- ^ First possibility in 
                 | MediaQuery2 [Expression] -- ^ Second possibility in the grammar
   deriving (Show, Eq)
 instance Minifiable MediaQuery where
-  minifyWith (MediaQuery1 t1 t2 es) = (MediaQuery1 t1 t2) <$> (mapM minifyWith es)
-  minifyWith (MediaQuery2 es)       = MediaQuery2 <$> (mapM minifyWith es)
+  minifyWith (MediaQuery1 t1 t2 es) = MediaQuery1 t1 t2 <$> mapM minifyWith es
+  minifyWith (MediaQuery2 es)       = MediaQuery2 <$> mapM minifyWith es
 
 instance ToText MediaQuery where
   toBuilder (MediaQuery1 t1 t2 es) = notOrOnly <> fromText t2 <> expressions
@@ -53,7 +53,7 @@ data Expression = Expression Text (Maybe Value)
                 | InvalidExpression Text
   deriving (Show, Eq)
 instance Minifiable Expression where
-  minifyWith (Expression t mv) = (Expression t) <$> (mapM minifyWith mv)
+  minifyWith (Expression t mv) = Expression t <$> mapM minifyWith mv
   minifyWith x = pure x
 instance ToText Expression where
   toBuilder (Expression t mv) =
@@ -150,8 +150,8 @@ instance ToText Rule where
 
 instance Minifiable Rule where
   minifyWith (AtMedia mqs rs) = liftA2 AtMedia (mapM minifyWith mqs) (mapM minifyWith rs)
-  minifyWith (AtKeyframes vp n bs) = (AtKeyframes vp n) <$> (mapM minifyWith bs)
-  minifyWith (AtBlockWithRules t rs) = (AtBlockWithRules t) <$> (mapM minifyWith rs)
+  minifyWith (AtKeyframes vp n bs) = AtKeyframes vp n <$> mapM minifyWith bs
+  minifyWith (AtBlockWithRules t rs) = AtBlockWithRules t <$> mapM minifyWith rs
   minifyWith (AtBlockWithDec t ds) = do
       decs <- cleanRule ds >>= compactLonghands >>= mapM minifyWith
       pure $ AtBlockWithDec t decs
@@ -159,7 +159,7 @@ instance Minifiable Rule where
       decs <- cleanRule ds >>= compactLonghands >>= mapM minifyWith >>= sortDeclarations
       sels <- mapM minifyWith ss >>= removeDuplicateSelectors >>= sortSelectors
       pure $ StyleRule sels decs
-  minifyWith (AtImport esu mqs) = (AtImport esu) <$> (mapM minifyWith mqs)
+  minifyWith (AtImport esu mqs) = AtImport esu <$> mapM minifyWith mqs
   minifyWith (AtCharset s) = AtCharset <$> mapString lowercaseText s
   minifyWith x = pure x
 
