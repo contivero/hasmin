@@ -14,11 +14,13 @@ module Hasmin.Parser.Internal (
     , declaration
     , declarations
     , selector
+    , supportsCondition
     ) where
 
 import Control.Arrow (first)
-import Control.Applicative ((<|>), many)
+import Control.Applicative ((<|>), many, some)
 import Control.Monad (mzero)
+import qualified Data.List.NonEmpty as NE
 import Data.Functor (($>))
 import Data.Attoparsec.Combinator (lookAhead, sepBy, endOfInput)
 import Data.Attoparsec.Text (asciiCI, char, many1, manyTill,
@@ -44,7 +46,7 @@ import Hasmin.Types.Declaration
 
 selector :: Parser Selector
 selector = Selector <$> compoundSelector
-      <*> many ((,) <$> (combinator <* skipComments) <*> compoundSelector)
+      <*> many ((,) <$> lexeme combinator <*> compoundSelector)
 
 -- First tries with '>>' (descendant), '>' (child), '+' (adjacent sibling), and
 -- '~' (general sibling) combinators. If those fail, it tries with the
@@ -53,10 +55,10 @@ selector = Selector <$> compoundSelector
 -- | Parser for selector combinators, i.e. ">>" (descendant), '>' (child), '+'
 -- (adjacent sibling), '~' (general sibling), and ' ' (descendant) combinators.
 combinator :: Parser Combinator
-combinator =  (skipComments *> ((string ">>" $> Descendant)
-                            <|> (char '>' $> Child)
-                            <|> (char '+' $> AdjacentSibling)
-                            <|> (char '~' $> GeneralSibling)))
+combinator = ((string ">>" $> Descendant)
+          <|> (char '>' $> Child)
+          <|> (char '+' $> AdjacentSibling)
+          <|> (char '~' $> GeneralSibling))
           <|> (satisfy ws $> Descendant)
   where ws c = c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
 
@@ -93,8 +95,8 @@ attrib
 -- but they should be.
 attributeSel :: Parser SimpleSelector
 attributeSel = do
-    _     <- char '[' *> skipComments
-    attId <- ident <* skipComments
+    _     <- char '['
+    attId <- lexeme ident
     g     <- option Attribute attValue
     _     <- char ']'
     pure $ AttributeSel (g attId)
@@ -222,8 +224,8 @@ declaration :: Parser Declaration
 declaration = do
     p  <- property <* colon
     v  <- values p <|> valuesFallback
-    i  <- important <* skipComments
-    ie <- iehack <* skipComments
+    i  <- important
+    ie <- lexeme iehack
     pure $ Declaration p v i ie
 
 -- | Parser for property names. Usually, 'ident' would be enough, but this
@@ -258,7 +260,7 @@ atRule = do
                          ,("import",            atImport)
                          ,("namespace",         atNamespace)
                          ,("media",             atMedia)
-                         -- ,("supports",          atSupports)
+                         ,("supports",          atSupports)
                          -- ,("document",          atDocument)
                          -- ,("page",              atPage)
                          ,("font-face",         skipComments *> atBlock "font-face")
@@ -280,7 +282,7 @@ atImport = do
 
 atCharset :: Parser Rule
 atCharset = do
-    st <- skipComments *> stringtype <* skipComments <* char ';'
+    st <- lexeme stringtype <* char ';'
     pure $ AtCharset st
 
 -- @namespace <namespace-prefix>? [ <string> | <uri> ];
@@ -305,15 +307,14 @@ atNamespace = do
 
 atKeyframe :: Text -> Parser Rule
 atKeyframe t = do
-    _    <- skipComments
-    name <- ident <* skipComments <* char '{'
+    name <- lexeme ident <* char '{'
     bs   <- many (keyframeBlock <* skipComments)
     _    <- char '}'
     pure $ AtKeyframes t name bs
 
 keyframeBlock :: Parser KeyframeBlock
 keyframeBlock = do
-    sel  <- skipComments *> kfsList <* skipComments
+    sel  <- lexeme kfsList
     ds   <- char '{' *> skipComments *> declarations <* char '}'
     pure $ KeyframeBlock sel ds
   where from = asciiCI "from" $> From
@@ -328,6 +329,49 @@ atMedia = do
   r <- manyTill (rule <* skipComments) (lookAhead (char '}'))
   _ <- char '}'
   pure $ AtMedia m r
+
+atSupports :: Parser Rule
+atSupports = do
+  sc <- satisfy C.isSpace *> supportsCondition
+  _  <- lexeme (char '{')
+  r  <- manyTill (rule <* skipComments) (lookAhead (char '}'))
+  _ <- char '}'
+  pure $ AtSupports sc r
+
+supportsCondition :: Parser SupportsCondition
+supportsCondition = asciiCI "not" *> skipComments *> (Not <$> supportsCondInParens)
+    <|> supportsConjunction
+    <|> supportsDisjunction
+    <|> (Parens <$> supportsCondInParens)
+
+supportsCondInParens :: Parser SupportsCondInParens
+supportsCondInParens = do
+    _ <- char '('
+    x <- lexeme ((ParensCond <$> supportsCondition) <|> (ParensDec <$> atSupportsDeclaration))
+    _ <- char ')'
+    pure x
+
+atSupportsDeclaration :: Parser Declaration
+atSupportsDeclaration = do
+    p  <- property <* colon
+    v  <- values p <|> valuesInParens
+    pure $ Declaration p v False False
+
+-- customPropertyIdent :: Parser Text
+-- customPropertyIdent = (<>) <$> string "-" <*> ident
+
+supportsHelper :: (SupportsCondInParens -> NonEmpty SupportsCondInParens -> SupportsCondition)
+               ->  Text -> Parser SupportsCondition
+supportsHelper c t = do
+    x  <- supportsCondInParens <* skipComments
+    xs <- some (asciiCI t *> lexeme supportsCondInParens)
+    pure $ c x (NE.fromList xs)
+
+supportsConjunction :: Parser SupportsCondition
+supportsConjunction = supportsHelper And "and"
+
+supportsDisjunction :: Parser SupportsCondition
+supportsDisjunction = supportsHelper Or "or"
 
 -- TODO clean code
 -- the "manyTill .. lookAhead" was added because if we only used "rules", it
@@ -396,7 +440,7 @@ mediaQuery = mediaQuery1 <|> mediaQuery2
         mediaQuery2 = MediaQuery2 <$> ((:) <$> expression <*> andExpressions)
         mediaType = lexeme ident
         andExpressions = many (h *> expression)
-        h = skipComments *> asciiCI "and" *> satisfy C.isSpace *> skipComments
+        h = lexeme (asciiCI "and" *> satisfy C.isSpace)
         optionalNotOrOnly = option mempty (asciiCI "not" <|> asciiCI "only")
 
 expression :: Parser Expression

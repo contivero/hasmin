@@ -7,6 +7,7 @@ import Hasmin.Parser.Value
 import Hasmin.TestUtils
 
 import Control.Monad.Reader (runReader)
+import Control.Applicative ((<|>))
 import Data.Text (Text)
 import Hasmin.Types.Class
 import Hasmin.Types.TransformFunction
@@ -16,13 +17,12 @@ import Hasmin.Config
 transformTests :: Spec
 transformTests =
     describe "transform function conversion" $
-      mapM_ (matchSpec (f <$> textualvalue)) transformTestsInfo
-  where f x = runReader (minifyWith x) defaultConfig
+      mapM_ (matchSpec (minify <$> textualvalue)) transformTestsInfo
 
 combinationTests :: Spec
 combinationTests = 
     describe "transform function combination" $
-      mapM_ (matchSpecWithDesc (g <$> values "transform")) functionCombinationTestsInfo
+      mapM_ (matchSpecWithDesc (g <$> (values "transform" <|> valuesFallback))) functionCombinationTestsInfo
   where g = mkValues . fmap TransformV . f . fmap (\(TransformV t) -> t) . valuesToList
         f x = runReader (combine x) defaultConfig
 

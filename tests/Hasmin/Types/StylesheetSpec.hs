@@ -5,13 +5,22 @@ module Hasmin.Types.StylesheetSpec where
 import Test.Hspec
 import Hasmin.Parser.Internal
 import Hasmin.TestUtils
+import Hasmin.Types.Class
 
 import Data.Text (Text)
 
 atRuleTests :: Spec
-atRuleTests =
+atRuleTests = do
     describe "at rules parsing and printing" $
       mapM_ (matchSpec atRule) atRuleTestsInfo
+    describe "@supports minification" $
+      mapM_ (matchSpec (minify <$> atRule)) atSupportsTestInfo
+
+atSupportsTestInfo :: [(Text, Text)]
+atSupportsTestInfo =
+  [("@supports not (not (a:a)){s{b:b}}",
+      "@supports (a:a){s{b:b}}")
+  ]
 
 atRuleTestsInfo :: [(Text, Text)]
 atRuleTestsInfo =
@@ -35,18 +44,25 @@ atRuleTestsInfo =
       "@keyframes p{from{background-position:40px 0}to{background-position:0 0}}")
   ,("@font-face  /**/ {a:a;}",
       "@font-face{a:a}")
+  -- Uncomment once custom properties are supported
   -- ,("@supports (--foo: green) { body { color: green; } }",
-   --  "@supports (--foo:green){body{color:green}}")
-  -- ,("@supports ( transform-style: preserve ) or ( -moz-transform-style: preserve )",
-   --  "@supports (transform-style:preserve) or (-moz-transform-style:preserve)")
-  -- ,("@supports ( display : table-cell ) and ( not ( display : list-item ) )",
-   --  "@supports (display:table-cell) and (not (display:list-item))")
+     -- "@supports (--foo:green){body{color:green}}")
+  ,("@supports ( transform-style: preserve ) or ( -moz-transform-style: preserve ){s{a:a}}",
+     "@supports (transform-style:preserve) or (-moz-transform-style:preserve){s{a:a}}")
+  ,("@supports ( display : table-cell ) and ( not ( display : list-item ) ){s{a:a}}",
+    "@supports (display:table-cell) and (not (display:list-item)){s{a:a}}")
+  ,("@supports not ( (a:a)  and  (b:b) ) {s{a:a}}",
+    "@supports not ((a:a) and (b:b)){s{a:a}}")
+  ,("@supports ((yoyo: yaya) or (margin: 0) or (answer: 42)) { div { background-color:green; } }",
+    "@supports ((yoyo:yaya) or (margin:0) or (answer:42)){div{background-color:green}}")
+  ,("@supports (margin: 0) {@media  not  all { div { background-color:red; }}}",
+    "@supports (margin:0){@media not all{div{background-color:red}}}")
   -- ,("@document url(http://www.w3.org/) , url-prefix(http://www.w3.org/Style/),\
-    --            \ domain(mozilla.org), regexp(\"https:.*\")"
+  --             \ domain(mozilla.org), regexp(\"https:.*\")"
   -- ,("@document url(http://www.w3.org/),url-prefix(http://www.w3.org/Style/),\
-    --            \domain(mozilla.org),regexp(\"https:.*\")"
+    --           \domain(mozilla.org),regexp(\"https:.*\")"
   -- ,("@page { margin: 1in }",
-    -- "@page{margin:1in}")
+  --   "@page{margin:1in}")
   -- ,("@page :left { font-size: 20pt; }",
     -- "@page:left{font-size:20pt}")
   -- ,("@page toc, index { size:8.5in 11in; }",

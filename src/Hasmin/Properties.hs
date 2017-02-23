@@ -9,13 +9,14 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Properties (
-     PropertyInfo(..)
+       PropertyInfo(..)
      , shorthandAndLonghandsMap
      , propertiesTraits
     ) where
 
 import Data.Attoparsec.Text (parseOnly)
-import Data.Text (Text)
+import Data.Text (Text, unpack)
+import Control.Applicative ((<|>))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Hasmin.Types.Value
@@ -496,6 +497,6 @@ propertiesTraits = Map.fromList $ replaceTextWithValues
 -- propertiesTraits table more readable and maintainable in general.
 replaceTextWithValues :: [(Text, (Text, Bool))] -> [(Text, (Maybe Values, Bool))]
 replaceTextWithValues = foldr (\(p,(t,i)) xs -> (p, (getValues p t,i)) : xs) []
-  where getValues p s = case parseOnly (values p) s of
+  where getValues p s = case parseOnly (values p <|> valuesFallback) s of
                           Right initialValues -> Just initialValues
                           Left _              -> Nothing
