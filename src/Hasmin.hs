@@ -53,7 +53,7 @@ minifyCSS = minifyCSSWith defaultConfig
 -- Minify it with 'minifyCSS'. In ghci:
 --
 -- > > minifyCSS sampleSheet
--- > Just "body{color:red}div{margin:0}"
+-- > Right "body{color:red}div{margin:0}"
 --
 -- To modify the minification settings, just use another 'Config', e.g.:
 --
@@ -62,8 +62,8 @@ minifyCSS = minifyCSSWith defaultConfig
 --
 -- Once more in ghci, this time using 'minifyCSSWith':
 --
--- > > minifyStylesheet cfg sampleSheet
--- > Just "body{color:#ff0000}div{margin:0}"
+-- > > minifyCSSWith cfg sampleSheet
+-- > Right "body{color:#ff0000}div{margin:0}"
 --
 -- The output is once more minified, but this time leaving colors as they were
 -- originally.
