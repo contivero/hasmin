@@ -240,7 +240,7 @@ rational = do
     dgts <- ((++) <$> digits <*> option "" fractionalPart)
            <|> ("0"++) <$> fractionalPart -- append a zero for read not to fail
     e <- option [] expo
-    pure $ fst . head $ readSigned readFloat (sign ++ dgts ++ e)
+    pure . fst . head $ readSigned readFloat (sign ++ dgts ++ e)
   where fractionalPart = (:) <$> char '.' <*> digits
         expo = (:) <$> satisfy (\c -> c == 'e' || c == 'E') <*> int'
         wrapMinus x = if x == '-' -- we use this since read fails with leading '+'

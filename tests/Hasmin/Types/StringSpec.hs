@@ -11,7 +11,7 @@ import Hasmin.Types.Class
 
 
 quotesNormalizationTests :: Spec
-quotesNormalizationTests = do
+quotesNormalizationTests =
     describe "Quotes Normalization" $ do
       describe "normalizes <string>s quotes in general" $
         mapM_ (matchSpecWithDesc f) quotesNormalizationTestsInfo
@@ -34,8 +34,8 @@ quotesNormalizationTestsInfo =
      "\"\\22\"", "\"\\22\"")
   ]
 
-unquotingUrlsTestsInfo :: [(Text, Text)] 
-unquotingUrlsTestsInfo = 
+unquotingUrlsTestsInfo :: [(Text, Text)]
+unquotingUrlsTestsInfo =
   [("url(\"validUrl\")", "url(validUrl)")
   ,("url('validUrl')", "url(validUrl)")
   ,("url('a b')", "url('a b')")

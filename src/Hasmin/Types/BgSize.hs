@@ -23,7 +23,7 @@ data Auto = Auto
 instance ToText Auto where
   toBuilder Auto = "auto"
 
-data BgSize = Cover 
+data BgSize = Cover
             | Contain
             | BgSize (Either PercentageLength Auto) (Maybe (Either PercentageLength Auto))
   deriving (Eq, Show)

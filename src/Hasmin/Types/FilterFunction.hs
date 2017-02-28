@@ -14,7 +14,7 @@ module Hasmin.Types.FilterFunction (
     ) where
 
 import Control.Monad.Reader (Reader, ask)
-import Data.Semigroup ((<>))
+import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton, Builder)
 import Hasmin.Config
 import Hasmin.Types.Class

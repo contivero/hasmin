@@ -13,7 +13,7 @@ module Hasmin.Types.Gradient (
     ) where
 
 import Control.Monad.Reader (Reader, ask)
-import Data.Semigroup ((<>))
+import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
 import Data.Maybe (catMaybes, fromJust, isNothing, isJust)
 import Hasmin.Config
@@ -41,7 +41,7 @@ instance Pretty Side where
 type SideOrCorner = (Side, Maybe Side)
 
 -- | CSS <color-stop> data type
-data ColorStop = ColorStop { csColor :: Color 
+data ColorStop = ColorStop { csColor :: Color
                            , colorHint :: Maybe PercentageLength
                            } deriving (Show, Eq)
 instance ToText ColorStop where
@@ -51,7 +51,7 @@ instance ToText ColorStop where
 instance Pretty ColorStop where
   ppr = strictText . toText
 instance Minifiable ColorStop where
-  minifyWith (ColorStop c mlp) = do 
+  minifyWith (ColorStop c mlp) = do
     newC   <- minifyWith c
     newMlp <- (mapM . mapM) minifyWith mlp
     pure $ ColorStop newC newMlp
@@ -70,7 +70,7 @@ minifyColorHints [c1,c2] = [newC1, newC2]
         ch2 = colorHint c2
         newC1
             | isJust ch1 && isZero (fromJust ch1) = c1 {colorHint = Nothing}
-            | otherwise = c1 
+            | otherwise = c1
         newC2
             | ch2 == Just (Left (Percentage 100)) = c2 {colorHint = Nothing}
             | otherwise = if ch2 `notGreaterThan` ch1
@@ -104,7 +104,7 @@ analyzeList :: PercentageLength -> Int -> [ColorStop]
    -> [ColorStop] -> [ColorStop]
 analyzeList start n list (ColorStop _ mpl:xs)
     | n < 2 = analyzeList start (n+1) list xs
-    | otherwise = 
+    | otherwise =
         case mpl of
           Just y  -> let (newList, remainingList, startVal) = minifySegment start y n list
                      in newList ++ analyzeList startVal 2 remainingList xs
@@ -141,7 +141,7 @@ handlePercentages start end n remainingList =
         step = (end - start) / toPercentage n
         interpolation = [start + (toPercentage x) * step | x <- [1..n-1]]
         simplifyValue (ColorStop x mpl) y = ColorStop x $ mpl >>= \v ->
-            if fromLeft' v == y 
+            if fromLeft' v == y
                then Nothing
                else if fromLeft' v <= start
                        then Just $ Right (Distance 0 PX)
@@ -157,7 +157,7 @@ data Gradient = OldLinearGradient (Maybe (Either Angle SideOrCorner)) [ColorStop
               -- ,| RepeatingRadialGradient
 
 
-{- 
+{-
   radial-gradient() = radial-gradient(
     [ <ending-shape> || <size> ]? [ at <position> ]? ,
     <color-stop-list>
@@ -172,7 +172,7 @@ data Gradient = OldLinearGradient (Maybe (Either Angle SideOrCorner)) [ColorStop
     <color-stop> [ , <color-stop> ]+
   )
   where <extent-keyword> = closest-corner | closest-side | farthest-corner | farthest-side
-    and <color-stop>     = <color> [ <percentage> | <length> ]? 
+    and <color-stop>     = <color> [ <percentage> | <length> ]?
 -}
 
 data Size = ClosestCorner | ClosestSide | FarthestCorner | FarthestSide
@@ -250,7 +250,7 @@ minifyAngleOrSide :: Maybe (Either Angle SideOrCorner)
                   -> Reader Config (Maybe (Either Angle SideOrCorner))
 minifyAngleOrSide mas =
     case mas of
-      Nothing -> pure Nothing 
+      Nothing -> pure Nothing
       Just y -> case y of
                   Left a  -> if a == defaultGradientAngle
                                 then pure Nothing
@@ -274,19 +274,19 @@ instance ToText Gradient where
   toBuilder (OldLinearGradient mas csl) = maybe mempty f mas
       <> mconcatIntersperse id (singleton ',') (fmap toBuilder csl)
     where f         = either ((<> singleton ',') . toBuilder) g
-          g (s, ms) = toBuilder s 
+          g (s, ms) = toBuilder s
                    <> maybe mempty (\x -> singleton ' ' <> toBuilder x) ms
                    <> singleton ','
   toBuilder (LinearGradient mas csl) = maybe mempty f mas
       <> mconcatIntersperse id (singleton ',') (fmap toBuilder csl)
     where f         = either ((<> singleton ',') . toBuilder) g
-          g (s, ms) = "to " <> toBuilder s 
+          g (s, ms) = "to " <> toBuilder s
                    <> maybe mempty (\x -> singleton ' ' <> toBuilder x) ms
                    <> singleton ','
-  toBuilder (RadialGradient sh sz p cs) = firstPart 
+  toBuilder (RadialGradient sh sz p cs) = firstPart
       <> mconcatIntersperse id (singleton ',') (fmap toBuilder cs)
     where l = catMaybes [fmap toBuilder sh, fmap toBuilder sz, fmap (\x -> "at " <> toBuilder x) p]
-          firstPart = if null l 
+          firstPart = if null l
                          then mempty
                          else mconcatIntersperse id (singleton ' ') l <> singleton ','
 

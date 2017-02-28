@@ -44,7 +44,7 @@ instance Pretty Number where
   ppr = strictText . toText
 
 toNumber :: Real a => a -> Number
-toNumber = Number . toRational 
+toNumber = Number . toRational
 
 fromNumber :: Fractional a => Number -> a
 fromNumber = fromRational . toRational
@@ -77,7 +77,7 @@ instance Fractional Alphavalue where
   fromRational = mkAlphavalue
   (Alphavalue a) / (Alphavalue b) = mkAlphavalue (toRational a / toRational b)
 toAlphavalue :: Real a => a -> Alphavalue
-toAlphavalue = mkAlphavalue . toRational 
+toAlphavalue = mkAlphavalue . toRational
 
 mkAlphavalue :: Rational -> Alphavalue
 mkAlphavalue = Alphavalue . restrict 0 1
@@ -99,7 +99,7 @@ instance ToText Percentage where
   toText = pack . (++ "%") . trimLeadingZeros . showRat . toRational
 
 toPercentage :: Real a => a -> Percentage
-toPercentage = Percentage . toRational 
+toPercentage = Percentage . toRational
 
 -- Note: printf used instead of show to avoid scientific notation
 -- | Show a Rational in decimal notation, removing leading zeros,
@@ -107,7 +107,7 @@ toPercentage = Percentage . toRational
 showRat :: Rational -> String
 showRat r | abs (r - fromInteger x) < eps = printf "%d" x
           | otherwise                     = printf "%f" d
-  where x = round r        
+  where x = round r
         d = fromRational r :: Double
 
 trimLeadingZeros :: String -> String

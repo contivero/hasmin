@@ -1,3 +1,4 @@
+{-# LANGUAGE Safe #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Hasmin.Types.Class
@@ -19,13 +20,13 @@ import Data.Text.Lazy.Builder (Builder, fromText, toLazyText)
 import Hasmin.Config
 
 -- | Class for types that can be minified
-class Minifiable a where 
+class Minifiable a where
   {-# MINIMAL minifyWith #-}
   minifyWith :: a -> Reader Config a
 
   -- Returns smallest equivalent representation for an element, using a default
   -- configuration. Mostly used for testing.
-  minify :: a -> a 
+  minify :: a -> a
   minify x = runReader (minifyWith x) defaultConfig
 
 -- | Class for types that can be converted to Text. Used for priting the

@@ -8,8 +8,11 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.String 
-  ( removeQuotes, unquoteUrl, unquoteFontFamily, mapString
+module Hasmin.Types.String (
+    removeQuotes
+  , unquoteUrl
+  , unquoteFontFamily
+  , mapString
   , StringType(..)
   ) where
 
@@ -23,10 +26,11 @@ import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import Text.PrettyPrint.Mainland (Pretty, ppr, strictText)
+
+import Hasmin.Config
 import Hasmin.Parser.Utils
 import Hasmin.Types.Class
-import Hasmin.Config
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText)
 
 -- | The \<string\> data type represents a string, formed by Unicode
 -- characters, delimited by either double (") or single (') quotes.

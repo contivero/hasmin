@@ -13,7 +13,7 @@ module Hasmin.Types.TimingFunction (
     ) where
 
 import Control.Monad.Reader (ask)
-import Data.Semigroup ((<>))
+import Data.Monoid ((<>))
 import Prelude hiding (sin, cos, acos, tan, atan)
 import Data.Maybe (isNothing, fromJust)
 import Data.Text.Lazy.Builder (singleton)
@@ -30,17 +30,17 @@ import Hasmin.Types.Numeric
 -- 3. <https://developer.mozilla.org/en-US/docs/Web/CSS/timing-function Mozilla summary>
 data TimingFunction = CubicBezier Number Number Number Number
                     | Steps Int (Maybe StepsSecondParam)
-                    | Ease | EaseIn | EaseInOut | EaseOut 
-                    | Linear | StepEnd | StepStart 
+                    | Ease | EaseIn | EaseInOut | EaseOut
+                    | Linear | StepEnd | StepStart
   deriving (Show)
 
 instance Eq TimingFunction where
-  Steps i1 ms1 == Steps i2 ms2 = i1 == i2 && (ms1 == ms2 
+  Steps i1 ms1 == Steps i2 ms2 = i1 == i2 && (ms1 == ms2
                                     || (isNothing ms1 && fromJust ms2 == End)
                                     || (fromJust ms1 == End && isNothing ms2))
   s@Steps{} == x         = maybe False (== s) (toSteps x)
   x == s@Steps{}         = s == x
-  CubicBezier x1 x2 x3 x4 == CubicBezier y1 y2 y3 y4 = 
+  CubicBezier x1 x2 x3 x4 == CubicBezier y1 y2 y3 y4 =
       x1 == y1 && x2 == y2 && x3 == y3 && x4 == y4
   c@CubicBezier{} == x   = maybe False (== c) (toCubicBezier x)
   x == c@CubicBezier{}   = c == x
@@ -52,14 +52,14 @@ instance Eq TimingFunction where
   EaseOut == EaseOut     = True
   EaseInOut == EaseInOut = True
   _ == _                 = False
-  
+
 toCubicBezier :: TimingFunction -> Maybe TimingFunction
 toCubicBezier Ease      = Just $ CubicBezier 0.25 0.1 0.25 1
 toCubicBezier EaseIn    = Just $ CubicBezier 0.42 0   1    1
 toCubicBezier EaseInOut = Just $ CubicBezier 0.42 0   0.58 1
 toCubicBezier Linear    = Just $ CubicBezier 0    0   1    1
 toCubicBezier EaseOut   = Just $ CubicBezier 0    0   0.58 1
-toCubicBezier _         = Nothing 
+toCubicBezier _         = Nothing
 
 toSteps :: TimingFunction -> Maybe TimingFunction
 toSteps StepEnd   = Just $ Steps 1 (Just End)
@@ -74,7 +74,7 @@ instance ToText StepsSecondParam where
   toBuilder End   = "end"
 
 instance ToText TimingFunction where
-  toBuilder (CubicBezier a b c d) = "cubic-bezier(" 
+  toBuilder (CubicBezier a b c d) = "cubic-bezier("
       <> mconcatIntersperse toBuilder (singleton ',') [a,b,c,d]
       <> singleton ')'
   toBuilder (Steps i ms) = "steps(" <> toBuilder i <> sp <> singleton ')'
@@ -92,10 +92,10 @@ instance Minifiable TimingFunction where
       conf <- ask
       if shouldMinifyTimingFunctions conf
          then pure $ minifyTimingFunction x
-         else pure x 
+         else pure x
 
 minifyTimingFunction :: TimingFunction -> TimingFunction
-minifyTimingFunction x@(CubicBezier a b c d) 
+minifyTimingFunction x@(CubicBezier a b c d)
     | a == 0.25 && b == 0.1 && c == 0.25 && d == 1 = Ease
     | a == 0.42 && b == 0 && d == 1 = if c == 1
                                          then EaseIn
@@ -104,7 +104,7 @@ minifyTimingFunction x@(CubicBezier a b c d)
                                                  else x
     | a == 0 && b == 0 && d == 1 = if c == 1
                                       then Linear
-                                      else if c == 0.58 
+                                      else if c == 0.58
                                               then EaseOut
                                               else x
     | otherwise = x
