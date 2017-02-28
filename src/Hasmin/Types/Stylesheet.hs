@@ -9,17 +9,25 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.Stylesheet (
-    Expression(..), MediaQuery(..), Rule(..), KeyframeSelector(..),
-    KeyframeBlock(..), isEmpty
+      Expression(..)
+    , MediaQuery(..)
+    , Rule(..)
+    , KeyframeSelector(..)
+    , KeyframeBlock(..)
+    , SupportsCondition(..)
+    , SupportsCondInParens(..)
+    , isEmpty
     ) where
 
 import Control.Monad.Reader (Reader, ask)
 import Control.Applicative (liftA2)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Text.Lazy.Builder (singleton, fromText)
+import Data.Text.Lazy.Builder (singleton, fromText, Builder)
 import Data.List (sortBy, (\\))
 import Data.Map.Strict (Map)
+import Data.List.NonEmpty (NonEmpty((:|)))
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -33,8 +41,11 @@ import Hasmin.Types.Value
 import Hasmin.Types.Declaration
 import Hasmin.Types.String
 import Hasmin.Types.Numeric
+import Hasmin.Types.Dimension
 import Hasmin.Utils
 
+-- | Data type for media queries. For the syntax, see
+-- <https://www.w3.org/TR/css3-mediaqueries/#syntax media query syntax>.
 data MediaQuery = MediaQuery1 Text Text [Expression]  -- ^ First possibility in the grammar
                 | MediaQuery2 [Expression] -- ^ Second possibility in the grammar
   deriving (Show, Eq)
@@ -103,6 +114,7 @@ data Rule = AtCharset StringType
           | AtNamespace Text (Either StringType Url)
           | AtMedia [MediaQuery] [Rule]
           | AtKeyframes VendorPrefix Text [KeyframeBlock]
+          | AtSupports SupportsCondition [Rule]
           | AtBlockWithRules Text [Rule]
           | AtBlockWithDec Text [Declaration]
           | StyleRule [Selector] [Declaration]
@@ -119,6 +131,8 @@ instance Pretty Rule where
 
 instance ToText Rule where
   toBuilder (AtMedia mqs rs) = "@media " <> mconcatIntersperse toBuilder (singleton ',') mqs
+      <> singleton '{' <> mconcat (fmap toBuilder rs) <> singleton '}'
+  toBuilder (AtSupports sc rs) = "@supports " <> toBuilder sc
       <> singleton '{' <> mconcat (fmap toBuilder rs) <> singleton '}'
   toBuilder (AtImport esu mqs) = "@import " <> toBuilder esu <> mediaqueries
       <> singleton ';'
@@ -150,6 +164,7 @@ instance ToText Rule where
 
 instance Minifiable Rule where
   minifyWith (AtMedia mqs rs) = liftA2 AtMedia (mapM minifyWith mqs) (mapM minifyWith rs)
+  minifyWith (AtSupports sc rs) = liftA2 AtSupports (minifyWith sc) (mapM minifyWith rs)
   minifyWith (AtKeyframes vp n bs) = AtKeyframes vp n <$> mapM minifyWith bs
   minifyWith (AtBlockWithRules t rs) = AtBlockWithRules t <$> mapM minifyWith rs
   minifyWith (AtBlockWithDec t ds) = do
@@ -251,3 +266,83 @@ nub' = go S.empty
   where go _ [] = []
         go s (x:xs) | S.member x s = go s xs
                     | otherwise    = x : go (S.insert x s) xs
+
+
+data SupportsCondition = Not SupportsCondInParens
+                       | And SupportsCondInParens (NonEmpty SupportsCondInParens)
+                       | Or SupportsCondInParens (NonEmpty SupportsCondInParens)
+                       | Parens SupportsCondInParens
+  deriving (Show)
+instance ToText SupportsCondition where
+  toBuilder (Not x)    = "not " <> toBuilder x
+  toBuilder (And x y)  = appendWith " and " x y
+  toBuilder (Or x y)   = appendWith " or " x y
+  toBuilder (Parens x) = toBuilder x
+instance Minifiable SupportsCondition where
+  minifyWith (And x y)   = And <$> pure x <*> mapM pure y
+  minifyWith (Or x y)    = Or <$> pure x <*> mapM pure y
+  minifyWith (Parens x)  = Parens <$> pure x
+  minifyWith (Not x) =
+    case x of
+      ParensCond (Not y) -> case y of
+                              ParensCond a@And{}    -> pure a
+                              ParensCond o@Or{}     -> pure o
+                              ParensCond n@Not{}    -> pure n
+                              ParensCond (Parens c) -> Parens <$> pure c
+                              ParensDec d           -> (Parens . ParensDec) <$> pure d
+      ParensCond y       -> (Not . ParensCond) <$> pure y
+      ParensDec y        -> (Not . ParensDec) <$> pure y
+
+appendWith :: Builder -> SupportsCondInParens -> NonEmpty SupportsCondInParens -> Builder
+appendWith s x y = toBuilder x <> s <> mconcatIntersperse toBuilder s (NE.toList y)
+
+-- Note that "general_enclosed" is not included, because, per the spec:
+--
+-- The result is always false. Additionally, style sheets must
+-- not write @supports rules that match this grammar production. (In other
+-- words, this production exists only for future extensibility, and is not part
+-- of the description of a valid style sheet in this level of the
+-- specification.) Note that future levels may define functions or other
+-- parenthesized expressions that can evaluate to true.
+data SupportsCondInParens = ParensCond SupportsCondition
+                          | ParensDec Declaration
+  deriving (Show)
+instance ToText SupportsCondInParens where
+  toBuilder (ParensDec x)  = "(" <> toBuilder x <> ")"
+  toBuilder (ParensCond x) = "(" <> toBuilder x <> ")"
+instance Minifiable SupportsCondInParens where
+  minifyWith (ParensDec x) = ParensDec <$> minifyWith x
+  minifyWith  (ParensCond x)  = ParensCond <$> minifyWith x
+
+data GeneralEnclosed = GEFunction
+  deriving (Show)
+
+{-
+supports_rule
+  : SUPPORTS_SYM S* supports_condition group_rule_body
+  ;
+
+supports_condition
+  : supports_negation | supports_conjunction | supports_disjunction |
+    supports_condition_in_parens
+  ;
+
+supports_condition_in_parens
+  : ( '(' S* supports_condition ')' S* ) | supports_declaration_condition |
+
+supports_negation
+  : NOT S* supports_condition_in_parens
+  ;
+
+supports_conjunction
+  : supports_condition_in_parens ( AND S* supports_condition_in_parens )+
+  ;
+
+supports_disjunction
+  : supports_condition_in_parens ( OR S* supports_condition_in_parens )+
+  ;
+
+supports_declaration_condition
+  : '(' S* declaration ')' S*
+  ;
+  -}

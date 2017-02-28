@@ -1,7 +1,8 @@
-{-# LANGUAGE OverloadedStrings, TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      : Hasmin.Parser.Internal
+-- Module      : Hasmin.Parser.Value
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
@@ -15,6 +16,7 @@ module Hasmin.Parser.Value (
     , percentage
     , value
     , valuesFallback
+    , valuesInParens
     , stringOrUrl
     , url
     , stringtype
@@ -29,7 +31,7 @@ module Hasmin.Parser.Value (
     , fontStyle
     ) where
 
-import Control.Applicative ((<|>), many, liftA2, liftA3)
+import Control.Applicative ((<|>), many, liftA3)
 import Control.Arrow (first, (&&&))
 import Control.Monad (mzero)
 import Data.Functor (($>))
@@ -68,8 +70,8 @@ import Hasmin.Types.Value
 
 values :: Text -> Parser Values
 values p = case Map.lookup (T.toLower p) propertyValueParsersMap of
-             Just x  -> x <* skipComments -- mappend <$> (x <|> ((:[]) <$> csswideKeyword))
-             Nothing -> valuesFallback
+             Just x  -> x <* skipComments
+             Nothing -> mzero
 
 number :: Parser Number
 number = Number <$> rational
@@ -584,10 +586,11 @@ value =  textualvalue
      <|> (StringV <$> stringtype)
      <|> invalidvalue
 
--- | Parses until the end of the declaration, i.e. ';' or '}'
--- Used to deal with invalid input, or some of the IE specific things
+-- | Parses until the end of the declaration, i.e. ';' or '}'.
+-- Used to deal with invalid input, or an IE specific hack.
 invalidvalue :: Parser Value
-invalidvalue = mkOther <$> A.takeWhile1 (\c -> c /= '\\' && c /= ';' && c /= '}' && c /= '!')
+invalidvalue = mkOther <$> A.takeWhile1 cond
+  where cond c = c /= '\\' && c /= ';' && c /= '}' && c /= '!'
 
 -- [ [ <'font-style'> || <font-variant-css21> || <'font-weight'> ||
 -- <'font-stretch'> ]? <'font-size'> [ / <'line-height'> ]? <'font-family'> ] |
@@ -743,8 +746,10 @@ functionParsers i = char '(' *>
 
 genericFunc :: Text -> Parser Value
 genericFunc i = (GenericFunc i <$> valuesInParens) <* char ')'
-  where valuesInParens = Values <$> v <*> many ((,) <$> separator <*> v) <* skipComments
-        v =  textualvalue
+
+valuesInParens :: Parser Values
+valuesInParens = Values <$> v <*> many ((,) <$> separator <*> v) <* skipComments
+ where v =  textualvalue
          <|> numericalvalue
          <|> hexvalue
          <|> (StringV <$> stringtype)
@@ -869,25 +874,22 @@ functionsMap = Map.fromList $ fmap (first T.toCaseFold)
 
 dropShadow :: Parser FilterFunction
 dropShadow = functionParser $ do
-    l1 <- distance <* skipComments
-    l2 <- distance <* skipComments
+    l1 <- distance
+    l2 <- lexeme distance
     l3 <- option Nothing ((Just <$> distance) <* skipComments)
     c  <- option Nothing (Just <$> color)
     pure $ DropShadow l1 l2 l3 c
 
 textShadow :: Parser Values
-textShadow = do
-    v <- shadowText <* skipComments
-    vs <- many (liftA2 (,) commaSeparator shadowText) <* skipComments
-    pure $ Values v vs
+textShadow = parseCommaSeparated shadowText
 
 shadowText :: Parser Value
 shadowText = permute (mkShadowText <$$> (lns <* skipComments)
                                    <|?> (Nothing , Just <$> color <* skipComments))
   where mkShadowText (x,y,b) = ShadowText x y b
         lns = do
-            l1 <- distance <* skipComments
-            l2 <- distance <* skipComments
+            l1 <- distance
+            l2 <- lexeme distance
             l3 <- option Nothing ((Just <$> distance) <* skipComments)
             pure (l1,l2,l3)
 
@@ -899,9 +901,9 @@ positionList = parseCommaSeparated positionvalue
 
 parseCommaSeparated :: Parser Value -> Parser Values
 parseCommaSeparated p = do
-    v <- p <* skipComments
-    vs <- many ((,) <$> commaSeparator <*> p) <* skipComments
-    c <- A.peekChar
+    v  <- p
+    vs <- lexeme $ many ((,) <$> commaSeparator <*> p)
+    c  <- A.peekChar
     case c of
       Just x  -> if x `elem` ['!', ';', '}']
                     then pure $ Values v vs
@@ -915,8 +917,8 @@ shadow = permute (mkShadow <$?> (False, asciiCI "inset" $> True <* skipComments)
                            <|?> (Nothing , Just <$> color <* skipComments))
   where mkShadow i (l1,l2,l3,l4) = Shadow i l1 l2 l3 l4
         fourLengths = do
-            l1 <- distance <* skipComments
-            l2 <- distance <* skipComments
+            l1 <- distance
+            l2 <- lexeme distance
             l3 <- option Nothing ((Just <$> distance) <* skipComments)
             l4 <- option Nothing ((Just <$> distance) <* skipComments)
             pure (l1,l2,l3,l4)
@@ -933,7 +935,7 @@ radialgradient = functionParser $ do
   where circle = asciiCI "circle" $> Just Circle <* skipComments
         ellipse = asciiCI "ellipse" $> Just Ellipse <* skipComments
         endingShapeAndSize = r1 <|> r2 <|> r3
-          where r1 = permute (RadialGradient <$?> (Nothing, ellipse) <||> (Just <$> (PL <$> percentageLength <* skipComments <*> percentageLength <* skipComments)))
+          where r1 = permute (RadialGradient <$?> (Nothing, ellipse) <||> (Just <$> (PL <$> percentageLength <*> lexeme percentageLength)))
                 r2 = permute (RadialGradient <$?> (Nothing, circle) <||> ((Just . SL) <$> distance <* skipComments))
                 r3 = permute (RadialGradient <$?> (Nothing, circle <|> ellipse) <||> extentKeyword)
                    <|> permute (RadialGradient <$$> (circle <|> ellipse) <|?> (Nothing, extentKeyword))

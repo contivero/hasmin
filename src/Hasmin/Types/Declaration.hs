@@ -318,6 +318,10 @@ declarationExceptions = Map.fromList $ map (first T.toCaseFold)
   [("background-size",         backgroundSizeReduce)
   ,("-webkit-background-size", backgroundSizeReduce)
   ,("font-synthesis",          fontSynthesisReduce)
+  -- Needed because otherwise the reducer replaces commas by spaces.
+  -- i.e. text-shadow: 1px 1px red,2px 2px blue ==>
+  --      text-shadow: 1px 1px red 2px 2px blue.
+  ,("text-shadow",             \d _ _ -> d)
   ]
 
 combineTransformFunctions :: Declaration -> Reader Config Declaration
