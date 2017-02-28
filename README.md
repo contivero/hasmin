@@ -1,6 +1,8 @@
 Hasmin - A Haskell CSS Minifier
 ====
 [![Build Status](https://travis-ci.org/contivero/hasmin.svg?branch=master)](https://travis-ci.org/contivero/hasmin)
+[![Hackage](https://img.shields.io/hackage/v/hasmin.svg?style=flat)](http://hackage.haskell.org/package/hasmin)
+[![Hackage-Deps](https://img.shields.io/hackage-deps/v/hasmin.svg?style=flat)](http://packdeps.haskellers.com/specific?package=hasmin)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 Hasmin is a CSS minifier written entirely in Haskell. To use it as a library,

@@ -24,6 +24,7 @@ module Hasmin.Parser.Value (
     , textualvalue
     , stringvalue
     , shadowList
+    , timingFunction
     , repeatStyle
     , position
     , color

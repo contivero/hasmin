@@ -100,6 +100,7 @@ test-suite spec
                      , Hasmin.TestUtils
                      , Hasmin.Types.ColorSpec
                      , Hasmin.Types.DeclarationSpec
+                     , Hasmin.Types.TimingFunctionSpec
                      , Hasmin.Types.DimensionSpec
                      , Hasmin.Types.FilterFunctionSpec
                      , Hasmin.Types.GradientSpec

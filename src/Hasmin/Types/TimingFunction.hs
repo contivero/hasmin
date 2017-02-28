@@ -95,21 +95,25 @@ instance Minifiable TimingFunction where
          else pure x
 
 minifyTimingFunction :: TimingFunction -> TimingFunction
-minifyTimingFunction x@(CubicBezier a b c d)
-    | a == 0.25 && b == 0.1 && c == 0.25 && d == 1 = Ease
-    | a == 0.42 && b == 0 && d == 1 = if c == 1
-                                         then EaseIn
-                                         else if c == 0.58
-                                                 then EaseInOut
-                                                 else x
-    | a == 0 && b == 0 && d == 1 = if c == 1
-                                      then Linear
-                                      else if c == 0.58
-                                              then EaseOut
-                                              else x
-    | otherwise = x
-minifyTimingFunction x@(Steps i ms)
-    | (isNothing ms || (fromJust ms == End)) && i == 1 = StepEnd
-    | i == 1 && (fromJust ms == Start) = StepStart
-    | otherwise = x
+minifyTimingFunction x@(CubicBezier a b c 1)
+    | a == 0.25 && b == 0.1 && c == 0.25 = Ease
+    | b == 0 = if a == 0.42
+                  then if c == 1
+                          then EaseIn
+                          else if c == 0.58
+                                  then EaseInOut
+                                  else x
+                   else if a == 0
+                           then if c == 1
+                                   then Linear
+                                   else if c == 0.58
+                                           then EaseOut
+                                           else x
+                           else x
+minifyTimingFunction x@CubicBezier{} = x
+minifyTimingFunction (Steps 1 ms) =
+    case ms of 
+    Just Start -> StepStart
+    _          -> StepEnd 
+minifyTimingFunction (Steps i (Just End)) = Steps i Nothing
 minifyTimingFunction x = x
