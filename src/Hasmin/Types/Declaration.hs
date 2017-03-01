@@ -24,7 +24,6 @@ import Data.Text (Text)
 import Data.Text.Lazy.Builder (singleton, fromText)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, colon, (<+>))
 
 import Hasmin.Config
 import Hasmin.Properties
@@ -43,12 +42,6 @@ data Declaration = Declaration { propertyName :: Text
                                , isImportant :: Bool  -- ends with !important
                                , hasIEhack :: Bool    -- ends with \9
                                } deriving (Eq, Show)
-
-instance Pretty Declaration where
-  ppr (Declaration p v i h) = strictText p <> colon <+> ppr v <> imp
-                           <> (if h then " \\9" else mempty)
-    where imp | i         = strictText " !important" 
-              | otherwise = mempty
 instance ToText Declaration where
   toBuilder (Declaration p vs i h) = fromText p <> singleton ':' 
       <> toBuilder vs <> imp <> (if h then " \\9" else mempty)

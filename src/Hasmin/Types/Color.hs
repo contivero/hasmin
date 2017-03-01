@@ -29,6 +29,7 @@ module Hasmin.Types.Color (
 
 import Control.Arrow (first)
 import Control.Monad.Reader (ask)
+import Data.Monoid ((<>))
 import Data.Char (isHexDigit, digitToInt, intToDigit, toLower)
 import Data.Maybe (fromMaybe)
 import Data.Ratio ((%))
@@ -37,7 +38,6 @@ import Data.Text.Lazy.Builder (Builder, singleton, fromText)
 import Data.Word (Word8)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, string, char, (<>), (<+>), comma, rparen)
 
 import Hasmin.Config
 import Hasmin.Types.Class
@@ -96,35 +96,6 @@ instance Ord Color where
     | a == "ff" =  r1 < r2 || r1 == r2 && (g1 < g2 || (g1 == g2 && b1 <= b2))
     | otherwise  = False
   c1 <= c2 = toLongHex c1 <= toLongHex c2
-
-instance Pretty Color where
-  ppr (Hex3 r g b)   = char '#' <> char r <> char g <> char b
-  ppr (Hex4 r g b a) = char '#' <> char r <> char g <> char b <> char a
-  ppr (Hex6 r g b)   = char '#' <> string r <> string g <> string b
-  ppr (Hex8 r g b a) = char '#' <> string r <> string g <> string b <> string a
-  ppr (Named n)      = strictText n
-  ppr (RGBInt r g b) = strictText "rgb(" <> ppr r <> comma
-                                        <+> ppr g <> comma
-                                        <+> ppr b <> rparen
-  ppr (RGBPer r g b) = strictText "rgb(" <> ppr r <> comma
-                                        <+> ppr g <> comma
-                                        <+> ppr b <> rparen
-  ppr (RGBAInt r g b a) = strictText "rgba(" <> ppr r <> comma
-                                            <+> ppr g <> comma
-                                            <+> ppr b <> comma
-                                            <+> ppr a <> rparen
-  ppr (RGBAPer r g b a) = strictText "rgba(" <> ppr r <> comma
-                                            <+> ppr g <> comma
-                                            <+> ppr b <> comma
-                                            <+> ppr a <> rparen
-  ppr (HSL h s l) = strictText "hsl(" <> ppr h <> comma
-                                     <+> ppr s <> comma
-                                     <+> ppr l <> rparen
-  ppr (HSLA h s l a) = strictText "hsla(" <> ppr h <> comma
-                                         <+> ppr s <> comma
-                                         <+> ppr l <> comma
-                                         <+> ppr a <> rparen
-
 instance Minifiable Color where
   minifyWith c = do
       conf <- ask

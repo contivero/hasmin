@@ -28,7 +28,6 @@ import Data.Text (Text, toCaseFold)
 import qualified Data.Text as T
 import Data.Text.Lazy.Builder (fromText, singleton, Builder)
 import Data.String (IsString)
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, space, comma, char)
 
 import Hasmin.Config
 import Hasmin.Types.BgSize
@@ -94,17 +93,6 @@ instance Eq TextV where
   TextV t1 == TextV t2 = toCaseFold t1 == toCaseFold t2
 instance ToText TextV where
   toText = getText
-instance Pretty Value where
-  ppr (NumberV n)     = ppr n
-  ppr (PercentageV p) = ppr p
-  ppr (DistanceV d)   = ppr d
-  ppr (AngleV a)      = ppr a
-  ppr (DurationV x)   = ppr x
-  ppr (FrequencyV x)  = ppr x
-  ppr (ResolutionV x) = ppr x
-  ppr (ColorV x)      = ppr x
-  ppr (Other x)       = ppr (getText x)
-  ppr x               = (strictText . toText) x
 
 mkOther :: Text -> Value
 mkOther = Other . TextV
@@ -113,8 +101,6 @@ newtype Url = Url (Either Text StringType)
   deriving (Eq, Show)
 instance ToText Url where
   toBuilder (Url x) = "url(" <> toBuilder x <> singleton ')'
-instance Pretty Url where
-  ppr (Url x) = strictText "url(" <> ppr x <> char ')'
 instance Minifiable Url where
   minifyWith u@(Url x) = do
       conf <- ask
@@ -375,18 +361,14 @@ handlePosition cannotRemovePos (Just x)
 
 data Values = Values Value [(Separator, Value)]
   deriving (Show, Eq)
+instance ToText Values where
+  toBuilder (Values v vs) = toBuilder v <> foldr f mempty vs
+    where f (sep, val) z = toBuilder sep <> toBuilder val <> z
 instance Minifiable Values where
   minifyWith (Values v vs) = do
       newV  <- minifyWith v
       newVs <- (mapM . mapM) minifyWith vs
       pure $ Values newV newVs
-
-instance ToText Values where
-  toBuilder (Values v vs) = toBuilder v <> foldr f mempty vs
-    where f (sep, val) z = toBuilder sep <> toBuilder val <> z
-instance Pretty Values where
-  ppr (Values v vs) = ppr v <> foldr f mempty vs
-    where f (sep, val) xs = ppr sep <> ppr val <> xs
 
 data Separator = Space | Slash | Comma
   deriving (Show, Eq)
@@ -394,10 +376,6 @@ instance ToText Separator where
   toText Space = " "
   toText Comma = ","
   toText Slash = "/" -- Used, for example, by font to separate font-size and line-height
-instance Pretty Separator where
-  ppr Space = space
-  ppr Comma = comma
-  ppr Slash = strictText (toText Slash)
 
 valuesToList :: Values -> [Value]
 valuesToList (Values v vs) = v : map snd vs

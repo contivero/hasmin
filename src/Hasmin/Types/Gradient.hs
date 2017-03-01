@@ -24,7 +24,6 @@ import Hasmin.Types.Numeric
 import Hasmin.Types.PercentageLength
 import Hasmin.Types.Position
 import Hasmin.Utils
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText)
 
 -- | CSS <side-or-corner> data type
 data Side = LeftSide | RightSide | TopSide | BottomSide
@@ -34,8 +33,6 @@ instance ToText Side where
   toBuilder RightSide  = "right"
   toBuilder TopSide    = "top"
   toBuilder BottomSide = "bottom"
-instance Pretty Side where
-  ppr = strictText . toText
 
 -- Possible pair of values, as expected by linear-gradient()
 type SideOrCorner = (Side, Maybe Side)
@@ -48,8 +45,6 @@ instance ToText ColorStop where
   toBuilder (ColorStop c mpl) = toBuilder c <> maybe mempty f mpl
     where f (Left p)  = singleton ' ' <> toBuilder p
           f (Right l) = singleton ' ' <> toBuilder l
-instance Pretty ColorStop where
-  ppr = strictText . toText
 instance Minifiable ColorStop where
   minifyWith (ColorStop c mlp) = do
     newC   <- minifyWith c
@@ -139,7 +134,7 @@ handlePercentages start end n remainingList =
     in (newList, remainingList, Left newStartVal)
   where newStartVal = maybe (last interpolation) fromLeft' (colorHint $ head remainingList)
         step = (end - start) / toPercentage n
-        interpolation = [start + (toPercentage x) * step | x <- [1..n-1]]
+        interpolation = [start + toPercentage x * step | x <- [1..n-1]]
         simplifyValue (ColorStop x mpl) y = ColorStop x $ mpl >>= \v ->
             if fromLeft' v == y
                then Nothing

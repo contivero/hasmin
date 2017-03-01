@@ -37,14 +37,10 @@ import Hasmin.Types.Class
 import Hasmin.Types.Numeric
 import Hasmin.Config
 import Hasmin.Utils
-import Text.PrettyPrint.Mainland (char, Pretty, ppr, strictText)
 
 -- | The \<length\> CSS data type
 data Distance = Distance Number DistanceUnit
   deriving (Show)
-instance Pretty Distance where
-  ppr (Distance 0 _) = char '0'
-  ppr (Distance r u) = ppr r <> ppr u
 instance Eq Distance where
   (Distance r1 u1) == (Distance r2 u2)
     | u1 == u2  = r1 == r2
@@ -67,9 +63,6 @@ instance ToText Distance where
 -- | The \<angle\> CSS data type
 data Angle = Angle Number AngleUnit
   deriving (Show)
-instance Pretty Angle where
-  ppr (Angle 0 _) = char '0'
-  ppr (Angle r u) = ppr r <> ppr u
 instance Eq Angle where
   (Angle r1 u1) == (Angle r2 u2)
     | u1 == u2  = r1 == r2
@@ -92,8 +85,6 @@ instance ToText Angle where
 -- | The \<duration\> CSS data type
 data Duration = Duration Number DurationUnit
   deriving (Show)
-instance Pretty Duration where
-  ppr (Duration r u) = ppr r <> ppr u
 instance Eq Duration where
   (Duration r1 u1) == (Duration r2 u2)
     | u1 == u2  = r1 == r2
@@ -110,8 +101,6 @@ instance ToText Duration where
 -- | The \<frequency\> CSS data type
 data Frequency = Frequency Number FrequencyUnit
   deriving (Show)
-instance Pretty Frequency where
-  ppr (Frequency r u) = ppr r <> ppr u
 instance Eq Frequency where
   (Frequency r1 u1) == (Frequency r2 u2)
     | u1 == u2  = r1 == r2
@@ -128,8 +117,6 @@ instance ToText Frequency where
 -- | The \<resolution\> CSS data type
 data Resolution = Resolution Number ResolutionUnit
   deriving (Show)
-instance Pretty Resolution where
-  ppr (Resolution r u) = ppr r <> ppr u
 instance Eq Resolution where
   (Resolution r1 u1) == (Resolution r2 u2)
     | u1 == u2  = r1 == r2
@@ -177,8 +164,6 @@ instance ToText DistanceUnit where
   toBuilder VMIN = "vmin"
   toBuilder VMAX = "vmax"
   toBuilder REM  = "rem"
-instance Pretty DistanceUnit where
-  ppr = strictText . toText
 instance  Unit DistanceUnit where
   convertTo IN = toInches
   convertTo CM = toCentimeters
@@ -196,8 +181,6 @@ instance ToText AngleUnit where
   toBuilder Grad = "grad"
   toBuilder Rad  = "rad"
   toBuilder Turn = "turn"
-instance Pretty AngleUnit where
-  ppr = strictText . toText
 instance Unit AngleUnit where
   convertTo Deg  = toDegrees
   convertTo Grad = toGradians
@@ -210,8 +193,6 @@ data DurationUnit = S -- seconds
 instance ToText DurationUnit where
   toBuilder S  = "s"
   toBuilder Ms = "ms"
-instance Pretty DurationUnit where
-  ppr = strictText . toText
 instance Unit DurationUnit where
   convertTo S  = toSeconds
   convertTo Ms = toMiliseconds
@@ -221,8 +202,6 @@ data FrequencyUnit = Hz | Khz
 instance ToText FrequencyUnit where
   toBuilder Hz  = "hz"
   toBuilder Khz = "khz"
-instance Pretty FrequencyUnit where
-  ppr = strictText . toText
 instance Unit FrequencyUnit where
   convertTo Hz  = toHertz
   convertTo Khz = toKilohertz
@@ -233,8 +212,6 @@ instance ToText ResolutionUnit where
   toBuilder Dpi  = "dpi"
   toBuilder Dpcm = "dpcm"
   toBuilder Dppx = "dppx"
-instance Pretty ResolutionUnit where
-  ppr = strictText . toText
 instance Unit ResolutionUnit where
   convertTo Dpi  = toDpi
   convertTo Dpcm = toDpcm

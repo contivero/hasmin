@@ -21,7 +21,6 @@ import Hasmin.Config
 import Hasmin.Types.Class
 import Hasmin.Utils
 import Hasmin.Types.Numeric
---import Text.PrettyPrint.Mainland (Pretty, ppr, strictText)
 
 -- | CSS \<single-transition-timing-function\> data type. Specifications:
 --
@@ -112,8 +111,8 @@ minifyTimingFunction x@(CubicBezier a b c 1)
                            else x
 minifyTimingFunction x@CubicBezier{} = x
 minifyTimingFunction (Steps 1 ms) =
-    case ms of 
+    case ms of
     Just Start -> StepStart
-    _          -> StepEnd 
+    _          -> StepEnd
 minifyTimingFunction (Steps i (Just End)) = Steps i Nothing
 minifyTimingFunction x = x

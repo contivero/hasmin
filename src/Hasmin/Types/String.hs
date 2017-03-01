@@ -26,7 +26,6 @@ import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText)
 
 import Hasmin.Config
 import Hasmin.Parser.Utils
@@ -44,8 +43,6 @@ data StringType = DoubleQuotes Text
 instance ToText StringType where
   toBuilder (DoubleQuotes t) = singleton '\"' <> fromText t <> singleton '\"'
   toBuilder (SingleQuotes t) = singleton '\'' <> fromText t <> singleton '\''
-instance Pretty StringType where
-  ppr = strictText . toText
 instance Minifiable StringType where
   minifyWith (DoubleQuotes t) = do
     conf <- ask
@@ -115,7 +112,3 @@ convertEscaped = (TL.toStrict . toLazyText) <$> go
               Just '\\' -> A.char '\\' *> liftA2 (mappend . mappend t . singleton) utf8 go
               _         -> pure t
         utf8 = C.chr <$> A.hexadecimal
-
-instance Pretty (Either Text StringType) where
-  ppr (Left i)  = strictText i
-  ppr (Right s) = ppr s

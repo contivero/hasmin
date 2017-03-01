@@ -24,7 +24,6 @@ import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as TIO
 import qualified Data.Text.Lazy as TL
 import System.Exit (die)
-import Text.PrettyPrint.Mainland (line, punctuate, putDoc, ppr)
 import Hasmin.Config
 import Hasmin.Parser.Internal
 import Hasmin.Types.Class
@@ -108,7 +107,7 @@ main = do
 
 process :: [Rule] -> Commands -> Config -> IO ()
 process r comm conf
-    | shouldBeautify comm = printBeautified $ fmap ppr sheet
+    | shouldBeautify comm = error "Currently unsupported"
     | shouldCompress comm = B.writeFile "output.gz" . compressWith defaultCompressOptions GZIP . TE.encodeUtf8 $ output
     | otherwise           = TIO.putStr output
   where sheet  = let ruleList = fmap (\x -> runReader (minifyWith x) conf) r
@@ -116,4 +115,3 @@ process r comm conf
                        then filter (not . isEmpty) ruleList
                        else ruleList
         output = TL.toStrict . toLazyText $ mconcat (fmap toBuilder sheet)
-        printBeautified = putDoc . mconcat . punctuate (line <> line)

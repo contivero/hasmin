@@ -29,7 +29,6 @@ import Data.Text.Lazy.Builder (fromText, singleton, Builder)
 import Data.Monoid ((<>))
 import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as N
-import Text.PrettyPrint.Mainland (Pretty, char, ppr, strictText)
 
 import Hasmin.Config
 import Hasmin.Types.Class
@@ -64,8 +63,6 @@ instance ToText Combinator where
   toBuilder Child           = ">"
   toBuilder AdjacentSibling = "+"
   toBuilder GeneralSibling  = "~"
-instance Pretty Combinator where
-  ppr = strictText . toText
 
 -- An empty selector, containing no sequence of simple selectors and no
 -- pseudo-element, is an invalid selector.
@@ -76,10 +73,6 @@ instance Ord Selector where
   -- Lexicographical order
   s1 <= s2 = toText s1 <= toText s2
 
-instance Pretty Selector where
-  ppr (Selector cs ccss) = ppr cs
-                        <> mconcat (fmap toDocument ccss)
-    where toDocument (comb, compSel) = ppr comb <> ppr compSel
 instance ToText Selector where
   toBuilder (Selector cs ccss) = toBuilder cs
                               <> mconcat (fmap build ccss)
@@ -110,11 +103,6 @@ instance ToText CompoundSelector where
   toBuilder ns@(Universal{} :| xs)
       | length ns > 1 = mconcat $ fmap toBuilder xs
   toBuilder ns = mconcat $ N.toList (fmap toBuilder ns)
-
-instance Pretty CompoundSelector where
-  ppr ns@(Universal{} :| xs)
-      | length ns > 1 = mconcat $ fmap ppr xs
-  ppr ns = mconcat $ N.toList (fmap ppr ns)
 
 instance Minifiable CompoundSelector where
   minifyWith (a :| xs) = liftA2 (:|) (minifyWith a) (mapM minifyWith xs)
@@ -163,23 +151,6 @@ data SimpleSelector = Type Namespace Element -- ^ e.g.: *, ns|*, h1, em, body
                     -- :nth-child(), nth-last-child()
                     | FunctionalPseudoClass3 Identifier AnPlusB [CompoundSelector]
   deriving (Eq, Show)
-
-instance Pretty SimpleSelector where
-  ppr (Type n e)
-      | T.null n  = strictText e
-      | otherwise = strictText n <> char '|' <> strictText e
-  ppr (Universal n)
-      | T.null n  = char '*'
-      | otherwise = strictText n <> strictText "|*"
-  ppr (AttributeSel att) = char '[' <> ppr att <> char ']'
-  ppr (ClassSel t)       = char '.' <> strictText t
-  ppr (IdSel t)          = char '#' <> strictText t
-  ppr (PseudoClass t)    = char ':' <> strictText t
-  ppr (PseudoElem t)     = if T.toCaseFold t `elem` specialPseudoElements
-                              then strictText ":" <> strictText t
-                              else strictText "::" <> strictText t
-  ppr (FunctionalPseudoClass i t)   = strictText i <> char '(' <> ppr t <> char ')'
-  -- ppr (FunctionalPseudoClass1 i cs) = strictText i <>
 
 instance ToText SimpleSelector where
   toBuilder (Type n e)
@@ -321,6 +292,14 @@ data Att = Attribute AttId
          | AttId :$=: AttValue   -- ^ \'$=\'
          | AttId :*=: AttValue   -- ^ \'*=\'
   deriving (Eq, Show)
+instance ToText Att where
+  toBuilder (Attribute t) = fromText t
+  toBuilder (attid :=: attval)  = fromText attid <> singleton '=' <> toBuilder attval
+  toBuilder (attid :~=: attval) = fromText attid <> fromText "~=" <> toBuilder attval
+  toBuilder (attid :|=: attval) = fromText attid <> fromText "|=" <> toBuilder attval
+  toBuilder (attid :^=: attval) = fromText attid <> fromText "^=" <> toBuilder attval
+  toBuilder (attid :$=: attval) = fromText attid <> fromText "$=" <> toBuilder attval
+  toBuilder (attid :*=: attval) = fromText attid <> fromText "*=" <> toBuilder attval
 
 removeAttributeQuotes :: Att -> Att
 removeAttributeQuotes (attId :=: val)  = attId :=: either Left removeQuotes val
@@ -330,20 +309,3 @@ removeAttributeQuotes (attId :^=: val) = attId :^=: either Left removeQuotes val
 removeAttributeQuotes (attId :$=: val) = attId :$=: either Left removeQuotes val
 removeAttributeQuotes (attId :*=: val) = attId :*=: either Left removeQuotes val
 removeAttributeQuotes a@Attribute{}    = a
-
-instance Pretty Att where
-  ppr (Attribute t) = strictText t
-  ppr (attid :=: attval)  = strictText attid <> char '=' <> ppr attval
-  ppr (attid :~=: attval) = strictText attid <> strictText "~=" <> ppr attval
-  ppr (attid :|=: attval) = strictText attid <> strictText "|=" <> ppr attval
-  ppr (attid :^=: attval) = strictText attid <> strictText "^=" <> ppr attval
-  ppr (attid :$=: attval) = strictText attid <> strictText "$=" <> ppr attval
-  ppr (attid :*=: attval) = strictText attid <> strictText "*=" <> ppr attval
-instance ToText Att where
-  toBuilder (Attribute t) = fromText t
-  toBuilder (attid :=: attval)  = fromText attid <> singleton '=' <> toBuilder attval
-  toBuilder (attid :~=: attval) = fromText attid <> fromText "~=" <> toBuilder attval
-  toBuilder (attid :|=: attval) = fromText attid <> fromText "|=" <> toBuilder attval
-  toBuilder (attid :^=: attval) = fromText attid <> fromText "^=" <> toBuilder attval
-  toBuilder (attid :$=: attval) = fromText attid <> fromText "$=" <> toBuilder attval
-  toBuilder (attid :*=: attval) = fromText attid <> fromText "*=" <> toBuilder attval

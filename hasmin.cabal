@@ -1,5 +1,5 @@
 name:                hasmin
-version:             0.3.1.1
+version:             0.3.1.2
 license:             BSD3
 license-file:        LICENSE
 author:              (c) 2017 Cristian Adrián Ontivero <cristianontivero@gmail.com>
@@ -36,7 +36,6 @@ executable hasmin
                      , containers           >=0.5        && <0.6
                      , optparse-applicative >=0.11       && <0.14
                      , parsers              >=0.12.3     && <0.13
-                     , mainland-pretty      >=0.4.1      && <0.5
                      , text                 >=1.2        && <1.3
                      , hopfli               >=0.2        && <0.3
                      , bytestring           >=0.10.2.0   && <0.11
@@ -80,7 +79,6 @@ library
                      , attoparsec      >=0.12       && <0.14
                      , bytestring      >=0.10.2.0   && <0.11
                      , containers      >=0.5        && <0.6
-                     , mainland-pretty >=0.4.1      && <0.5
                      , matrix          >=0.3.4      && <0.4
                      , mtl             >=2.2.1      && <2.3
                      , numbers         >=3000.2.0.0 && <3000.3

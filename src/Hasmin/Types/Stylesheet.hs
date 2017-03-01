@@ -31,8 +31,6 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText,
-  lbrace, rbrace, (</>), (<+>), comma, folddoc, nest, semi, stack, char)
 
 import Hasmin.Config
 import Hasmin.Types.Selector
@@ -79,8 +77,6 @@ instance ToText KeyframeSelector where
   toText From             = "from"
   toText To               = "to"
   toText (KFPercentage p) = toText p
-instance Pretty KeyframeSelector where
-  ppr = strictText . toText
 instance Minifiable KeyframeSelector where
   minifyWith x = do
       conf <- ask
@@ -119,16 +115,6 @@ data Rule = AtCharset StringType
           | AtBlockWithDec Text [Declaration]
           | StyleRule [Selector] [Declaration]
  deriving (Show)
-instance Pretty Rule where
-  ppr (StyleRule ss ds) = folddoc (\x y -> x <> comma <+> y) (fmap ppr ss)
-                     <+> nest 4 (lbrace </> stack (fmap ((<> semi) . ppr) ds))
-                     </> rbrace
-  ppr (AtBlockWithRules t rs) = char '@' <> strictText t
-      <+> nest 4 (lbrace </> stack (fmap ppr rs)) </> rbrace
-  ppr (AtBlockWithDec t ds) = char '@' <> strictText t
-      <+> nest 4 (lbrace </> stack (fmap ppr ds)) </> rbrace
-  ppr _ = error "not implemented (TODO)"
-
 instance ToText Rule where
   toBuilder (AtMedia mqs rs) = "@media " <> mconcatIntersperse toBuilder (singleton ',') mqs
       <> singleton '{' <> mconcat (fmap toBuilder rs) <> singleton '}'
@@ -161,7 +147,6 @@ instance ToText Rule where
   toBuilder (AtKeyframes vp n bs) = singleton '@' <> fromText vp <> "keyframes"
             <> singleton ' ' <> fromText n <> singleton '{'
             <> mconcat (fmap toBuilder bs) <> singleton '}'
-
 instance Minifiable Rule where
   minifyWith (AtMedia mqs rs) = liftA2 AtMedia (mapM minifyWith mqs) (mapM minifyWith rs)
   minifyWith (AtSupports sc rs) = liftA2 AtSupports (minifyWith sc) (mapM minifyWith rs)

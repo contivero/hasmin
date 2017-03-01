@@ -9,7 +9,7 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.Shadow (
-    Shadow(..)
+      Shadow(..)
     ) where
 
 import Control.Monad.Reader (ask)
@@ -33,7 +33,7 @@ instance ToText Shadow where
       bool mempty "inset " i
       <> toBuilder ox <> singleton ' '
       <> toBuilder oy <> f br <> f sr <> f c
-    where f c = maybe mempty (\y -> singleton ' ' <> toBuilder y) c -- don't eta reduce this!
+    where f x = maybe mempty (\y -> singleton ' ' <> toBuilder y) x -- don't eta reduce this!
 
 instance Minifiable Shadow where
   minifyWith (Shadow i ox oy br sr c) = do

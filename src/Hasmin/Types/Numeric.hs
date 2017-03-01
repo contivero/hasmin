@@ -20,7 +20,6 @@ module Hasmin.Types.Numeric (
 import Data.Text (pack)
 import Hasmin.Types.Class
 import Hasmin.Utils
-import Text.PrettyPrint.Mainland (strictText, text, Pretty, ppr)
 import Text.Printf (printf)
 
 -- | The \<number\> data type. Real numbers, possibly with a fractional component.
@@ -40,8 +39,6 @@ newtype Number = Number { getRational :: Rational }
 
 instance ToText Number where
   toText = pack . trimLeadingZeros . showRat . toRational -- check if scientific notation is shorter!
-instance Pretty Number where
-  ppr = strictText . toText
 
 toNumber :: Real a => a -> Number
 toNumber = Number . toRational
@@ -68,8 +65,6 @@ instance Num Alphavalue where
 
 instance ToText Alphavalue where
   toText = pack .  trimLeadingZeros . showRat . toRational
-instance Pretty Alphavalue where
-  ppr = text . showRat . toRational
 instance Bounded Alphavalue where
   minBound = 0
   maxBound = 1
@@ -93,8 +88,6 @@ mkAlphavalue = Alphavalue . restrict 0 1
 newtype Percentage = Percentage Rational
   deriving (Eq, Show, Ord, Num, Fractional, Real, RealFrac)
 
-instance Pretty Percentage where
-  ppr = strictText . toText
 instance ToText Percentage where
   toText = pack . (++ "%") . trimLeadingZeros . showRat . toRational
 

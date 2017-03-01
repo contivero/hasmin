@@ -21,7 +21,7 @@ import qualified Data.Text as T
 import Data.Number.FixedFunctions (sin, cos, acos, tan, atan)
 import Prelude hiding (sin, cos, acos, tan, atan)
 import qualified Data.Matrix as M
-import Data.Matrix (Matrix) 
+import Data.Matrix (Matrix)
 import Data.List (groupBy)
 import Data.Maybe (fromMaybe, isNothing, isJust, fromJust)
 import Data.Text.Lazy.Builder (toLazyText, singleton, Builder)
@@ -32,9 +32,8 @@ import Hasmin.Utils
 import Hasmin.Types.Dimension
 import Hasmin.Types.PercentageLength
 import Hasmin.Types.Numeric
-import Text.PrettyPrint.Mainland (Doc, Pretty, ppr, char)
 
--- Note: In a previous specification, translate3d() took two 
+-- Note: In a previous specification, translate3d() took two
 -- <https://www.w3.org/TR/css-transforms-1/#typedef-translation-value \<translation-value\>>,
 -- however in the <https://drafts.csswg.org/css-transforms/ latest draft>, it
 -- takes two \<length-percentage\> (which makes sense since translateX() and
@@ -75,10 +74,10 @@ instance Minifiable TransformFunction where
       if shouldMinifyTransformFunction conf
          then case possibleRepresentations m of
                 []     -> pure (Mat3d m)
-                (x:xs) -> let simplifyAndConvertUnits a = local (const $ conf { dimensionSettings = DimMinOn }) (simplify a) 
+                (x:xs) -> let simplifyAndConvertUnits a = local (const $ conf { dimensionSettings = DimMinOn }) (simplify a)
                           in go simplifyAndConvertUnits x xs
          else pure (Mat3d m)
-    where go f y []     = f y 
+    where go f y []     = f y
           go f y (z:zs) = do
               currentLength <- textualLength <$> f y
               newLength     <- textualLength <$> f z
@@ -106,9 +105,9 @@ g x = runReader x defaultConfig
 -}
 
 instance ToText TransformFunction where
-  toBuilder (Translate pl mpl)   = "translate(" 
+  toBuilder (Translate pl mpl)   = "translate("
       <> toBuilder pl <> maybeWithComma mpl <> singleton ')'
-  toBuilder (TranslateX pl)      = "translatex(" 
+  toBuilder (TranslateX pl)      = "translatex("
       <> either toBuilder toBuilder pl <> singleton ')'
   toBuilder (TranslateY pl)      = "translatey(" <> either toBuilder toBuilder pl <> singleton ')'
   toBuilder (TranslateZ d)       = "translatez(" <> toBuilder d <> singleton ')'
@@ -123,57 +122,21 @@ instance ToText TransformFunction where
   toBuilder (RotateX a)          = "rotatex(" <> toBuilder a <> singleton ')'
   toBuilder (RotateY a)          = "rotatey(" <> toBuilder a <> singleton ')'
   toBuilder (RotateZ a)          = "rotatez(" <> toBuilder a <> singleton ')'
-  toBuilder (Rotate3d x y z a)   = "rotate3d(" <> toBuilder x <> singleton ',' 
-      <> toBuilder y <> singleton ',' <> toBuilder z <> singleton ',' 
+  toBuilder (Rotate3d x y z a)   = "rotate3d(" <> toBuilder x <> singleton ','
+      <> toBuilder y <> singleton ',' <> toBuilder z <> singleton ','
       <> toBuilder a <> singleton ')'
   toBuilder (Scale3d x y z)      = "scale3d(" <> toBuilder x <> singleton ','
       <> toBuilder y <> singleton ',' <> toBuilder z <> singleton ')'
   toBuilder (Perspective d)      = "perspective(" <> toBuilder d <> singleton ')'
   toBuilder (Translate3d x y z ) = "translate3d(" <> toBuilder x <> singleton ','
       <> toBuilder y <> singleton ',' <> toBuilder z <> singleton ')'
-  toBuilder (Mat m)              = "matrix(" 
+  toBuilder (Mat m)              = "matrix("
       <> mconcatIntersperse toBuilder (singleton ',') (M.toList m) <> singleton ')'
-  toBuilder (Mat3d m)            = "matrix3d(" 
+  toBuilder (Mat3d m)            = "matrix3d("
       <> mconcatIntersperse toBuilder (singleton ',') (M.toList m) <> singleton ')'
 
 maybeWithComma :: ToText a => Maybe a -> Builder
 maybeWithComma = maybe mempty (\x -> singleton ',' <> toBuilder x)
-
-instance Pretty TransformFunction where
-  ppr (Translate pl mpl)  = "translate(" <> eitherToDoc pl 
-                         <> maybe mempty (\x -> char ',' <> eitherToDoc x) mpl 
-                         <> char ')'
-  ppr (TranslateX pl)     = "translatex(" <> either ppr ppr pl <> char ')'
-  ppr (TranslateY pl)     = "translatey(" <> either ppr ppr pl <> char ')'
-  ppr (TranslateZ d)      = "translatez(" <> ppr d <> char ')'
-  ppr (Scale n mn)        = "scale(" <> ppr n <> maybeToDoc mn <> char ')'
-  ppr (ScaleX n)          = "scalex(" <> ppr n <> char ')'
-  ppr (ScaleY n)          = "scaley(" <> ppr n <> char ')'
-  ppr (ScaleZ n)          = "scalez(" <> ppr n <> char ')'
-  ppr (Skew a ma)         = "skew(" <> ppr a <> maybeToDoc ma <> char ')'
-  ppr (SkewX a)           = "skewx(" <> ppr a <> char ')'
-  ppr (SkewY a)           = "skewy(" <> ppr a <> char ')'
-  ppr (Rotate a)          = "rotate(" <> ppr a <> char ')'
-  ppr (RotateX a)         = "rotatex(" <> ppr a <> char ')'
-  ppr (RotateY a)         = "rotatey(" <> ppr a <> char ')'
-  ppr (RotateZ a)         = "rotatez(" <> ppr a <> char ')'
-  ppr (Rotate3d x y z a)  = "rotate3d(" <> ppr x <> char ',' <> ppr y 
-                          <> char ',' <> ppr z <> char ',' <> ppr a <> char ')'
-  ppr (Scale3d x y z)     = "scale3d(" <> ppr x <> char ',' <> ppr y 
-                          <> char ',' <> ppr z <> char ')'
-  ppr (Perspective d)     = "perspective(" <> ppr d <> char ')'
-  ppr (Translate3d x y z) = "translate3d(" <> eitherToDoc x <> char ',' 
-                          <> eitherToDoc y <> char ',' <> ppr z <> char ')'
-  ppr (Mat m)             = "matrix(" 
-      <> mconcatIntersperse ppr (char ',') (M.toList m) <> char ')'
-  ppr (Mat3d m)           = "matrix3d(" 
-      <> mconcatIntersperse ppr (char ',') (M.toList m) <> char ')'
-
-maybeToDoc :: Pretty a => Maybe a -> Doc
-maybeToDoc = maybe mempty (\x -> char ',' <> ppr x)
-
-eitherToDoc :: (Pretty a, Pretty b) => Either a b -> Doc
-eitherToDoc = either ppr ppr
 
 mkMat :: [Number] -> TransformFunction
 mkMat = Mat . M.fromList 3 2
@@ -196,17 +159,17 @@ toMatrix3d (Translate pl mpl)
   where x = either (const 0) fromPixelsToNum pl
         y = maybe 0 (fromPixelsToNum . fromRight') mpl
 toMatrix3d (TranslateX pl)
-    | isNonZeroPercentage pl = Nothing 
-    | isRight pl && isRelativeDistance (fromRight' pl) = Nothing 
-    | otherwise = Just . Mat3d $ mkTranslate3dMatrix x 0 0 
+    | isNonZeroPercentage pl = Nothing
+    | isRight pl && isRelativeDistance (fromRight' pl) = Nothing
+    | otherwise = Just . Mat3d $ mkTranslate3dMatrix x 0 0
   where x = either (const 0) fromPixelsToNum pl
 toMatrix3d (TranslateY pl)
-    | isNonZeroPercentage pl = Nothing 
-    | isRight pl && isRelativeDistance (fromRight' pl) = Nothing 
+    | isNonZeroPercentage pl = Nothing
+    | isRight pl && isRelativeDistance (fromRight' pl) = Nothing
     | otherwise = Just . Mat3d $ mkTranslate3dMatrix 0 y 0
   where y = either (const 0) fromPixelsToNum pl
 toMatrix3d (TranslateZ d)
-    | isRelativeDistance d  = Nothing 
+    | isRelativeDistance d  = Nothing
     | otherwise = Just . Mat3d $ mkTranslate3dMatrix 0 0 z
   where z = fromPixelsToNum d
 toMatrix3d (Scale n mn) = Just . Mat3d $ mkScale3dMatrix n y 1
@@ -214,16 +177,16 @@ toMatrix3d (Scale n mn) = Just . Mat3d $ mkScale3dMatrix n y 1
 toMatrix3d (ScaleX n) = Just . Mat3d $ mkScale3dMatrix n 1 1
 toMatrix3d (ScaleY n) = Just . Mat3d $ mkScale3dMatrix 1 n 1
 toMatrix3d (ScaleZ n) = Just . Mat3d $ mkScale3dMatrix 1 1 n
-toMatrix3d (Skew a ma) = Just . Mat3d $ mkSkewMatrix α β 
+toMatrix3d (Skew a ma) = Just . Mat3d $ mkSkewMatrix α β
   where α = tangent a
         β = maybe 0 tangent ma
 toMatrix3d (SkewX a) = Just . Mat3d $ mkSkewMatrix (tangent a) 0
 toMatrix3d (SkewY a) = Just . Mat3d $ mkSkewMatrix 0 (tangent a)
 toMatrix3d (Translate3d pl1 pl2 d)
-    | isNonZeroPercentage pl1 || isNonZeroPercentage pl2 = Nothing 
+    | isNonZeroPercentage pl1 || isNonZeroPercentage pl2 = Nothing
     | isRight pl1 && isRelativeDistance (fromRight' pl1) = Nothing
-    | isRight pl2 && isRelativeDistance (fromRight' pl2) = Nothing 
-    | isRelativeDistance d = Nothing 
+    | isRight pl2 && isRelativeDistance (fromRight' pl2) = Nothing
+    | isRelativeDistance d = Nothing
     | otherwise = let x = either (const 0) fromPixelsToNum pl1
                       y = either (const 0) fromPixelsToNum pl2
                       z = fromPixelsToNum d
@@ -232,8 +195,8 @@ toMatrix3d (Scale3d x y z) = Just . Mat3d $ mkScale3dMatrix x y z
 toMatrix3d (Perspective d)
     | d == Distance 0 Q = Nothing
     | otherwise         = let c = fromPixelsToNum d
-                          in Just . Mat3d $ mkPerspectiveMatrix c 
--- Note: The commented code is fine, but until we implement the 
+                          in Just . Mat3d $ mkPerspectiveMatrix c
+-- Note: The commented code is fine, but until we implement the
 -- function that converts a matrix back to a rotate function, uncommenting this
 -- breaks the minification, e.g. it says that:
 -- minify rotate(90deg) == matrix(0,1,-1,0,0,0)
@@ -254,7 +217,7 @@ rotateIn3d (b,c,d) a = mkMat3d $ fmap toNumber
     [1-2*(y^2 + z^2)*sq, 2*(x*y*sq - z*sc),  2*(x*z*sq + y*sc),  0,
      2*(x*y*sq + z*sc),  1-2*(x^2 + z^2)*sq, 2*(y*z*sq - x*sc),  0,
      2*(x*z*sq - y*sc),  2*(y*z*sq + x*sc),  1-2*(x^2 + y^2)*sq, 0,
-     0,                  0,                  0,                  1]    
+     0,                  0,                  0,                  1]
   where sc = sin epsilon (α/2) * cos epsilon (α/2)  :: Rational
         sq = sin epsilon (α/2) ^ 2 :: Rational
         x  = toRational b
@@ -293,7 +256,7 @@ matrixToRotate3d _ = []
 -- Make sure that the input is a pure rotation matrix.
 -- The condition for this is:
 -- R' * R = I, and det(R) = 1
-        isRotationMatrix 
+        isRotationMatrix
             |    abs (m11*m12 + m12*m22 + m13*m23) > ep
               || abs (m11*m31 + m12*m32 + m13*m33) > ep
               || abs (m21*m31 + m22*m32 + m23*m33) > ep
@@ -301,10 +264,10 @@ matrixToRotate3d _ = []
               || abs (m21*m21 + m22*m11 + m23*m23 - 1) > ep
               || abs (m31*m31 + m32*m32 + m33*m33 - 1) > ep = False
             | otherwise = abs (detLU m - 1) < ep
-        handleSingularity 
-            |    abs (m12 + m21) < ep2 
-              && abs (m13 + m31) < ep2 
-              && abs (m23 - m32) < ep2 
+        handleSingularity
+            |    abs (m12 + m21) < ep2
+              && abs (m13 + m31) < ep2
+              && abs (m23 - m32) < ep2
               && abs (m11 + m22 + m33 - 3) < ep2 = Rotate3d 1 0 0 (Angle 0 Deg)
             | otherwise = let xx = (m11+1)/2
                               yy = (m22+1)/2
@@ -342,13 +305,13 @@ tangent :: Angle -> Number
 tangent =  toNumber . tan epsilon . fromNumber . fromRadiansToNum
 
 arctan :: Number -> Number
-arctan = toNumber . atan epsilon . fromNumber 
+arctan = toNumber . atan epsilon . fromNumber
 
 -- sine :: Number -> Number
--- sine = toNumber . sin epsilon . fromNumber 
+-- sine = toNumber . sin epsilon . fromNumber
 
 -- arccos :: Number -> Number
--- arccos = toNumber . acos epsilon . fromNumber 
+-- arccos = toNumber . acos epsilon . fromNumber
 
 getMat :: TransformFunction -> Matrix Number
 getMat (Mat q)   = q
@@ -372,7 +335,7 @@ matrixToSkewFunctions :: Matrix Number -> [TransformFunction]
 matrixToSkewFunctions m
     | skewMatrix == m = Skew a (Just b) : others
     | otherwise       = []
-  where α = M.unsafeGet 1 2 m 
+  where α = M.unsafeGet 1 2 m
         β = M.unsafeGet 2 1 m
         a = Angle (arctan α) Rad
         b = Angle (arctan β) Rad
@@ -382,7 +345,7 @@ matrixToSkewFunctions m
             | β /= 0 && α == 0 = [SkewY b]
             | otherwise        = [] -- The only case when we can use either of
                                     -- them is when both α and β are zero, but if so
-                                    -- skew is already shorter, so don't return it. 
+                                    -- skew is already shorter, so don't return it.
 
 matrixToTranslateFunctions :: Matrix Number -> [TransformFunction]
 matrixToTranslateFunctions m
@@ -394,7 +357,7 @@ matrixToTranslateFunctions m
         ty = Right $ Distance y PX
         z  = M.unsafeGet 3 4 m
         tz = Distance z PX
-        others 
+        others
             | z == 0 && y == 0 = [TranslateX tx, Translate tx (Just ty)]
             | x == 0 && z == 0 = [TranslateY ty, Translate tx (Just ty)]
             | y == 0 && x == 0 = [TranslateZ tz]
@@ -407,7 +370,7 @@ matrixToScaleFunctions m
   where x = M.unsafeGet 1 1 m
         y = M.unsafeGet 2 2 m
         z = M.unsafeGet 3 3 m
-        others 
+        others
             | z == 1 && y == 1 = [ScaleX x, Scale x Nothing]
             | y == 1 && x == 1 = [ScaleZ z]
             | x == 1 && z == 1 = [ScaleY y, Scale x (Just y)]
@@ -450,26 +413,26 @@ mkScale3dMatrix x y z = mk4x4Matrix [x, 0, 0, 0,
                                      0, 0, z, 0,
                                      0, 0, 0, 1]
 
-mkSkewMatrix :: Number -> Number -> Matrix Number 
+mkSkewMatrix :: Number -> Number -> Matrix Number
 mkSkewMatrix a b = mk4x4Matrix [1, a, 0, 0,
                                 b, 1, 0, 0,
                                 0, 0, 1, 0,
                                 0, 0, 0, 1]
 
 mkPerspectiveMatrix :: Number -> Matrix Number
-mkPerspectiveMatrix c = let d = (-1/c) 
+mkPerspectiveMatrix c = let d = (-1/c)
                         in mk4x4Matrix [1, 0, 0, 0,
                                         0, 1, 0, 0,
                                         0, 0, 1, 0,
                                         0, 0, d, 0]
 mk4x4Matrix :: [Number] -> Matrix Number
-mk4x4Matrix = M.fromList 4 4 
+mk4x4Matrix = M.fromList 4 4
 
 -- | Simplifies a \<transform-function\> without converting it to a 4x4 matrix,
 -- by doing some simple conversions between the different functions, or
 -- minifying the dimension arguments (\<length\> and \<angle\> values)
 simplify :: TransformFunction -> Reader Config TransformFunction
-simplify (Translate pl mpl) 
+simplify (Translate pl mpl)
     | isNothing mpl || isZero (fromJust mpl) = do
         x <- mapM minifyWith pl
         pure $ Translate x Nothing
@@ -478,7 +441,7 @@ simplify (Translate pl mpl)
                      pure $ Translate x y
 simplify (TranslateX pl) = do
     x <- mapM minifyWith pl
-    simplify $ Translate x Nothing 
+    simplify $ Translate x Nothing
 -- Note: It always makes sense to convert from translateX to translate
 -- Not sure about translateY. Converting to translate(0,a) might aid
 -- compression, even when we are adding one character, because we might be
@@ -495,7 +458,7 @@ simplify s@(Scale n mn)  = pure $ maybe s removeDefaultArgument mn
 -- TODO see if it is better to leave them as is, or convert them to scale(x,1)
 -- and scale(1,x), respectively, to aid gzip compression
 simplify s@(ScaleX _)    = pure s
-simplify s@(ScaleY _)    = pure s 
+simplify s@(ScaleY _)    = pure s
 -- In skew(), if the second parameter isn't present, it defaults to the zero.
 simplify (Skew a ma)
       | defaultSecondArgument = do ang <- minifyWith a
@@ -535,7 +498,7 @@ simplify (TranslateZ d)
       | otherwise         = fmap TranslateZ (minifyWith d)
 simplify s@(Scale3d x y z)
       | z == 1           = simplify $ Scale x (Just y)
-      | x == 1 && y == 1 = simplify $ ScaleZ z 
+      | x == 1 && y == 1 = simplify $ ScaleZ z
       | otherwise        = pure s
 simplify (Translate3d x y z )
       | isZero y && z == Distance 0 Q = either (f TranslateX) (g TranslateX) x
@@ -544,7 +507,7 @@ simplify (Translate3d x y z )
     where f con a | a == 0    = simplify . con . Right $ Distance 0 Q
                   | otherwise = simplify . con . Left $ a
           g con a = simplify . con $ Right a -- A distance, transform an minify
-simplify x = pure x 
+simplify x = pure x
 
 -- | Combines consecutive \<transform-functions\> whenever possible, leaving
 -- translate functions that can't be converted to a matrix (because they use
@@ -568,12 +531,12 @@ combine xs = do
     originalLength <- mapReader (getLength . asBuilder) minifiedOriginal
     if combinedLength < originalLength
        then combinedFunctions
-       else minifiedOriginal  
+       else minifiedOriginal
   where getLength = T.length . toStrict . toLazyText
         asBuilder = mconcatIntersperse toBuilder (singleton ' ')
         combinedFunctions = mapM handleMatrices . groupByMatrices $ zip (fmap toMatrix3d xs) xs
         minifiedOriginal = mapM minifyWith xs
-        groupByMatrices   = groupBy (\(a,_) (b,_) -> isJust a && isJust b) 
+        groupByMatrices   = groupBy (\(a,_) (b,_) -> isJust a && isJust b)
         handleMatrices l@((x,a):_)
             | isJust x  = minifyWith . Mat3d . foldr (*) (M.identity 4 :: Matrix Number) $ fmap (getMat . fromJust . fst) l
             | otherwise = simplify a
