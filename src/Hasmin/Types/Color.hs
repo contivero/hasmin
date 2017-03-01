@@ -10,11 +10,21 @@
 -- \<color> data type.
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Color
-  ( Color(Named)
-  , mkHex3, mkHex4, mkHex6, mkHex8, mkNamed
-  , mkHSL, mkHSLA, mkRGBInt, mkRGBPer, mkRGBAInt, mkRGBAPer
-  , keywordColors, minifyColor
+module Hasmin.Types.Color (
+    Color(Named)
+  , mkHex3
+  , mkHex4
+  , mkHex6
+  , mkHex8
+  , mkNamed
+  , mkHSL
+  , mkHSLA
+  , mkRGBInt
+  , mkRGBPer
+  , mkRGBAInt
+  , mkRGBAPer
+  , keywordColors
+  , minifyColor
   ) where
 
 import Control.Arrow (first)

@@ -40,13 +40,14 @@ import qualified Data.Text.Lazy as TL
 
 import Hasmin.Parser.Utils
 import Hasmin.Parser.Value
-import Hasmin.Selector
+import Hasmin.Types.Selector
 import Hasmin.Types.Stylesheet
 import Hasmin.Types.Declaration
+import Hasmin.Types.String
 
 selector :: Parser Selector
 selector = Selector <$> compoundSelector
-      <*> many ((,) <$> lexeme combinator <*> compoundSelector)
+      <*> many ((,) <$> combinator <* skipComments  <*> compoundSelector)
 
 -- First tries with '>>' (descendant), '>' (child), '+' (adjacent sibling), and
 -- '~' (general sibling) combinators. If those fail, it tries with the
@@ -55,10 +56,10 @@ selector = Selector <$> compoundSelector
 -- | Parser for selector combinators, i.e. ">>" (descendant), '>' (child), '+'
 -- (adjacent sibling), '~' (general sibling), and ' ' (descendant) combinators.
 combinator :: Parser Combinator
-combinator = ((string ">>" $> Descendant)
+combinator = (skipComments *> ((string ">>" $> Descendant)
           <|> (char '>' $> Child)
           <|> (char '+' $> AdjacentSibling)
-          <|> (char '~' $> GeneralSibling))
+          <|> (char '~' $> GeneralSibling)))
           <|> (satisfy ws $> Descendant)
   where ws c = c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
 
@@ -107,8 +108,11 @@ attributeSel = do
                 (string "="  $> (:=:))  <|>
                 (string "~=" $> (:~=:)) <|>
                 (string "|=" $> (:|=:))) <* skipComments
-          attval <- ((Left <$> ident) <|> (Right <$> stringtype)) <* skipComments
+          attval <- identOrString <* skipComments
           pure (`f` attval)
+
+identOrString :: Parser (Either Text StringType)
+identOrString = (Left <$> ident) <|> (Right <$> stringtype)
 
 {-
 -- string1: \"([^\n\r\f\\"]|\\{nl}|{escape})*\"
@@ -195,6 +199,7 @@ fpcMap = Map.fromList $ fmap (first T.toCaseFold)
     ,buildTuple "matches"          (\x -> FunctionalPseudoClass1 x <$> compoundSelectorList)
     ,buildTuple "nth-child"        (anbAndSelectors . FunctionalPseudoClass3)
     ,buildTuple "nth-last-child"   (anbAndSelectors . FunctionalPseudoClass3)
+    ,buildTuple "lang"             (const (Lang <$> identOrString))
     --
     -- :drop( [ active || valid || invalid ]? )
     -- The :drop() functional pseudo-class is identical to :drop

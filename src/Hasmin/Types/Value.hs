@@ -9,8 +9,16 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.Value (
-    Value(..), Values(..), TextV(..), Separator(..), Url(..), mkOther,
-    mkValues, valuesToList, optimizeFontFamily, lowercaseText
+      Value(..)
+    , Values(..)
+    , TextV(..)
+    , Separator(..)
+    , Url(..)
+    , mkOther
+    , mkValues
+    , valuesToList
+    , optimizeFontFamily
+    , lowercaseText
     ) where
 
 import Control.Monad.Reader (ask, Reader, mapReader)
@@ -20,22 +28,23 @@ import Data.Text (Text, toCaseFold)
 import qualified Data.Text as T
 import Data.Text.Lazy.Builder (fromText, singleton, Builder)
 import Data.String (IsString)
+import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, space, comma, char)
+
 import Hasmin.Config
+import Hasmin.Types.BgSize
 import Hasmin.Types.Class
 import Hasmin.Types.Color
 import Hasmin.Types.Dimension
+import Hasmin.Types.FilterFunction
 import Hasmin.Types.Gradient
 import Hasmin.Types.Numeric
-import Hasmin.Types.String
 import Hasmin.Types.Position
 import Hasmin.Types.RepeatStyle
-import Hasmin.Types.BgSize
-import Hasmin.Types.TransformFunction
-import Hasmin.Types.TimingFunction
-import Hasmin.Types.FilterFunction
 import Hasmin.Types.Shadow
+import Hasmin.Types.String
+import Hasmin.Types.TimingFunction
+import Hasmin.Types.TransformFunction
 import Hasmin.Utils
-import Text.PrettyPrint.Mainland (Pretty, ppr, strictText, space, comma, char)
 
 data Value = Inherit
            | Initial
@@ -186,8 +195,6 @@ instance Minifiable Value where
   minifyWith (ResolutionV r)  = ResolutionV <$> minifyWith r
   minifyWith (GradientV t g)  = GradientV t <$> minifyWith g
   minifyWith (FilterV f)      = FilterV <$> minifyWith f
-  minifyWith (ShadowV s)      = ShadowV <$> minifyWith s
-  minifyWith (ShadowText l1 l2 ml mc) = minifyPseudoShadow ShadowText l1 l2 ml mc
   minifyWith (TransformV tf)  = TransformV <$> minifyWith tf
   minifyWith (TimingFuncV tf) = TimingFuncV <$> minifyWith tf
   minifyWith (StringV s)      = StringV <$> minifyWith s
@@ -196,6 +203,8 @@ instance Minifiable Value where
   minifyWith (PositionV p)    = PositionV <$> minifyWith p
   minifyWith (RepeatStyleV r) = RepeatStyleV <$> minifyWith r
   minifyWith (BgSizeV b)      = BgSizeV <$> minifyWith b
+  minifyWith (ShadowV s)      = ShadowV <$> minifyWith s
+  minifyWith (ShadowText l1 l2 ml mc) = minifyPseudoShadow ShadowText l1 l2 ml mc
   minifyWith (BgLayer img pos sz rst att b1 b2) = do
       conf <- ask
       i <- handleImage img

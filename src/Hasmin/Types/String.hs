@@ -5,7 +5,7 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.String (

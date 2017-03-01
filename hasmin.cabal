@@ -66,7 +66,7 @@ library
                      , Hasmin.Utils
   other-modules:       Hasmin.Parser.Utils
                      , Hasmin.Properties
-                     , Hasmin.Selector
+                     , Hasmin.Types.Selector
                      , Hasmin.Types.BgSize
                      , Hasmin.Types.FilterFunction
                      , Hasmin.Types.Gradient
@@ -96,19 +96,19 @@ test-suite spec
   default-extensions:  OverloadedStrings
   other-modules:       Hasmin.Parser.InternalSpec
                      , Hasmin.Parser.ValueSpec
-                     , Hasmin.SelectorSpec
                      , Hasmin.TestUtils
                      , Hasmin.Types.ColorSpec
                      , Hasmin.Types.DeclarationSpec
-                     , Hasmin.Types.TimingFunctionSpec
                      , Hasmin.Types.DimensionSpec
                      , Hasmin.Types.FilterFunctionSpec
                      , Hasmin.Types.GradientSpec
                      , Hasmin.Types.PositionSpec
                      , Hasmin.Types.RepeatStyleSpec
+                     , Hasmin.Types.SelectorSpec
                      , Hasmin.Types.ShadowSpec
                      , Hasmin.Types.StringSpec
                      , Hasmin.Types.StylesheetSpec
+                     , Hasmin.Types.TimingFunctionSpec
                      , Hasmin.Types.TransformFunctionSpec
   build-depends:       base             >=4.9     && <5.1
                      , attoparsec       >=0.12    && <0.14

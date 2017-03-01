@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Hasmin.SelectorSpec where
+module Hasmin.Types.SelectorSpec where
 
 import Test.Hspec
 import Hasmin.Parser.Internal
@@ -14,15 +14,33 @@ import Hasmin.Config
 anplusbMinificationTests :: Spec
 anplusbMinificationTests =
     describe "<an+b> minification tests" $
-      mapM_ (matchSpec (f <$> selector)) anplusbMinificationTestsInfo
-  where f x = runReader (minifyWith x) defaultConfig
+      mapM_ (matchSpec (minify <$> selector)) anplusbMinificationTestsInfo
+
+selectorMinificationTests :: Spec
+selectorMinificationTests =
+    describe "Selectors minification test" $
+      mapM_ (matchSpec (minify <$> selector)) selectorTestsInfo
+
+selectorTestsInfo :: [(Text, Text)]
+selectorTestsInfo =
+  [("div > p", "div>p")
+  ,("div p",   "div p")
+  ,("div + p", "div+p")
+  ,("div ~ p", "div~p")
+  ,("p::selection", "p::selection")
+  ,("html:lang( 'de' )", "html:lang(de)")
+  ]
 
 anplusbMinificationTestsInfo :: [(Text, Text)]
-anplusbMinificationTestsInfo = 
+anplusbMinificationTestsInfo =
   [(":nth-child(-1n)",      ":nth-child(-n)")
   ,(":nth-child(-n)",       ":nth-child(-n)")
+  ,(":nth-child(odd)",      ":nth-child(odd)")
   ,(":nth-child(+n)",       ":nth-child(n)")
   ,(":nth-child(+1n)",      ":nth-child(n)")
+  ,(":nth-child(1n+0)",     ":nth-child(n)")
+  ,(":nth-child(1n-0)",     ":nth-child(n)")
+  ,(":nth-child(+3n)",      ":nth-child(3n)")
   ,(":nth-child( even )",   ":nth-child(2n)")
   ,(":nth-child( 2n - 2 )", ":nth-child(2n)")
   ,(":nth-child( 2n - 4 )", ":nth-child(2n)")
@@ -33,8 +51,9 @@ anplusbMinificationTestsInfo =
   ,(":nth-child(0n+0)",     ":nth-child(0)")
   ,(":nth-child(0n-0)",     ":nth-child(0)")
   ,(":nth-child(0n-1)",     ":nth-child(-1)")
-  ,(":nth-child(1n+0)",     ":nth-child(n)")
-  ,(":nth-child(1n-0)",     ":nth-child(n)")
+  ,(":nth-child(3n-3)",     ":nth-child(3n-3)")
+  ,(":nth-child(2n+4)",     ":nth-child(2n+4)")
+  ,(":nth-child(+4)",       ":nth-child(4)")
   ]
 
 attributeQuoteRemovalTest :: Spec
@@ -52,6 +71,8 @@ attributeQuoteRemovalTestInfo =
 
 spec :: Spec
 spec = do anplusbMinificationTests
+          attributeQuoteRemovalTest
+          selectorMinificationTests
           attributeQuoteRemovalTest
 
 main :: IO ()

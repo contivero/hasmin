@@ -35,7 +35,7 @@ import Text.PrettyPrint.Mainland (Pretty, ppr, strictText,
   lbrace, rbrace, (</>), (<+>), comma, folddoc, nest, semi, stack, char)
 
 import Hasmin.Config
-import Hasmin.Selector
+import Hasmin.Types.Selector
 import Hasmin.Types.Class
 import Hasmin.Types.Value
 import Hasmin.Types.Declaration

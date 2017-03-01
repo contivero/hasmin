@@ -1,14 +1,15 @@
-{-# LANGUAGE OverloadedStrings, FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings
+           , FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      : Hasmin.Selector
+-- Module      : Hasmin.Types.Selector
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Selector (
+module Hasmin.Types.Selector (
       Selector(..)
     , SimpleSelector(..)
     , CompoundSelector
@@ -151,6 +152,7 @@ data SimpleSelector = Type Namespace Element -- ^ e.g.: *, ns|*, h1, em, body
                     | IdSel Identifier
                     | PseudoElem Identifier
                     | PseudoClass Identifier
+                    | Lang (Either Text StringType)
                     -- generic functional pseudo class
                     | FunctionalPseudoClass Identifier Text
                     -- :not() and :matches() fpc
@@ -193,6 +195,7 @@ instance ToText SimpleSelector where
   toBuilder (PseudoElem t)
       | T.toCaseFold t `elem` specialPseudoElements = fromText ":" <> fromText t
       | otherwise                                   = fromText "::" <> fromText t
+  toBuilder (Lang x) = ":lang" <> singleton '(' <> toBuilder x <> singleton ')'
   toBuilder (FunctionalPseudoClass t x) = fromText t <> singleton '(' <> fromText x <> singleton ')'
   toBuilder (FunctionalPseudoClass1 t ss) = singleton ':' <> fromText t <> singleton '('
       <> mconcatIntersperse toBuilder (singleton ',') ss
@@ -216,6 +219,13 @@ instance Minifiable SimpleSelector where
       conf <- ask
       pure $ if shouldRemoveQuotes conf
                 then AttributeSel (removeAttributeQuotes att)
+                else a
+  minifyWith a@(Lang x) = do
+      conf <- ask
+      pure $ if shouldRemoveQuotes conf
+                then case x of
+                       Left _  -> a
+                       Right s -> Lang (removeQuotes s)
                 else a
   minifyWith a@(FunctionalPseudoClass2 i n) = do
       conf <- ask
