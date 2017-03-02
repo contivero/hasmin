@@ -103,6 +103,7 @@ test-suite spec
                      , Hasmin.Types.PositionSpec
                      , Hasmin.Types.RepeatStyleSpec
                      , Hasmin.Types.SelectorSpec
+                     , Hasmin.Types.ValueSpec
                      , Hasmin.Types.ShadowSpec
                      , Hasmin.Types.StringSpec
                      , Hasmin.Types.StylesheetSpec
