@@ -54,6 +54,7 @@ instance Eq RepeatStyle where
   RSPair RsRepeat (Just RsRepeat) == RSPair RsRepeat (Just RsRepeat) = True
   RSPair x Nothing == RSPair y Nothing = x == y
   a@(RSPair _ Nothing) == b@(RSPair _ _) = b == a
+  RSPair x y == RSPair z w = x == z && y == w
   _ == _ = False
 
 data RSKeyword = RsRepeat 

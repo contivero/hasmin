@@ -12,6 +12,7 @@ import Data.Text (Text)
 import Data.Foldable
 import Data.Maybe (fromJust)
 import Control.Monad
+import Control.Applicative (liftA2)
 import Hasmin.Types.Color
 import Hasmin.Types.Class
 import Hasmin.Types.Numeric
@@ -36,38 +37,30 @@ instance Arbitrary Color where
 
 -- | Generates color keywords uniformly distributed 
 colorKeyword :: Gen Text
-colorKeyword = do
-  index <- choose (0, len)
-  pure $ keywords !! index
-  where len      = length keywordColors - 1
-        keywords = fmap fst keywordColors
+colorKeyword = mkGen $ fmap fst keywordColors
 
 -- | Generates a hexadecimal character uniformly distributed 
 hexChar :: Gen Char
-hexChar = (hexadecimals !!) <$> choose (0, length hexadecimals - 1)
+hexChar = mkGen hexadecimals
 
 hexString :: Gen String
-hexString = (\x y -> [x,y]) <$> hexChar <*> hexChar
-
--- | Check that a color is equivalent to their minified representation form
-prop_minificationEq :: Color -> Bool
-prop_minificationEq c = c == minifyColor c
+hexString = liftA2 (\x y -> [x,y]) hexChar hexChar
 
 colorTests :: Spec
 colorTests =
-  describe "Color datatype tests" $
-    it "color minify semantically equivalent" $
-      quickCheck prop_minificationEq
+  describe "Color datatype tests" .
+    it "minified color is semantically equivalent" $
+      property (prop_minificationEq :: Color -> Bool)
 
 colorParserTests :: Spec
 colorParserTests =
-  describe "Color Parser tests" $
+  describe "Color Parser tests" .
     it "succeeds in parsing and minifying different red color representations" $
       traverse_ ((`parseSatisfies` (==(fromJust $ mkNamed "red"))) . (~> (minifyColor <$> color))) redColor
 
 colorParserSpacesAndCommentsTests :: Spec
 colorParserSpacesAndCommentsTests =
-  describe "Color Parser test" $
+  describe "Color Parser test" .
     it "succeeds in parsing different yellow color representations with spaces and comments in-between" $
       traverse_ ((`parseSatisfies` (==(fromJust $ mkNamed "yellow"))) . (~> color)) commentsAndSpacesInColors
 

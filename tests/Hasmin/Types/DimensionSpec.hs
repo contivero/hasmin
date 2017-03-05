@@ -10,17 +10,29 @@ import Control.Applicative (liftA2)
 import Hasmin.Types.Dimension
 import Hasmin.Types.Numeric
 import Hasmin.Types.Class
-
-instance Arbitrary Duration where
-  arbitrary = liftA2 Duration arbitrary durationUnit
-    where durationUnit = ([S, Ms] !!) <$>  choose (0, 1)
+import Hasmin.TestUtils
 
 instance Arbitrary Distance where
   arbitrary = liftA2 Distance arbitrary distanceUnit
     -- TODO keep it DRY, avoid repeating constructor list here (i.e. SPOF)
-    where distanceUnit = let constructors = [IN, CM, MM, Q, PC, PT, PX, EM, EX,
-                                             CH, VH, VW, VMIN, VMAX, REM]
-                         in (constructors !!) <$> choose (0, length constructors - 1)
+    where distanceUnit = mkGen [IN, CM, MM, Q, PC, PT, PX, EM, EX,
+                                CH, VH, VW, VMIN, VMAX, REM]
+
+instance Arbitrary Angle where
+  arbitrary = liftA2 Angle arbitrary angleUnit
+    where angleUnit = mkGen [Deg, Grad, Rad, Turn]
+
+instance Arbitrary Duration where
+  arbitrary = liftA2 Duration arbitrary durationUnit
+    where durationUnit = mkGen [S, Ms]
+
+instance Arbitrary Frequency where
+  arbitrary = liftA2 Frequency arbitrary frequencyUnit
+    where frequencyUnit = mkGen [Hz, Khz]
+
+instance Arbitrary Resolution where
+  arbitrary = liftA2 Resolution arbitrary resolutionUnit
+    where resolutionUnit = mkGen [Dpi, Dpcm, Dppx]
 
 instance Arbitrary Number where
   arbitrary = toNumber <$> (arbitrary :: Gen Rational)
@@ -28,12 +40,16 @@ instance Arbitrary Number where
 dimensionTests :: Spec
 dimensionTests =
     describe "Dimension tests with quickcheck" $ do
-      it "Minified durations are equivalent to the original ones" $
-        property (prop_minificationEq :: Duration -> Bool)
-      it "Minified distances are equivalent to the original ones" $
+      it "Minified <length>s are equivalent to the original ones" $
         property (prop_minificationEq :: Distance -> Bool)
-  where prop_minificationEq :: (Minifiable a, Eq a) => a -> Bool
-        prop_minificationEq d = minify d == d
+      it "Minified <angle>s are equivalent to the original ones" $
+        property (prop_minificationEq :: Angle -> Bool)
+      it "Minified <time>s are equivalent to the original ones" $
+        property (prop_minificationEq :: Duration -> Bool)
+      it "Minified <frequency>s are equivalent to the original ones" $
+        property (prop_minificationEq :: Frequency -> Bool)
+      it "Minified <resolution>s are equivalent to the original ones" $
+        property (prop_minificationEq :: Resolution -> Bool)
 
 spec :: Spec
 spec = do

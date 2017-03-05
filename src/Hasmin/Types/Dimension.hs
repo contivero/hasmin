@@ -32,7 +32,6 @@ module Hasmin.Types.Dimension (
 import Control.Monad.Reader (asks)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton, fromText)
-import Data.Typeable (Typeable)
 import Hasmin.Types.Class
 import Hasmin.Types.Numeric
 import Hasmin.Config
@@ -175,7 +174,7 @@ instance  Unit DistanceUnit where
   convertTo _  = const
 
 data AngleUnit = Deg | Grad | Rad | Turn
-  deriving (Show, Eq, Typeable)
+  deriving (Show, Eq)
 instance ToText AngleUnit where
   toBuilder Deg  = "deg"
   toBuilder Grad = "grad"
@@ -331,9 +330,9 @@ toDpi d Dppx = d * 96
 toDpcm :: Number -> ResolutionUnit -> Number
 toDpcm d Dpi  = d / 2.54
 toDpcm d Dpcm = d
-toDpcm d Dppx = d * (2.54 / 96)
+toDpcm d Dppx = d * (96 / 2.54)
 
 toDppx :: Number -> ResolutionUnit -> Number
 toDppx d Dpi  = d / 96
-toDppx d Dpcm = d * (96 / 2.54)
+toDppx d Dpcm = d * (2.54 / 96)
 toDppx d Dppx = d

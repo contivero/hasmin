@@ -3,17 +3,31 @@
 module Hasmin.Types.RepeatStyleSpec where
 
 import Test.Hspec
+import Test.QuickCheck
 
 import Data.Text (Text)
+import Control.Applicative (liftA2)
 import Hasmin.Parser.Value
 import Hasmin.Types.Class
+import Hasmin.Types.RepeatStyle
 import Hasmin.TestUtils
 
 repeatStyleTests :: Spec
 repeatStyleTests =
-    describe "<repeat-style> minification tests" $
+    describe "<repeat-style> minification tests" $ do
+      it "Minified <repeat-style> maintains semantic equivalence" $ 
+        property (prop_minificationEq :: RepeatStyle -> Bool)
       mapM_ (matchSpec f) repeatStyleTestsInfo
   where f = minify <$> repeatStyle
+
+instance Arbitrary RepeatStyle where
+  arbitrary = frequency [(1, pure RepeatX)
+                        ,(1, pure RepeatY)
+                        ,(6, liftA2 RSPair arbitrary arbitrary)
+                        ]
+
+instance Arbitrary RSKeyword where
+  arbitrary = mkGen [RsRepeat, RsSpace, RsRound, RsNoRepeat]
 
 repeatStyleTestsInfo :: [(Text, Text)]
 repeatStyleTestsInfo =
