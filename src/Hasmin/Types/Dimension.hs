@@ -134,13 +134,13 @@ instance ToText Resolution where
 -- the shortest equivalent representation. If there is more than one, returns
 -- the latest found to "normalize" values, hopefully improving gzip compression.
 minDim :: (Unit a, ToText a) => (Number -> a -> b) -> Number -> a -> [a] -> b
+minDim constructor r u [] = constructor r u
 minDim constructor r u (x:xs)
     | currentLength < newLength = minDim constructor r u xs
     | otherwise                 = minDim constructor equivValue x xs
   where equivValue    = convertTo x r u
         currentLength = textualLength r + textualLength u
         newLength     = textualLength equivValue + textualLength x
-minDim constructor r u [] = constructor r u
 
 class Unit a where
   convertTo :: a -> Number -> a -> Number
@@ -254,7 +254,7 @@ toQuarterMilimeter d PX = d * (101.6 / 96)
 toQuarterMilimeter d _  = d
 
 toPoints :: Number -> DistanceUnit -> Number
-toPoints d IN = d / 72
+toPoints d IN = d * 72
 toPoints d CM = d * (72 / 2.54)
 toPoints d MM = d * (72 / 25.4)
 toPoints d Q  = d * (72 / 101.6)
@@ -263,7 +263,7 @@ toPoints d PX = d * (3 / 4)
 toPoints d _  = d
 
 toPica :: Number -> DistanceUnit -> Number
-toPica d IN = d / 6
+toPica d IN = d * 6
 toPica d CM = d * (6 / 2.54)
 toPica d MM = d * (6 / 25.4)
 toPica d Q  = d * (6 / 101.6)
@@ -277,7 +277,7 @@ toPixels d CM = d * (96 / 2.54)
 toPixels d MM = d * (96 / 25.4)
 toPixels d Q  = d * (96 / 101.6)
 toPixels d PT = d * (4 / 3)
-toPixels d PC = d / 6
+toPixels d PC = d * 16
 toPixels d _  = d
 ------------------------------------------------------------------------------
 rationalPi :: Number

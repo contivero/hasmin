@@ -10,11 +10,11 @@ import Hasmin.Types.Class
 import Hasmin.TestUtils
 
 repeatStyleTests :: Spec
-repeatStyleTests = 
+repeatStyleTests =
     describe "<repeat-style> minification tests" $
       mapM_ (matchSpec f) repeatStyleTestsInfo
   where f = minify <$> repeatStyle
-      
+
 repeatStyleTestsInfo :: [(Text, Text)]
 repeatStyleTestsInfo =
   [("repeat no-repeat", "repeat-x")
@@ -23,6 +23,9 @@ repeatStyleTestsInfo =
   ,("repeat repeat", "repeat")
   ,("space space", "space")
   ,("round round", "round")
+  ,("round  space", "round space")
+  ,("repeat-x", "repeat-x")
+  ,("repeat-y", "repeat-y")
   ]
 
 spec :: Spec

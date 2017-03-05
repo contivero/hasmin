@@ -17,7 +17,7 @@ import Hasmin.Types.Class
 import Hasmin.Types.Numeric
 
 instance Arbitrary Color where
-  arbitrary = oneof [ fmap   (fromJust . mkNamed) colorKeyword
+  arbitrary = oneof [ fmap Named colorKeyword
                     , liftM3 mkHex3 hexChar hexChar hexChar
                     , liftM3 mkHex6 hexString hexString hexString
                     , liftM4 mkHex4 hexChar hexChar hexChar hexChar

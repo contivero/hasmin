@@ -426,13 +426,13 @@ minifyDecTestsInfo =
 -- background-size: The first value gives the width of the corresponding image,
 -- the second value its height. Its initial value is 'auto', and it doesn't
 -- inherit. If only one value is given the second is assumed to be ‘auto’.
-  ,("background-size: 96px",      "background-size:1in")
+  ,("background-size: 96px",      "background-size:6pc")
   ,("background-size: auto",      "background-size:auto")
   ,("background-size: unset",     "background-size:auto")
   ,("background-size: initial",   "background-size:auto")
   ,("background-size: auto auto", "background-size:auto")
-  ,("background-size: auto 96px", "background-size:auto 1in")
-  ,("background-size: 96px auto", "background-size:1in")
+  ,("background-size: auto 96px", "background-size:auto 6pc")
+  ,("background-size: 96px auto", "background-size:6pc")
   ]
 
 spec :: Spec

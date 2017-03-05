@@ -5,7 +5,7 @@ license-file:        LICENSE
 author:              (c) 2017 Cristian Adrián Ontivero <cristianontivero@gmail.com>
 maintainer:          Cristian Adrián Ontivero <cristianontivero@gmail.com>
 synopsis:            "A CSS Minifier"
-homepage:            https://github.com/contivero/hasmin/
+homepage:            https://github.com/contivero/hasmin#readme
 bug-reports:         https://github.com/contivero/hasmin/issues
 category:            Text
 build-type:          Simple
@@ -13,9 +13,10 @@ extra-source-files:  README.md
 cabal-version:       >=1.10
 description:
     A CSS minifier which not only aims at reducing the amount of bytes of the
-    output, but also at improving gzip compression. By default, the output is the
-    minified CSS file, but hasmin allows also its compression into gzip using
-    Google's Zopfli library.
+    output, but also at improving gzip compression. It may be used as a library,
+    or a stand-alone executable. For the library, refer to the Hasmin module
+    documentation. For the program: the output is the minified CSS file, but
+    hasmin allows also its compression into gzip using Google's Zopfli library.
     .
     To use it: ./hasmin input.css > output.css
     .

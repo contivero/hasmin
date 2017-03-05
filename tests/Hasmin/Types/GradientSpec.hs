@@ -54,8 +54,8 @@ gradientTestsInfo =
      ,"linear-gradient(72deg, pink 3em, peru 3em)"
      ,"linear-gradient(72deg,pink 3em,peru 0)")
   ,("Reduces a <length> value to 0 when it is less than the greatest previous one"
-     ,"linear-gradient(72deg, pink 1in, peru 90px)" -- 1in == 96px
-     ,"linear-gradient(72deg,pink 1in,peru 0)")
+     ,"linear-gradient(72deg, pink 6pc, peru 90px)" -- 6pc == 96px
+     ,"linear-gradient(72deg,pink 6pc,peru 0)")
   ,("Removes default start and end <percentage> values"
      ,"linear-gradient(pink 0%, peru 100%)"
      ,"linear-gradient(pink,peru)")

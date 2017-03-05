@@ -56,7 +56,10 @@ instance Eq RepeatStyle where
   a@(RSPair _ Nothing) == b@(RSPair _ _) = b == a
   _ == _ = False
 
-data RSKeyword = RsRepeat | RsSpace | RsRound | RsNoRepeat
+data RSKeyword = RsRepeat 
+               | RsSpace
+               | RsRound
+               | RsNoRepeat
   deriving (Eq, Show)
 instance ToText RSKeyword where
   toBuilder RsRepeat   = "repeat"
