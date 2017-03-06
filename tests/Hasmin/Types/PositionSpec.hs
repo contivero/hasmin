@@ -3,16 +3,24 @@
 module Hasmin.Types.PositionSpec where
 
 import Test.Hspec
-import Hasmin.Parser.Value
-import Hasmin.TestUtils
+import Test.QuickCheck
 
 import Data.Text (Text)
+import Control.Monad (liftM4)
+
+import Hasmin.Parser.Value
+import Hasmin.TestUtils
 import Hasmin.Types.Class
+import Hasmin.Types.Position
+import Hasmin.Types.Numeric
 
 positionMinificationTests :: Spec
 positionMinificationTests =
-    describe "position minification" $
-      mapM_ (matchSpec f) positionMinificationTestsInfo
+    describe "<position> minification" $
+        mapM_ (matchSpec f) positionMinificationTestsInfo
+      -- it "Minifies <position> properly" $
+      -- it "Minified <position> maintains semantical equivalence" $ do
+        -- property (prop_minificationEq :: Position -> Bool)
   where f = minify <$> position
 
 positionMinificationTestsInfo :: [(Text, Text)]
@@ -132,7 +140,7 @@ positionMinificationTestsInfo =
   ]
 
 spec :: Spec
-spec = do positionMinificationTests 
+spec = positionMinificationTests
 
 main :: IO ()
 main = hspec spec

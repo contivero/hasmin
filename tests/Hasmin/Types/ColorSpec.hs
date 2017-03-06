@@ -17,38 +17,9 @@ import Hasmin.Types.Color
 import Hasmin.Types.Class
 import Hasmin.Types.Numeric
 
-instance Arbitrary Color where
-  arbitrary = oneof [ fmap Named colorKeyword
-                    , liftM3 mkHex3 hexChar hexChar hexChar
-                    , liftM3 mkHex6 hexString hexString hexString
-                    , liftM4 mkHex4 hexChar hexChar hexChar hexChar
-                    , liftM4 mkHex8 hexString hexString hexString hexString
-                    , liftM3 mkRGBInt intRange intRange intRange
-                    , liftM3 mkRGBPer ratRange ratRange ratRange 
-                    , liftM4 mkRGBAInt intRange intRange intRange alphaRange
-                    , liftM4 mkRGBAPer ratRange ratRange ratRange alphaRange 
-                    , liftM3 mkHSL hueRange ratRange ratRange
-                    , liftM4 mkHSLA hueRange ratRange ratRange alphaRange 
-                    ]
-    where intRange   = choose (0, 255)
-          ratRange   = toPercentage <$> (choose (0, 100) :: Gen Float)
-          alphaRange = toAlphavalue <$> (choose (0, 1) :: Gen Float)
-          hueRange   = choose (0, 360)
-
--- | Generates color keywords uniformly distributed 
-colorKeyword :: Gen Text
-colorKeyword = mkGen $ fmap fst keywordColors
-
--- | Generates a hexadecimal character uniformly distributed 
-hexChar :: Gen Char
-hexChar = mkGen hexadecimals
-
-hexString :: Gen String
-hexString = liftA2 (\x y -> [x,y]) hexChar hexChar
-
 colorTests :: Spec
 colorTests =
-  describe "Color datatype tests" .
+  describe "<color> tests" .
     it "minified color is semantically equivalent" $
       property (prop_minificationEq :: Color -> Bool)
 
@@ -76,13 +47,6 @@ redColor =
   , "hsla(0,100%,50%,1)", "hsla(0,100%,50%,1.0)"
   , "hsla(360,100%,50%,1)", "hsla(360,100%,50%,1.0)"
   ]
-
--- | All 4096 (16^3) possible 3 char shorthands
-allHex3 :: [String]
-allHex3 = replicateM 3 hexadecimals
-
-hexadecimals :: String
-hexadecimals = "0123456789abcdef" 
 
 -- Every color is yellow
 commentsAndSpacesInColors :: [Text]

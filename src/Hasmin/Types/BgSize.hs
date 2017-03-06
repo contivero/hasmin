@@ -8,12 +8,15 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.BgSize (
-    BgSize(..), Auto(..)
+module Hasmin.Types.BgSize
+    ( BgSize(..)
+    , Auto(..)
     ) where
+
 import Control.Monad.Reader (ask)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
+
 import Hasmin.Types.Class
 import Hasmin.Types.PercentageLength
 
@@ -26,7 +29,17 @@ instance ToText Auto where
 data BgSize = Cover
             | Contain
             | BgSize (Either PercentageLength Auto) (Maybe (Either PercentageLength Auto))
-  deriving (Eq, Show)
+  deriving Show
+
+instance Eq BgSize where
+  Cover == Cover = True
+  Contain == Contain = True
+  BgSize a b == BgSize c d = fstParamEquality a c && b `equals` d
+    where equals (Just (Right Auto)) Nothing = True
+          equals Nothing (Just (Right Auto)) = True
+          equals x y = x == y
+          fstParamEquality (Left x) (Left y) = isZero x && isZero y || x == y
+          fstParamEquality x y = x == y
 
 instance ToText BgSize where
   toBuilder Cover = "cover"

@@ -12,31 +12,6 @@ import Hasmin.Types.Numeric
 import Hasmin.Types.Class
 import Hasmin.TestUtils
 
-instance Arbitrary Distance where
-  arbitrary = liftA2 Distance arbitrary distanceUnit
-    -- TODO keep it DRY, avoid repeating constructor list here (i.e. SPOF)
-    where distanceUnit = mkGen [IN, CM, MM, Q, PC, PT, PX, EM, EX,
-                                CH, VH, VW, VMIN, VMAX, REM]
-
-instance Arbitrary Angle where
-  arbitrary = liftA2 Angle arbitrary angleUnit
-    where angleUnit = mkGen [Deg, Grad, Rad, Turn]
-
-instance Arbitrary Duration where
-  arbitrary = liftA2 Duration arbitrary durationUnit
-    where durationUnit = mkGen [S, Ms]
-
-instance Arbitrary Frequency where
-  arbitrary = liftA2 Frequency arbitrary frequencyUnit
-    where frequencyUnit = mkGen [Hz, Khz]
-
-instance Arbitrary Resolution where
-  arbitrary = liftA2 Resolution arbitrary resolutionUnit
-    where resolutionUnit = mkGen [Dpi, Dpcm, Dppx]
-
-instance Arbitrary Number where
-  arbitrary = toNumber <$> (arbitrary :: Gen Rational)
-
 dimensionTests :: Spec
 dimensionTests =
     describe "Dimension tests with quickcheck" $ do

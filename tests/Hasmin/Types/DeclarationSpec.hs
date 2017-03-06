@@ -255,7 +255,7 @@ cleaningTestsInfo =
   ]
 
 minifyDecTests :: Spec
-minifyDecTests = do
+minifyDecTests =
     describe "minifyDec function" $
       mapM_ (matchSpec f) minifyDecTestsInfo
   where f = minify <$> declaration
@@ -371,7 +371,7 @@ outlineTestsInfo =
 -- Tests for shorthands whose initial values are "medium none currentColor",
 -- and can go on any order. 
 anyOrderShorthandTests :: Spec
-anyOrderShorthandTests = do
+anyOrderShorthandTests =
     describe "Shorthands that accept values in any order (mostly: medium none currentColor)" $
       traverse_ (mapM_ (matchSpec (minify <$> declaration))) d
   where d = fmap f shorthandsToTest 

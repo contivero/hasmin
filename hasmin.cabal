@@ -64,15 +64,15 @@ library
                      , Hasmin.Types.TransformFunction
                      , Hasmin.Types.Value
                      , Hasmin.Types.RepeatStyle
+                     , Hasmin.Types.FilterFunction
+                     , Hasmin.Types.Position
+                     , Hasmin.Types.BgSize
                      , Hasmin.Utils
   other-modules:       Hasmin.Parser.Utils
                      , Hasmin.Properties
                      , Hasmin.Types.Selector
-                     , Hasmin.Types.BgSize
-                     , Hasmin.Types.FilterFunction
                      , Hasmin.Types.Gradient
                      , Hasmin.Types.PercentageLength
-                     , Hasmin.Types.Position
                      , Hasmin.Types.Shadow
                      , Hasmin.Types.String
                      , Hasmin.Types.TimingFunction
@@ -105,6 +105,7 @@ test-suite spec
                      , Hasmin.Types.RepeatStyleSpec
                      , Hasmin.Types.SelectorSpec
                      , Hasmin.Types.ValueSpec
+                     , Hasmin.Types.BgSizeSpec
                      , Hasmin.Types.ShadowSpec
                      , Hasmin.Types.StringSpec
                      , Hasmin.Types.StylesheetSpec

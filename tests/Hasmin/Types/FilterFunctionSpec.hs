@@ -3,18 +3,26 @@
 module Hasmin.Types.FilterFunctionSpec where
 
 import Test.Hspec
+import Test.QuickCheck
 
 import Data.Text (Text)
 import Hasmin.Parser.Value
 import Hasmin.Types.Class
+import Hasmin.Types.FilterFunction
 import Hasmin.TestUtils
 
 filterTests :: Spec
-filterTests = 
+filterTests =
     describe "<filter-function> minification tests" $
       mapM_ (matchSpecWithDesc f) filterTestsInfo
   where f = minify <$> value
-      
+
+quickcheckFilter :: Spec
+quickcheckFilter =
+    describe "Quickcheck <filter-function> tests" $
+      it "Minified <filter-function> maintains semantical equivalence" $
+        property (prop_minificationEq :: FilterFunction -> Bool)
+
 filterTestsInfo :: [(String, Text, Text)]
 filterTestsInfo =
   [("Minifies the <color> value in drop-shadow()"
@@ -35,22 +43,24 @@ filterTestsInfo =
   ,("Minifies 100% in contrast()"
      ,"contrast(100%)"
      ,"contrast(1)")
-  ,("Minifies 0% in contrast()"
-     ,"contrast(0%)"
-     ,"contrast(0)")
-  ,("Minifies <percentage> multiple of 10 in brightness()"
+  ,("Minifies 0% to 0"
+     ,"grayscale(0%)"
+     ,"grayscale(0)")
+  ,("Minifies <percentage> multiple of 10"
      ,"brightness(50%)"
      ,"brightness(.5)")
-  ,("Normalizes <percentage> to <number> when > 10 in contrast()"
-     ,"contrast(11%)"
-     ,"contrast(.11)")
-  ,("Does not minify <percentage> when > 0 and < 10 in contrast()"
-     ,"contrast(8%)"
-     ,"contrast(8%)")
+  ,("Normalizes <percentage> to <number> when > 10"
+     ,"invert(11%)"
+     ,"invert(.11)")
+  ,("Does not minify <percentage> when > 0 and < 10"
+     ,"opacity(8%)"
+     ,"opacity(8%)")
   ]
 
 spec :: Spec
-spec = filterTests
+spec = do
+    filterTests
+    quickcheckFilter
 
 main :: IO ()
 main = hspec spec

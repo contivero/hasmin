@@ -9,7 +9,11 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.Position (
-    Position(..), PosKeyword(..), minifyPosition, p50, l0
+      Position(..)
+    , PosKeyword(..)
+    , minifyPosition
+    , p50
+    , l0
     ) where
 
 import Data.Text (Text)
@@ -21,15 +25,12 @@ import Hasmin.Types.Dimension
 import Hasmin.Types.PercentageLength
 import Hasmin.Utils
 
-data Position = Position { origin1 :: Maybe PosKeyword
-                         , offset1 :: Maybe PercentageLength
-                         , origin2 :: Maybe PosKeyword
-                         , offset2 :: Maybe PercentageLength
-                         } deriving (Eq, Show)
-
-data PosKeyword = PosCenter | PosLeft | PosRight | PosTop | PosBottom
+data PosKeyword = PosCenter 
+                | PosLeft
+                | PosRight 
+                | PosTop
+                | PosBottom
   deriving (Eq, Show)
-
 instance ToText PosKeyword where
   toBuilder PosCenter = "center"
   toBuilder PosTop    = "top"
@@ -37,6 +38,13 @@ instance ToText PosKeyword where
   toBuilder PosBottom = "bottom"
   toBuilder PosLeft   = "left"
 
+-- TODO turn this into a proper algebraic type with all the cases, avoding Maybe
+-- and making invalid Position values impossible.
+data Position = Position { origin1 :: Maybe PosKeyword
+                         , offset1 :: Maybe PercentageLength
+                         , origin2 :: Maybe PosKeyword
+                         , offset2 :: Maybe PercentageLength
+                         } deriving (Show)
 instance Minifiable Position where
   minifyWith p = pure $ minifyPosition p
 
@@ -203,6 +211,11 @@ minAxis PosBottom x
     | isZero x  = (Just PosBottom, Nothing)
     | otherwise = (Just PosBottom, Just x)
 minAxis PosCenter x = (Just PosCenter, Just x)
+
+instance Eq Position where
+  a == b = minify a `equals` minify b
+    where equals (Position a b c d) (Position e f g h) =
+            a == e && b == f && c == g && d == h
 
 l0 :: Maybe PercentageLength
 l0 = Just (Right (Distance 0 Q))

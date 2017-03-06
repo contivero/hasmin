@@ -17,7 +17,7 @@ declarationParserTests =
     mapM_ (matchSpecWithDesc declaration) declarationTestInfo
 
 declarationTestInfo :: [(String, Text, Text)]
-declarationTestInfo = 
+declarationTestInfo =
   [("parses declaration with unknown property and value, ending in ';'",
       "a:b;", "a:b")
   ,("parses declaration with unknown property and value, ending in '}'",
@@ -35,8 +35,8 @@ declarationTestInfo =
   ]
 
 declarationParsersTests :: Spec
-declarationParsersTests = 
-    describe "Declaration parsers tests" $ do
+declarationParsersTests =
+    describe "Declaration parsers tests" $
       it "Parses valid font-style values, and fails with invalids" $ do
         fontStyle `shouldSucceedOn` ("normal" :: Text)
         fontStyle `shouldSucceedOn` ("italic" :: Text)
@@ -47,28 +47,35 @@ declarationParsersTests =
 styleRuleParser :: Spec
   describe "style rule parser" $ do
     it "parses rule whose final declaration ends in ';'" $ do
-      "a { margin : 0;}" ~> (styleRule 
+      "a { margin : 0;}" ~> (styleRule
 -}
 
 styleRuleTestInfo :: [(String, Text, Text)]
-styleRuleTestInfo = 
+styleRuleTestInfo =
   [("simple style rule",
     "a { margin : 0 ;}", "a{margin:0}")
-  ,("handles unset", 
+  ,("handles unset",
     "h1 {\n    border: unset\n}", "h1{border:unset}")
-  ,("handles initial", 
+  ,("handles initial",
     "camelCase {\r color: initial;}", "camelCase{color:initial}")
-  ,("handles inherit", 
+  ,("handles inherit",
     "h1 {\n\tpadding: inherit\f}", "h1{padding:inherit}")
   ]
 
 selectorParserTests :: Spec
 selectorParserTests =
-  describe "selector parser tests" $
-    mapM_ (matchSpecWithDesc selector) selectorTestInfo
+    describe "Selector parser tests" $
+      mapM_ (matchSpecWithDesc selector) selectorTestInfo
+
+selectorParserFailures :: Spec
+selectorParserFailures =
+    describe "Selector parser should fail on" .
+      it "" $
+        selector `shouldFailOn` ("\\6543217" :: Text)
+
 
 selectorTestInfo :: [(String, Text, Text)]
-selectorTestInfo = 
+selectorTestInfo =
   [("Element", "h6", "h6")
   ,("Element with namespace", "ns|body", "ns|body")
   ,("Element with any namespace", "*|p", "*|p")
@@ -78,9 +85,10 @@ selectorTestInfo =
   --,("Class name starting with number or dash", ".\\1\\#-\\.1 .\\--wie.-gehts", ".1#-.1.--wie.-gehts")
   ,("Class name with emoji", ".☺", ".☺")
   ,("Class name with multiple emoji", ".👊✊", ".👊✊")
+  ,("Class name with escaped letter", ".\\t", ".\\t")
+  ,("Class name with escaped unicode character", ".\\91", ".\\91")
   ,("Id", "#AnId", "#AnId")
-  --,("Id starting with a number", "#\\5\\#-\\.5", "#5#-.5")
-  --,("Id starting with a number", "#\\5\\#-\\.5", "#5#-.5")
+  -- ,("Id starting with a number", "#\\5\\#-\\.5", "#5#-.5")
   ,("Id with latin-1 character", "#ñ", "#ñ")
 -- The following four have a pseudo class syntax, but are pseudo elements
   ,(":after pseudo element", ":after", ":after")
@@ -146,9 +154,9 @@ selectorTestInfo =
   ,("an E element that has no children (including text nodes)",
     "E:empty","E:empty")
   ,("An E element being the source anchor of a hyperlink of which the target is not yet visited",
-    "E:link", "E:link") 
+    "E:link", "E:link")
   ,("An E element being the source anchor of a hyperlink of which the target is already visited",
-    "E:visited", "E:visited") 
+    "E:visited", "E:visited")
   ,("an E element during active action",
     "E:active","E:active")
   ,("an E element during hover action",
@@ -196,11 +204,12 @@ selectorTestInfo =
 --    mapM_ (matchSpecWithDesc stylesheet) stylesheetTestInfo
 
 --stylesheetTestInfo :: [(String, Text, Text)]
---stylesheetTestInfo = 
+--stylesheetTestInfo =
 
 spec :: Spec
 spec = do declarationParserTests
           selectorParserTests
+          selectorParserFailures
           declarationParsersTests
 
 main :: IO ()
