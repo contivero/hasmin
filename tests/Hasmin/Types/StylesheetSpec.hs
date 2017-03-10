@@ -2,12 +2,11 @@
 
 module Hasmin.Types.StylesheetSpec where
 
-import Test.Hspec
+import Data.Text (Text)
+
 import Hasmin.Parser.Internal
 import Hasmin.TestUtils
 import Hasmin.Types.Class
-
-import Data.Text (Text)
 
 atRuleTests :: Spec
 atRuleTests = do
@@ -73,7 +72,7 @@ atRuleTestsInfo =
     -- "@counter-style circled-alpha{system:fixed;symbols:Ⓐ Ⓑ Ⓒ;suffix:" "}")
   -- ,("@font-feature-values Jupiter Sans { @swash { delicate: 1; flowing: 2; } }",
     -- "@font-feature-values Jupiter Sans{@swash{delicate:1;flowing:2}}",
-  ] 
+  ]
 
 spec :: Spec
 spec = atRuleTests

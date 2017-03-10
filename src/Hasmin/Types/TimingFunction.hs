@@ -9,7 +9,8 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.TimingFunction (
-    TimingFunction(..), StepsSecondParam(..)
+      TimingFunction(..)
+    , StepsSecondParam(..)
     ) where
 
 import Control.Monad.Reader (ask)
@@ -29,8 +30,13 @@ import Hasmin.Types.Numeric
 -- 3. <https://developer.mozilla.org/en-US/docs/Web/CSS/timing-function Mozilla summary>
 data TimingFunction = CubicBezier Number Number Number Number
                     | Steps Int (Maybe StepsSecondParam)
-                    | Ease | EaseIn | EaseInOut | EaseOut
-                    | Linear | StepEnd | StepStart
+                    | Ease
+                    | EaseIn
+                    | EaseInOut
+                    | EaseOut
+                    | Linear
+                    | StepEnd
+                    | StepStart
   deriving (Show)
 
 instance Eq TimingFunction where
@@ -66,12 +72,12 @@ toSteps StepStart = Just $ Steps 1 (Just Start)
 toSteps _         = Nothing
 
 
-data StepsSecondParam = Start | End -- End is the default value
+data StepsSecondParam = Start
+                      | End -- End is the default value
   deriving (Eq, Show)
 instance ToText StepsSecondParam where
   toBuilder Start = "start"
   toBuilder End   = "end"
-
 instance ToText TimingFunction where
   toBuilder (CubicBezier a b c d) = "cubic-bezier("
       <> mconcatIntersperse toBuilder (singleton ',') [a,b,c,d]
@@ -89,9 +95,9 @@ instance ToText TimingFunction where
 instance Minifiable TimingFunction where
   minifyWith x = do
       conf <- ask
-      if shouldMinifyTimingFunctions conf
-         then pure $ minifyTimingFunction x
-         else pure x
+      pure $ if shouldMinifyTimingFunctions conf
+                then minifyTimingFunction x
+                else x
 
 minifyTimingFunction :: TimingFunction -> TimingFunction
 minifyTimingFunction x@(CubicBezier a b c 1)

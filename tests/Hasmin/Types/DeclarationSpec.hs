@@ -2,13 +2,12 @@
 
 module Hasmin.Types.DeclarationSpec where
 
-import Test.Hspec
+import Data.Foldable (traverse_)
+import Data.Monoid ((<>))
+import Data.Text (Text)
+
 import Hasmin.Parser.Internal
 import Hasmin.TestUtils
-
-import Data.Text (Text)
-import Data.Monoid ((<>))
-import Data.Foldable (traverse_)
 import Hasmin.Types.Class
 import Hasmin.Types.Declaration
 

@@ -2,17 +2,16 @@
 
 module Hasmin.Types.TransformFunctionSpec where
 
-import Test.Hspec
+import Control.Applicative ((<|>))
+import Control.Monad.Reader (runReader)
+import Data.Text (Text)
+
+import Hasmin.Config
 import Hasmin.Parser.Value
 import Hasmin.TestUtils
-
-import Control.Monad.Reader (runReader)
-import Control.Applicative ((<|>))
-import Data.Text (Text)
 import Hasmin.Types.Class
 import Hasmin.Types.TransformFunction
 import Hasmin.Types.Value
-import Hasmin.Config
 
 transformTests :: Spec
 transformTests =
@@ -20,14 +19,14 @@ transformTests =
       mapM_ (matchSpec (minify <$> textualvalue)) transformTestsInfo
 
 combinationTests :: Spec
-combinationTests = 
+combinationTests =
     describe "transform function combination" $
       mapM_ (matchSpecWithDesc (g <$> (values "transform" <|> valuesFallback))) functionCombinationTestsInfo
   where g = mkValues . fmap TransformV . f . fmap (\(TransformV t) -> t) . valuesToList
         f x = runReader (combine x) defaultConfig
 
 transformTestsInfo :: [(Text, Text)]
-transformTestsInfo = 
+transformTestsInfo =
   [("translate(0)",             "skew(0)")
   ,("translateX(0)",            "skew(0)")
   ,("translateY(0)",            "skew(0)")
@@ -47,7 +46,7 @@ transformTestsInfo =
   ]
 
 functionCombinationTestsInfo :: [(String, Text, Text)]
-functionCombinationTestsInfo = 
+functionCombinationTestsInfo =
   [("Combines consecutive absolute value translate() functions into one",
     "translate(10px) translate(0) translate(10px)", "translate(20px)")
   ,("Don't combine an skew(90deg), since tan(90deg) = ∞",
@@ -62,7 +61,7 @@ functionCombinationTestsInfo =
 
 
 spec :: Spec
-spec = do transformTests 
+spec = do transformTests
           combinationTests
 
 main :: IO ()

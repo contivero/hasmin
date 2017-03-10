@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Hasmin.TestUtils where
+module Hasmin.TestUtils (
+      module Hasmin.TestUtils
+    , module Test.QuickCheck
+    , module Test.Hspec
+    ) where
 
 import Test.Hspec
 import Test.QuickCheck
@@ -11,14 +15,15 @@ import Data.Attoparsec.Text (Parser)
 import Control.Applicative (liftA2, liftA3)
 import Control.Monad (liftM4)
 
+import Hasmin.Types.BgSize
 import Hasmin.Types.Class
+import Hasmin.Types.Color
 import Hasmin.Types.Declaration
 import Hasmin.Types.Dimension
+import Hasmin.Types.FilterFunction
 import Hasmin.Types.Numeric
 import Hasmin.Types.Position
-import Hasmin.Types.FilterFunction
-import Hasmin.Types.BgSize
-import Hasmin.Types.Color
+import Hasmin.Types.TimingFunction
 import Hasmin.Utils
 
 -- | Check that a color is equivalent to their minified representation form
@@ -96,6 +101,21 @@ instance Arbitrary BgSize where
 
 instance Arbitrary Auto where
   arbitrary = pure Auto
+
+instance Arbitrary StepsSecondParam where
+  arbitrary = oneof [pure Start, pure End]
+
+instance Arbitrary TimingFunction where
+  arbitrary = oneof [ liftM4 CubicBezier arbitrary arbitrary arbitrary arbitrary
+                    , liftA2 Steps arbitrary arbitrary
+                    , pure Ease
+                    , pure EaseIn
+                    , pure EaseInOut
+                    , pure EaseOut
+                    , pure Linear
+                    , pure StepEnd
+                    , pure StepStart
+                    ]
 
 instance Arbitrary Color where
   arbitrary = oneof [ fmap Named colorKeyword

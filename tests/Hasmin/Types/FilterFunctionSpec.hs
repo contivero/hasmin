@@ -2,9 +2,6 @@
 
 module Hasmin.Types.FilterFunctionSpec where
 
-import Test.Hspec
-import Test.QuickCheck
-
 import Data.Text (Text)
 import Hasmin.Parser.Value
 import Hasmin.Types.Class

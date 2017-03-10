@@ -2,14 +2,14 @@
 
 module Hasmin.Types.SelectorSpec where
 
-import Test.Hspec
-import Hasmin.Parser.Internal
-import Hasmin.TestUtils
-
 import Control.Monad.Reader (runReader)
 import Data.Text (Text)
-import Hasmin.Types.Class
+
 import Hasmin.Config
+import Hasmin.Parser.Internal
+import Hasmin.TestUtils
+import Hasmin.Types.Class
+
 
 anplusbMinificationTests :: Spec
 anplusbMinificationTests =

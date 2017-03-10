@@ -2,9 +2,6 @@
 
 module Hasmin.Types.BgSizeSpec where
 
-import Test.Hspec
-import Test.QuickCheck
-
 import Data.Text (Text)
 import Hasmin.Parser.Value
 import Hasmin.Types.Class
@@ -13,7 +10,7 @@ import Hasmin.TestUtils
 
 quickcheckBgSize :: Spec
 quickcheckBgSize =
-    describe "Quickcheck tests for <bg-size>" $
+    describe "Quickcheck tests for <bg-size>" .
       it "Minified <bg-size> maintains semantical equivalence" $
         property (prop_minificationEq :: BgSize -> Bool)
 

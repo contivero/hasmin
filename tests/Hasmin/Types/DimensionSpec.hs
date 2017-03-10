@@ -2,9 +2,6 @@
 
 module Hasmin.Types.DimensionSpec where
 
-import Test.Hspec
-import Test.QuickCheck
-
 import Control.Applicative (liftA2)
 
 import Hasmin.Types.Dimension

@@ -2,13 +2,11 @@
 
 module Hasmin.Types.StringSpec where
 
-import Test.Hspec
+import Data.Text (Text)
+
 import Hasmin.Parser.Value
 import Hasmin.TestUtils
-
-import Data.Text (Text)
 import Hasmin.Types.Class
-
 
 quotesNormalizationTests :: Spec
 quotesNormalizationTests =

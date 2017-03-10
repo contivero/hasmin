@@ -2,9 +2,6 @@
 
 module Hasmin.Types.PositionSpec where
 
-import Test.Hspec
-import Test.QuickCheck
-
 import Data.Text (Text)
 import Control.Monad (liftM4)
 

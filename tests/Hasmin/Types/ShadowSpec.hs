@@ -2,8 +2,6 @@
 
 module Hasmin.Types.ShadowSpec where
 
-import Test.Hspec
-
 import Data.Text (Text)
 import Hasmin.Parser.Value
 import Hasmin.Types.Class

@@ -68,6 +68,7 @@ library
                      , Hasmin.Types.Position
                      , Hasmin.Types.BgSize
                      , Hasmin.Utils
+                     , Hasmin.Types.TimingFunction
   other-modules:       Hasmin.Parser.Utils
                      , Hasmin.Properties
                      , Hasmin.Types.Selector
@@ -75,7 +76,6 @@ library
                      , Hasmin.Types.PercentageLength
                      , Hasmin.Types.Shadow
                      , Hasmin.Types.String
-                     , Hasmin.Types.TimingFunction
   build-depends:       base            >=4.9        && <5.1
                      , attoparsec      >=0.12       && <0.14
                      , bytestring      >=0.10.2.0   && <0.11

@@ -2,9 +2,6 @@
 
 module Hasmin.Types.RepeatStyleSpec where
 
-import Test.Hspec
-import Test.QuickCheck
-
 import Data.Text (Text)
 import Control.Applicative (liftA2)
 import Hasmin.Parser.Value

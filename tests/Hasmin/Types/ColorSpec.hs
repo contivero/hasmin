@@ -2,19 +2,17 @@
 
 module Hasmin.Types.ColorSpec where
 
-import Test.Hspec
-import Test.QuickCheck
-import Hasmin.Parser.Value
-import Hasmin.TestUtils
-
-import Test.Hspec.Attoparsec (parseSatisfies, (~>))
-import Data.Text (Text)
+import Control.Applicative (liftA2)
+import Control.Monad
 import Data.Foldable
 import Data.Maybe (fromJust)
-import Control.Monad
-import Control.Applicative (liftA2)
-import Hasmin.Types.Color
+import Data.Text (Text)
+import Test.Hspec.Attoparsec (parseSatisfies, (~>))
+
+import Hasmin.Parser.Value
+import Hasmin.TestUtils
 import Hasmin.Types.Class
+import Hasmin.Types.Color
 import Hasmin.Types.Numeric
 
 colorTests :: Spec

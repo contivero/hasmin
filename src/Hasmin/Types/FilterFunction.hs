@@ -51,8 +51,8 @@ instance Eq FilterFunction where
   HueRotate a == HueRotate b               = a == b
   DropShadow a b c d == DropShadow e f g h =
       a == e && b == f && d == h && c `thirdValueEq` g
-    where thirdValueEq Nothing (Just (Distance 0 PX)) = True
-          thirdValueEq (Just (Distance 0 PX)) Nothing = True
+    where thirdValueEq Nothing (Just (Distance 0 _)) = True
+          thirdValueEq (Just (Distance 0 _)) Nothing = True
           thirdValueEq x y = x == y
   _ == _                                   = False
 instance ToText FilterFunction where

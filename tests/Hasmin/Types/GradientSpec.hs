@@ -2,14 +2,9 @@
 
 module Hasmin.Types.GradientSpec where
 
-import Test.Hspec
--- import Test.QuickCheck
--- import Hasmin.Parser.Internal
-
--- import Test.Hspec.Attoparsec (shouldParse, parseSatisfies, (~>))
 import Control.Monad.Reader (runReader)
 import Data.Text (Text)
--- import Data.Attoparsec.Text (Parser)
+
 import Hasmin.Parser.Value
 import Hasmin.Types.Class
 import Hasmin.Config
