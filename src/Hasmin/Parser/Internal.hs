@@ -171,12 +171,12 @@ anplusb = (asciiCI "even" $> Even)
     s <- option Nothing (Just <$> parseSign)
     x <- option mempty digits
     case x of
-      [] -> ciN *> (AB (Nwith s Nothing) <$> (skipComments *> option Nothing (Just <$> bValue)))
+      [] -> ciN *> skipComments *> option (A s Nothing) (AB s Nothing <$> bValue)
       _  -> do n <- option False (ciN $> True)
                let a = read x :: Int
                if n
-                  then AB (Nwith s (Just a)) <$> (skipComments *> option Nothing (Just <$> bValue))
-                  else pure $ AB NoValue (Just $ getSign s * a)
+                  then skipComments *> option (A s (Just a)) (AB s (Just a) <$> bValue)
+                  else pure $ B (getSign s * a)
   where ciN       = satisfy (\c -> c == 'N' || c == 'n')
         parseSign = (char '-' $> Minus) <|> (char '+' $> Plus)
         getSign (Just Minus) = -1

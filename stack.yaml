@@ -1,8 +1,7 @@
-resolver: lts-8.0
+resolver: lts-8.5
 packages:
 - '.'
 extra-deps:
-- hopfli-0.2.1.1
 ghc-options:
     "*": -Wall -O2
 flags: {}

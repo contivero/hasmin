@@ -16,7 +16,6 @@ module Hasmin.Types.Selector (
     , Combinator(..)
     , Sign(..)
     , AnPlusB(..)
-    , AValue(..)
     , Att(..)
     , specialPseudoElements
     ) where
@@ -198,19 +197,9 @@ instance Minifiable SimpleSelector where
                        Left _  -> a
                        Right s -> Lang (removeQuotes s)
                 else a
-  minifyWith a@(FunctionalPseudoClass2 i n) = do
-      conf <- ask
-      pure $ if shouldMinifyMicrosyntax conf
-                then FunctionalPseudoClass2 i (minifyAnPlusB n)
-                else a
-  minifyWith a@(FunctionalPseudoClass3 i n cs) = do
-      conf <- ask
-      pure $ if shouldMinifyMicrosyntax conf
-                then FunctionalPseudoClass3 i (minifyAnPlusB n) cs
-                else a
-  minifyWith (FunctionalPseudoClass1 i cs) = do
-      newcs <- mapM minifyWith cs
-      pure $ FunctionalPseudoClass1 i newcs
+  minifyWith (FunctionalPseudoClass1 i cs)   = FunctionalPseudoClass1 i <$> mapM minifyWith cs
+  minifyWith (FunctionalPseudoClass2 i n)    = FunctionalPseudoClass2 i <$> minifyWith n
+  minifyWith (FunctionalPseudoClass3 i n cs) = FunctionalPseudoClass3 i <$> minifyWith n <*> pure cs
   minifyWith x = pure x
 
 data Sign = Plus | Minus
@@ -225,7 +214,7 @@ instance ToText Sign where
   toBuilder Plus  = singleton '+'
   toBuilder Minus = singleton '-'
 
-data AValue = Nwith (Maybe Sign) (Maybe Int) -- at least a lone 'n'
+{- data AValue = Nwith (Maybe Sign) (Maybe Int) -- at least a lone 'n'
             | NoValue -- The "An" part is omitted.
   deriving (Eq, Show)
 instance ToText AValue where
@@ -243,6 +232,7 @@ minifyAValue (Nwith s a)
                          then Nothing
                          else Just x
 minifyAValue NoValue = NoValue
+-}
 
 -- We could maybe model the AB constructor with an Either,
 -- to make sure AB NoValue Nothing isn't possible (which is invalid).
@@ -250,36 +240,56 @@ minifyAValue NoValue = NoValue
 -- for example +6 vs 6, -0 vs 0 vs +0.
 data AnPlusB = Even
              | Odd
-             | AB AValue (Maybe Int)
+             | A (Maybe Sign) (Maybe Int) -- "sign n number", e.g. +3n, -2n, 1n.
+             | B Int                      -- "sign number", e.g. +1, +2, 3.
+             | AB (Maybe Sign) (Maybe Int) Int -- "sign n number sign number", e.g. 2n+1
   deriving (Eq, Show)
 instance ToText AnPlusB where
-  toBuilder Even     = "even"
-  toBuilder Odd      = "odd"
-  toBuilder (AB a b) = toBuilder a <> bToBuilder b
-    where bToBuilder
-              | a == NoValue = maybe (singleton '0') toBuilder
-              | otherwise    = maybe mempty (\x -> bSign x <> toBuilder x)
-          bSign x
+  toBuilder Even         = "even"
+  toBuilder Odd          = "odd"
+  toBuilder (B b)        = toBuilder b
+  toBuilder (A ms mi)    = an2Builder ms mi
+  toBuilder (AB ms mi b) = an2Builder ms mi <> bSign b <> toBuilder b
+    where bSign x
               | x < 0     = mempty
               | otherwise = singleton '+'
 
+an2Builder :: Maybe Sign -> Maybe Int -> Builder
+an2Builder ms mi = maybeToBuilder ms <> maybeToBuilder mi <> singleton 'n'
+  where maybeToBuilder :: ToText a => Maybe a -> Builder
+        maybeToBuilder = maybe mempty toBuilder
+
+instance Minifiable AnPlusB where
+  minifyWith x = do
+    conf <- ask
+    pure $ if shouldMinifyMicrosyntax conf
+              then minifyAnPlusB x
+              else x
+
 minifyAnPlusB :: AnPlusB -> AnPlusB
-minifyAnPlusB Even = AB (Nwith Nothing (Just 2)) Nothing
-minifyAnPlusB (AB n@(Nwith s a) (Just b))
-    | isPositive s && a == Just 2 =
-        if b == 1 || odd b && b < 0
+minifyAnPlusB Even = A Nothing (Just 2)
+minifyAnPlusB (A ms mi) =
+    case mi of
+      Just 0 -> B 0
+      _      -> uncurry A (minifyAN ms mi)
+minifyAnPlusB (AB _ (Just 0) b) = B b
+minifyAnPlusB (AB ms mi b)
+    | isPositive ms && mi == Just 2 =
+        if b == 1 || b < 0 && odd b
            then Odd
            else if even b && b <= 0
                 then minifyAnPlusB Even
-                else AB (minifyAValue n) (Just b)
-    | otherwise = AB (minifyAValue n) $ if b == 0
-                                           then Nothing
-                                           else Just b
-minifyAnPlusB (AB n@Nwith{} Nothing) = AB (minifyAValue n) Nothing
+                else AB ms' mi' b
+    | otherwise = if b == 0
+                     then A ms' mi'
+                     else AB ms' mi' b
+  where (ms', mi') = minifyAN ms mi
 minifyAnPlusB x = x
--- instance Specificity SimpleSelector where
-  -- specificity (IdSel _)    = (0,1,0,0)
-  -- specificity (ClassSel _) = (0,0,1,0)
+
+minifyAN :: Maybe Sign -> Maybe Int -> (Maybe Sign, Maybe Int)
+minifyAN (Just Plus) i = minifyAN Nothing i
+minifyAN s (Just 1)    = minifyAN s Nothing
+minifyAN s i           = (s, i)
 
 type AttId = Text
 type AttValue = Either Text StringType
