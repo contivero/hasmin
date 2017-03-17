@@ -48,7 +48,7 @@ matrix:
     compiler: ": #stack default"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-7"
+  - env: BUILD=stack ARGS="--resolver lts-8.5"
     compiler: ": #stack 8.0.1"
     addons: {apt: {packages: [libgmp-dev]}}
 
@@ -57,7 +57,7 @@ matrix:
     compiler: ": #stack default osx"
     os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-7"
+  - env: BUILD=stack ARGS="--resolver lts-8.5"
     compiler: ": #stack 8.0.1 osx"
     os: osx
 

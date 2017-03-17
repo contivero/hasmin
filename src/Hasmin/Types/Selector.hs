@@ -254,6 +254,7 @@ instance ToText AnPlusB where
               | x < 0     = mempty
               | otherwise = singleton '+'
 
+-- Used to print "An" values
 an2Builder :: Maybe Sign -> Maybe Int -> Builder
 an2Builder ms mi = maybeToBuilder ms <> maybeToBuilder mi <> singleton 'n'
   where maybeToBuilder :: ToText a => Maybe a -> Builder
