@@ -18,8 +18,7 @@ module Hasmin.Parser.Internal (
     ) where
 
 import Control.Arrow (first)
-import Control.Applicative ((<|>), many, some)
-import Control.Monad (mzero)
+import Control.Applicative ((<|>), many, some, empty)
 import qualified Data.List.NonEmpty as NE
 import Data.Functor (($>))
 import Data.Attoparsec.Combinator (lookAhead, sepBy, endOfInput)
@@ -161,7 +160,7 @@ pseudo = char ':' *> (pseudoElementSelector <|> pseudoClassSelector)
           where handleSpecialCase :: Text -> Parser SimpleSelector
                 handleSpecialCase t = if T.toCaseFold t `elem` specialPseudoElements
                                          then pure $ PseudoElem t
-                                         else mzero
+                                         else empty
 
 -- \<An+B> microsyntax parser.
 anplusb :: Parser AnPlusB

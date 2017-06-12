@@ -1,0 +1,14 @@
+Con bang patterns:
+----
+time                 21.89 s    (21.87 s .. 21.91 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 21.88 s    (21.88 s .. 21.89 s)
+std dev              5.792 ms   (0.0 s .. 6.489 ms)
+
+Sin bang patterns:
+benchmarking minification/a
+time                 22.98 s    (21.76 s .. 25.57 s)
+                     0.998 R²   (0.997 R² .. 1.000 R²)
+mean                 22.13 s    (21.78 s .. 22.46 s)
+std dev              556.2 ms   (0.0 s .. 573.0 ms)
+variance introduced by outliers: 19% (moderately inflated)

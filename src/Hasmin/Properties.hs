@@ -32,6 +32,8 @@ data PropertyInfo =
 shorthandAndLonghandsMap :: Map Text PropertyInfo
 shorthandAndLonghandsMap = Map.fromList properties
 
+-- This holds the information of which shorthand overwrites which longhand, and
+-- vice versa (which longhand is overwritten by which shorthand).
 properties :: [(Text,PropertyInfo)]
 properties =
   [("animation", PropertyInfo mempty ["animation-name","animation-duration","animation-timing-function","animation-delay","animation-iteration-count","animation-direction","animation-fill-mode","animation-play-state"])
