@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2.2
+* Relaxed criterion upper bound.
+
 ## 0.3.2.1
 * Relaxed optparse-applicative upper bound.
 
