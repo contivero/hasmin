@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2.3
+* Relaxed doctest upper bound.
+
 ## 0.3.2.2
 * Relaxed criterion upper bound.
 
