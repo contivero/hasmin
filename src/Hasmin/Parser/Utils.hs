@@ -8,8 +8,8 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Parser.Utils (
-    ident
+module Hasmin.Parser.Utils
+    ( ident
     , fontfamilyname
     , nonquotedurl
     , skipComments

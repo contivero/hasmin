@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2.4
+* Relaxed doctest upper bound once more, see [stackage issue 2663](https://github.com/fpco/stackage/issues/2663#issuecomment-319880160).
+
 ## 0.3.2.3
 * Relaxed doctest upper bound.
 

@@ -113,13 +113,6 @@ attributeSel = do
 identOrString :: Parser (Either Text StringType)
 identOrString = (Left <$> ident) <|> (Right <$> stringtype)
 
-{-
--- string1: \"([^\n\r\f\\"]|\\{nl}|{escape})*\"
-string1 = char '\"' *> many (o1 <|> o2 <|> escape)
-  where o1 = satisfy (c -> c /= '\"' && c /= '\\' && c /= '\n')
-        o2 = char '\\' *> newline $> mempty
--}
-
 -- type_selector: [namespace_prefix]? element_name
 typeSelector :: Parser SimpleSelector
 typeSelector = Type <$> opt namespacePrefix <*> ident

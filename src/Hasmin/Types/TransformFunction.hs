@@ -10,8 +10,11 @@
 -- CSS \<transform-function> data type.
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.TransformFunction (
-    TransformFunction(..), mkMat, mkMat3d, combine
+module Hasmin.Types.TransformFunction
+    ( TransformFunction(..)
+    , mkMat
+    , mkMat3d
+    , combine
     ) where
 
 import Control.Monad.Reader (mapReader, Reader, ask, local)

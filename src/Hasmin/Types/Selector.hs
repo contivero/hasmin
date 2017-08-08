@@ -214,26 +214,6 @@ instance ToText Sign where
   toBuilder Plus  = singleton '+'
   toBuilder Minus = singleton '-'
 
-{- data AValue = Nwith (Maybe Sign) (Maybe Int) -- at least a lone 'n'
-            | NoValue -- The "An" part is omitted.
-  deriving (Eq, Show)
-instance ToText AValue where
-  toBuilder NoValue     = mempty
-  toBuilder (Nwith s i) = maybeToBuilder s <> maybeToBuilder i <> singleton 'n'
-    where maybeToBuilder :: ToText a => Maybe a -> Builder
-          maybeToBuilder = maybe mempty toBuilder
-
-minifyAValue :: AValue -> AValue
-minifyAValue (Nwith _ (Just 0)) = NoValue
-minifyAValue (Nwith s a)
-    | isPositive s = Nwith Nothing (maybe Nothing droppedOne a)
-    | otherwise    = Nwith s (maybe Nothing droppedOne a)
-  where droppedOne x = if x == 1
-                         then Nothing
-                         else Just x
-minifyAValue NoValue = NoValue
--}
-
 -- We could maybe model the AB constructor with an Either,
 -- to make sure AB NoValue Nothing isn't possible (which is invalid).
 -- Also, modelling a BValue would cover all remaining cases,

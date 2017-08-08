@@ -8,8 +8,9 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Class (
-    ToText(..), Minifiable(..)
+module Hasmin.Types.Class
+    ( ToText(..)
+    , Minifiable(..)
     ) where
 
 import Control.Monad.Reader (Reader, runReader)

@@ -8,8 +8,8 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Utils (
-      isRight
+module Hasmin.Utils
+    ( isRight
     , isLeft
     , epsilon
     , eps

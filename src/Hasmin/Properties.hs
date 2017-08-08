@@ -8,10 +8,10 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Properties (
-       PropertyInfo(..)
-     , shorthandAndLonghandsMap
-     , propertiesTraits
+module Hasmin.Properties
+    ( PropertyInfo(..)
+    , shorthandAndLonghandsMap
+    , propertiesTraits
     ) where
 
 import Data.Attoparsec.Text (parseOnly)
