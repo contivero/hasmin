@@ -7,3 +7,5 @@ warn = pure x <* y ==> x <$ y
 warn = x >> return y ==> x $> y
 warn = return x << y ==> x <$ y
 warn = skipComments *> x <* skipComments ==> lexeme x
+-- warn = liftA2 (,) x y ==> x &&& y
+-- warn = (,) <$> x <*> y ==> x &&& y

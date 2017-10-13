@@ -4,6 +4,7 @@ module Hasmin.TestUtils (
       module Hasmin.TestUtils
     , module Test.QuickCheck
     , module Test.Hspec
+    , module Test.Hspec.Attoparsec
     ) where
 
 import Test.Hspec
@@ -39,7 +40,8 @@ matchSpecWithDesc parser (description, textToParse, expectedResult) =
 
 matchSpec :: ToText a => Parser a -> (Text, Text) -> Spec
 matchSpec parser (textToParse, expectedResult) =
-  it (unpack textToParse) $ (toText <$> (textToParse ~> parser)) `parseSatisfies` (== expectedResult)
+  it (unpack textToParse) $ 
+    (toText <$> (textToParse ~> parser)) `parseSatisfies` (== expectedResult)
 
 mkGen :: [a] -> Gen a
 mkGen xs = (xs !!) <$> choose (0, length xs - 1)

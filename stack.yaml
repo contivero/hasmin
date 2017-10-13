@@ -3,6 +3,6 @@ packages:
 - '.'
 extra-deps:
 ghc-options:
-    "*": -Wall -O2
+    "$everything": -Wall -O2
 flags: {}
 extra-package-dbs: []

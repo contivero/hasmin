@@ -2,11 +2,25 @@
 
 module Hasmin.Types.StylesheetSpec where
 
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 
 import Hasmin.Parser.Internal
 import Hasmin.TestUtils
 import Hasmin.Types.Class
+import Hasmin.Utils
+import Hasmin
+
+combineAdjacentMediaQueriesTests :: Spec
+combineAdjacentMediaQueriesTests =
+     describe "Combines adjacent @media rules" $
+      mapM_ f combineAdjacentMediaQueriesTestsInfo
+  where f (t1, t2) = it (unpack t1) $ minifyCSS t1 `parseSatisfies` (== t2)
+
+combineAdjacentMediaQueriesTestsInfo :: [(Text, Text)]
+combineAdjacentMediaQueriesTestsInfo =
+  [("@media all and (min-width:24rem){.Fz\\(s2\\)\\@xs{font-size:1.2rem;}}@media all and (min-width: 24rem){.Px\\(s04\\)\\@xs{padding-left:.25rem; padding-right:.25rem;}}",
+    "@media all and (min-width:24rem){.Fz\\(s2\\)\\@xs{font-size:1.2rem}.Px\\(s04\\)\\@xs{padding-left:.25rem;padding-right:.25rem}}")
+  ]
 
 atRuleTests :: Spec
 atRuleTests = do
@@ -75,7 +89,9 @@ atRuleTestsInfo =
   ]
 
 spec :: Spec
-spec = atRuleTests
+spec = do atRuleTests
+          combineAdjacentMediaQueriesTests
+
 
 main :: IO ()
 main = hspec spec

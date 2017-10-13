@@ -9,9 +9,7 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Utils
-    ( isRight
-    , isLeft
-    , epsilon
+    ( epsilon
     , eps
     , fromLeft'
     , fromRight'
@@ -50,14 +48,6 @@ fromRight' _         = error "fromRight'"
 fromLeft' :: Either a b -> a
 fromLeft' (Left x) = x
 fromLeft' _        = error "fromLeft'"
-
-isRight :: Either a b -> Bool
-isRight Right{} = True
-isRight _       = False
-
-isLeft :: Either a b -> Bool
-isLeft Left{} = True
-isLeft _      = False
 
 -- TODO: Find out how precise is enough.
 -- Can we use double and round when printing?

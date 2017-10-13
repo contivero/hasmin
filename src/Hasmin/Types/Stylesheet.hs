@@ -17,10 +17,12 @@ module Hasmin.Types.Stylesheet (
     , SupportsCondition(..)
     , SupportsCondInParens(..)
     , isEmpty
+    , minifyRules
     ) where
 
-import Control.Monad.Reader (Reader, ask)
 import Control.Applicative (liftA2)
+import Control.Monad ((>=>))
+import Control.Monad.Reader (Reader, ask)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Text.Lazy.Builder (singleton, fromText, Builder)
@@ -114,7 +116,7 @@ data Rule = AtCharset StringType
           | AtBlockWithRules Text [Rule]
           | AtBlockWithDec Text [Declaration]
           | StyleRule [Selector] [Declaration]
- deriving (Show)
+ deriving (Eq, Show)
 instance ToText Rule where
   toBuilder (AtMedia mqs rs) = "@media " <> mconcatIntersperse toBuilder (singleton ',') mqs
       <> singleton '{' <> mconcat (fmap toBuilder rs) <> singleton '}'
@@ -257,7 +259,7 @@ data SupportsCondition = Not SupportsCondInParens
                        | And SupportsCondInParens (NonEmpty SupportsCondInParens)
                        | Or SupportsCondInParens (NonEmpty SupportsCondInParens)
                        | Parens SupportsCondInParens
-  deriving (Show)
+  deriving (Eq, Show)
 instance ToText SupportsCondition where
   toBuilder (Not x)    = "not " <> toBuilder x
   toBuilder (And x y)  = appendWith " and " x y
@@ -291,7 +293,7 @@ appendWith s x y = toBuilder x <> s <> mconcatIntersperse toBuilder s (NE.toList
 -- parenthesized expressions that can evaluate to true.
 data SupportsCondInParens = ParensCond SupportsCondition
                           | ParensDec Declaration
-  deriving (Show)
+  deriving (Eq, Show)
 instance ToText SupportsCondInParens where
   toBuilder (ParensDec x)  = "(" <> toBuilder x <> ")"
   toBuilder (ParensCond x) = "(" <> toBuilder x <> ")"
@@ -299,8 +301,28 @@ instance Minifiable SupportsCondInParens where
   minifyWith (ParensDec x) = ParensDec <$> minifyWith x
   minifyWith  (ParensCond x)  = ParensCond <$> minifyWith x
 
-data GeneralEnclosed = GEFunction
-  deriving (Show)
+combineAdjacentMediaQueries :: [Rule] -> [Rule]
+combineAdjacentMediaQueries (a@(AtMedia mqs es) : b@(AtMedia mqs2 es2) : xs)
+    | mqs == mqs2 = combineAdjacentMediaQueries (AtMedia mqs (es ++ es2) : xs)
+    | otherwise   = a : combineAdjacentMediaQueries (b:xs)
+combineAdjacentMediaQueries (x:xs) = x : combineAdjacentMediaQueries xs
+combineAdjacentMediaQueries [] = []
+
+-- Set of functions to minify rules
+minifyRules :: [Rule] -> Reader Config [Rule]
+minifyRules = handleAdjacentMediaQueries
+          >=> handleEmptyBlocks
+          >=> traverse minifyWith -- minify rules individually
+  where handleEmptyBlocks :: [Rule] -> Reader Config [Rule]
+        handleEmptyBlocks rs = do
+          conf <- ask
+          pure $ if shouldRemoveEmptyBlocks conf
+                    then filter (not . isEmpty) rs
+                    else rs
+        handleAdjacentMediaQueries :: [Rule] -> Reader Config [Rule]
+        handleAdjacentMediaQueries rs = do
+          conf <- ask
+          pure $ combineAdjacentMediaQueries rs
 
 {-
 supports_rule

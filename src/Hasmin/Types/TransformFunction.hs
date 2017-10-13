@@ -20,6 +20,7 @@ module Hasmin.Types.TransformFunction
 import Control.Monad.Reader (mapReader, Reader, ask, local)
 import Control.Applicative (liftA2)
 import Data.Monoid ((<>))
+import Data.Either (isRight)
 import qualified Data.Text as T
 import Data.Number.FixedFunctions (sin, cos, acos, tan, atan)
 import Prelude hiding (sin, cos, acos, tan, atan)

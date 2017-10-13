@@ -26,6 +26,7 @@ import qualified Data.Text.Lazy as TL
 
 import Hasmin.Parser.Internal
 import Hasmin.Types.Class
+import Hasmin.Types.Stylesheet
 import Hasmin.Config
 
 -- | Minify Text, based on a 'Config'. To just use a default set of
@@ -33,8 +34,8 @@ import Hasmin.Config
 minifyCSSWith :: Config -> Text -> Either String Text
 minifyCSSWith cfg t = do
     sheet <- parseOnly stylesheet t
-    pure . TL.toStrict . toLazyText . mconcat $ map f sheet
-  where f x = toBuilder $ runReader (minifyWith x) cfg
+    let rs = runReader (minifyRules sheet) cfg
+    pure . TL.toStrict . toLazyText . mconcat $ map toBuilder rs
 
 -- | Minify Text CSS, using a default set of configurations (with most
 -- minification techniques enabled).
