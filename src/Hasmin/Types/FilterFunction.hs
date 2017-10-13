@@ -86,6 +86,9 @@ instance Minifiable FilterFunction where
          then minifyPseudoShadow DropShadow a b c d
          else pure s
 
+minifyPseudoShadow :: (Minifiable b, Minifiable t1, Minifiable t2, Traversable t)
+                   => (t2 -> t1 -> Maybe Distance -> t b -> b1)
+                   -> t2 -> t1 -> Maybe Distance -> t b -> Reader Config b1
 minifyPseudoShadow constr a b c d = do
               x  <- minifyWith a
               y  <- minifyWith b

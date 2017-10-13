@@ -18,9 +18,11 @@ import Control.Arrow (first)
 import Control.Monad ((>=>))
 import Data.Map.Strict (Map)
 import Data.Monoid ((<>))
+import Data.Foldable (toList)
 import Data.Maybe (fromMaybe)
+import Data.Sequence (Seq, (|>))
 import Data.List (find, delete, minimumBy, (\\))
-import Data.Text (Text) 
+import Data.Text (Text)
 import Data.Text.Lazy.Builder (singleton, fromText)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -37,15 +39,15 @@ import Hasmin.Types.TransformFunction
 import Hasmin.Types.Value
 import Hasmin.Utils
 
-data Declaration = Declaration { propertyName :: Text 
+data Declaration = Declaration { propertyName :: Text
                                , valueList :: Values
                                , isImportant :: Bool  -- ends with !important
                                , hasIEhack :: Bool    -- ends with \9
                                } deriving (Eq, Show)
 instance ToText Declaration where
-  toBuilder (Declaration p vs i h) = fromText p <> singleton ':' 
+  toBuilder (Declaration p vs i h) = fromText p <> singleton ':'
       <> toBuilder vs <> imp <> (if h then " \\9" else mempty)
-    where imp | i         = "!important" 
+    where imp | i         = "!important"
               | otherwise = mempty
 
 instance Minifiable Declaration where
@@ -125,7 +127,7 @@ propertyOptimizations = Map.fromList
   ]
 
 -- Generic function to map some optimization to a property's values.
-optimizeValues :: (Value -> Reader Config Value) 
+optimizeValues :: (Value -> Reader Config Value)
                -> Declaration -> Reader Config Declaration
 optimizeValues f d@(Declaration _ vs _ _) = do
     newV <- mapValues f vs
@@ -134,7 +136,7 @@ optimizeValues f d@(Declaration _ vs _ _) = do
 -- converts 0% into 0 (of type <length>)
 -- Do NOT use it with height and max-height, since 0% /= 0
 nullPercentageToLength :: Declaration -> Reader Config Declaration
-nullPercentageToLength d = do 
+nullPercentageToLength d = do
     conf <- ask
     if shouldConvertNullPercentages conf
        then optimizeValues f d
@@ -142,7 +144,7 @@ nullPercentageToLength d = do
   where f :: Value -> Reader Config Value
         f (PositionV p@(Position _ a _ b)) = pure . PositionV $
             let stripPercentage Nothing  = Nothing
-                stripPercentage (Just x) = if isZero x 
+                stripPercentage (Just x) = if isZero x
                                               then l0
                                               else Just x
             in p { offset1 = stripPercentage a, offset2 = stripPercentage b }
@@ -152,8 +154,8 @@ nullPercentageToLength d = do
                 zeroPercentageToLength x = PercentageV x
         f (BgSizeV (BgSize x y)) = pure . BgSizeV $ BgSize (zeroPerToLength x) (fmap zeroPerToLength y)
           where zeroPerToLength (Left (Left 0)) = Left $ Right (Distance 0 Q)
-                zeroPerToLength z = z 
-        f x = pure x 
+                zeroPerToLength z = z
+        f x = pure x
 
 -- For word-spacing, normal computes to 0.
 -- For vertical-align, baseline is the same as 0.
@@ -163,7 +165,7 @@ nullPercentageToLength d = do
 replaceWithZero :: Text -> Declaration -> Reader Config Declaration
 replaceWithZero s d@(Declaration p (Values v vs) _ _)
     | not (null vs) = pure d -- Some error occured, since there should be only one value
-    | otherwise     = 
+    | otherwise     =
         case Map.lookup (T.toCaseFold p) propertiesTraits of
           Just (iv, inhs) -> if f iv inhs == mkOther s
                                 then pure $ d { valueList = Values (DistanceV (Distance 0 Q)) [] }
@@ -171,19 +173,19 @@ replaceWithZero s d@(Declaration p (Values v vs) _ _)
           Nothing         -> pure d
   where f (Just (Values x _)) inh
           | v == Initial || v == Unset && not inh = x
-          | otherwise                             = v 
+          | otherwise                             = v
         f _ _ = v
 
 -- Converts the keywords "normal" and "bold" to 400 and 700, respectively.
 fontWeightOptimizer :: Declaration -> Reader Config Declaration
-fontWeightOptimizer = optimizeValues f 
+fontWeightOptimizer = optimizeValues f
   where f :: Value -> Reader Config Value
         f x@(Other t) = do
           conf <- ask
           pure $ case fontweightSettings conf of
                    FontWeightMinOn  -> replaceForSynonym t
                    FontWeightMinOff -> x
-        f x = pure x 
+        f x = pure x
 
         replaceForSynonym :: TextV -> Value
         replaceForSynonym t
@@ -259,7 +261,7 @@ transformOrigin2 x y
 
 transformOrigin3 :: Value -> Value -> Value -> [Value]
 transformOrigin3 x y z
-    | x == Other "top" || x == Other "bottom" 
+    | x == Other "top" || x == Other "bottom"
       || y == Other "left" || y == Other "right" = fmap replaceKeywords [y, x, z]
     | otherwise = fmap replaceKeywords [x, y, z]
   where replaceKeywords :: Value -> Value
@@ -268,7 +270,7 @@ transformOrigin3 x y z
 
 -- transform-origin keyword meanings.
 transformOriginKeywords :: Map Text Value
-transformOriginKeywords = Map.fromList 
+transformOriginKeywords = Map.fromList
     [("top", DistanceV (Distance 0 Q))
     ,("right", PercentageV (Percentage 100))
     ,("bottom", PercentageV (Percentage 100))
@@ -281,7 +283,7 @@ transformOriginKeywords = Map.fromList
 -- configurations.
 minifyDec :: Declaration -> Maybe Values -> Bool -> Declaration
 minifyDec d@(Declaration p vs _ _) mv inherits =
-    case mv of 
+    case mv of
       -- Use the found initial values to try to reduce the declaration
       Just vals ->
           case Map.lookup (T.toCaseFold p) declarationExceptions of
@@ -290,7 +292,7 @@ minifyDec d@(Declaration p vs _ _) mv inherits =
             Just f  -> f d vals inherits
             Nothing -> reduceDeclaration d vals inherits
       -- Property with no defined initial values. Try to reduce css-wide keywords
-      Nothing   -> 
+      Nothing   ->
           if not inherits && vs == initial || inherits && vs == inherit
              then d { valueList = unset }
              else d
@@ -319,13 +321,17 @@ declarationExceptions = Map.fromList $ map (first T.toCaseFold)
 
 combineTransformFunctions :: Declaration -> Reader Config Declaration
 combineTransformFunctions d@(Declaration _ vs _ _) = do
-    combinedFuncs <- combine $ fmap (\(TransformV x) -> x) tfuncs 
-    let newVals = fmap TransformV combinedFuncs ++ (decValues \\ tfuncs)
+    combinedFuncs <- combine (toList tfValues)
+    let newVals = fmap TransformV combinedFuncs ++ toList otherValues
     pure $ d { valueList = mkValues newVals}
-  where decValues     = valuesToList vs
-        tfuncs = filter isTransformFunction decValues
-        isTransformFunction (TransformV _) = True
-        isTransformFunction _              = False
+  where decValues               = valuesToList vs
+        (tfValues, otherValues) = splitValues decValues
+        splitValues = splitValues' (mempty, mempty)
+          where splitValues' :: (Seq TransformFunction, Seq Value) -> [Value]
+                             -> (Seq TransformFunction, Seq Value)
+                splitValues' (ts, os) (TransformV x:xs) = splitValues' (ts |> x, os) xs
+                splitValues' (ts, os) (x:xs)            = splitValues' (ts, os |> x) xs
+                splitValues  (ts, os) []                = (ts, os)
 
 backgroundSizeReduce :: Declaration -> Values -> Bool -> Declaration
 backgroundSizeReduce d@(Declaration _ vs _ _) initVals inherits =
@@ -349,7 +355,7 @@ fontSynthesisReduce d@(Declaration _ vs _ _) initVals inherits =
 --    property that qualifies is border-bottom, and one that doesn't is
 --    font-synthesis (because it isn't a shorthand).
 reduceDeclaration :: Declaration -> Values -> Bool -> Declaration
-reduceDeclaration d@(Declaration _ vs _ _) initVals inherits = 
+reduceDeclaration d@(Declaration _ vs _ _) initVals inherits =
     case analyzeValueDifference vs initVals of
       Just v  -> d {valueList = shortestEquiv v shortestInitialValue inherits}
       Nothing -> d {valueList = minVal inherits shortestInitialValue}
@@ -373,13 +379,13 @@ minVal inherits vs
     | textualLength globalKeyword <= textualLength vs = globalKeyword
     | otherwise                                       = vs
   where globalKeyword = mkValues [if not inherits then Unset else Initial]
-    
+
 -- Substract declaration values to the property's initial value list.
 -- If nothing remains (i.e. every value declared was an initial one and may be
 -- left implicit), then just replace it with whatever initial value is the
 -- shortest, otherwise whatever remains is the shortest equivalent declaration.
 analyzeValueDifference :: Values -> Values -> Maybe Values
-analyzeValueDifference vs initVals = 
+analyzeValueDifference vs initVals =
     case valuesDifference of
       [] -> Nothing -- every value was an initial one
       _  -> Just $ mkValues valuesDifference -- At least a value wasn't an initial one, or it was a css-wide keyword
@@ -402,7 +408,7 @@ clean (d:ds) =
 -- longhand later in the list, merges them. If it is a longhand overwritten by
 -- a shorthand, it deletes it. Otherwise, it keeps the value. In any case, it
 -- returns the new list to analyze and (if any) the value to keep.
-solveClashes :: [Declaration] -> Declaration 
+solveClashes :: [Declaration] -> Declaration
              -> PropertyInfo -> (Maybe Declaration, [Declaration])
 solveClashes ds = solveClashes' ds ds
 
@@ -413,7 +419,7 @@ solveClashes' newDs []            dec _ = (Just dec, newDs)
 solveClashes' newDs (laterDec:ds) dec pinfo
     -- Do not remove vendor-prefixed values, which are probably fallbacks.
     | hasVendorPrefix dec      = (Just dec, newDs)
-    | hasVendorPrefix laterDec || hasIEhack dec /= hasIEhack laterDec = 
+    | hasVendorPrefix laterDec || hasIEhack dec /= hasIEhack laterDec =
         solveClashes' newDs ds dec pinfo
     | propertyName laterDec `elem` subproperties pinfo =
         attemptMerge newDs ds dec laterDec pinfo
@@ -442,7 +448,7 @@ isVendorPrefixedValue (GenericFunc t _) = T.isPrefixOf "-" t
 isVendorPrefixedValue _                 = False
 
 attemptMerge :: [Declaration] -> [Declaration] -> Declaration
-             -> Declaration -> PropertyInfo 
+             -> Declaration -> PropertyInfo
              -> (Maybe Declaration, [Declaration])
 attemptMerge newDs ds dec laterDec pinfo =
     case merge dec laterDec of
@@ -464,19 +470,19 @@ merge d1@(Declaration p1 _ _ _) d2@Declaration{} = do
                                        ,("border-color", mergeIntoTRBL)
                                        ,("border-width", mergeIntoTRBL)
                                        ,("border-style", mergeIntoTRBL)
-                                       --,("animation", 
+                                       --,("animation",
                                        --,("background",
-                                       --,("background-position", 
+                                       --,("background-position",
                                        --,("border",
-                                       --,("border-bottom", 
+                                       --,("border-bottom",
                                        --,("border-image",
-                                       --,("border-left", 
+                                       --,("border-left",
                                        --,("border-radius"
                                        --,("border-right",
                                        --,("border-top"
                                        --,("column-rule",
                                        --,("columns",
-                                       --,("flex",  
+                                       --,("flex",
                                        --,("flex-flow",
                                        --,("font",
                                        --,("grid",
@@ -486,10 +492,10 @@ merge d1@(Declaration p1 _ _ _) d2@Declaration{} = do
                                        --,("grid-row",
                                        --,("grid-template",
                                        --,("list-style",
-                                       --,("mask", 
+                                       --,("mask",
                                        --,("outline",
                                        --,("padding",
-                                       --,("text-decoration", 
+                                       --,("text-decoration",
                                        --,("text-emphasis"
                                        --,("transition",
                                        ]
@@ -534,7 +540,7 @@ reduceTRBL d@(Declaration _ (Values v1 vs) _ _) =
       [t,r,b,l] -> reduce4 t r b l
       [t,r,b]   -> reduce3 t r b
       [t,r]     -> reduce2 t r
-      _         -> d 
+      _         -> d
   where reduce4 tv rv bv lv
             | lv == rv  = reduce3 tv rv bv
             | otherwise = d

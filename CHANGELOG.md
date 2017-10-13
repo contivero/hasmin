@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.3
+Added a simple merging of adjacent media queries (`@media` rules), e.g.:
+```css
+@media all and (min-width: 24rem) {
+  a { font-size: 1.2rem; }
+}
+@media all and (min-width: 24rem) {
+  b { padding-left: .25rem; padding-right: .25rem; }
+}
+```
+Gets merged into into:
+```css
+@media all and (min-width: 24rem) {
+  a { font-size: 1.2rem; }
+  b { padding-left: .25rem; padding-right: .25rem; }
+}
+```
+
 ## 0.3.2.4
 * Relaxed doctest upper bound once more, see [stackage issue 2663](https://github.com/fpco/stackage/issues/2663#issuecomment-319880160).
 

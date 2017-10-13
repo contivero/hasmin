@@ -13,8 +13,6 @@ module Main where
 import Codec.Compression.Hopfli
 import Control.Applicative (liftA2)
 import Data.Monoid ((<>))
-import Data.Attoparsec.Text (parseOnly)
-import Data.Text.Lazy.Builder (toLazyText)
 import Data.Text (Text) 
 import Options.Applicative hiding (command)
 import Data.Version (showVersion)
@@ -23,12 +21,8 @@ import Paths_hasmin (version)
 import qualified Data.ByteString as B
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as TIO
-import qualified Data.Text.Lazy as TL
 import System.Exit (die)
 import Hasmin.Config
-import Hasmin.Parser.Internal
-import Hasmin.Types.Class
-import Hasmin.Types.Stylesheet
 import Hasmin
 
 command :: Parser Commands

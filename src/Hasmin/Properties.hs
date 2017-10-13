@@ -15,7 +15,7 @@ module Hasmin.Properties
     ) where
 
 import Data.Attoparsec.Text (parseOnly)
-import Data.Text (Text, unpack)
+import Data.Text (Text)
 import Control.Applicative ((<|>))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map

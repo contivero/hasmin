@@ -28,8 +28,8 @@ import Data.Text (Text)
 import Data.Text.Lazy.Builder (singleton, fromText, Builder)
 import Data.List (sortBy, (\\))
 import Data.Map.Strict (Map)
-import Data.List.NonEmpty (NonEmpty((:|)))
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty (NonEmpty)
+import Data.Foldable (toList)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -41,7 +41,6 @@ import Hasmin.Types.Value
 import Hasmin.Types.Declaration
 import Hasmin.Types.String
 import Hasmin.Types.Numeric
-import Hasmin.Types.Dimension
 import Hasmin.Utils
 
 -- | Data type for media queries. For the syntax, see
@@ -281,7 +280,7 @@ instance Minifiable SupportsCondition where
       ParensDec y        -> (Not . ParensDec) <$> pure y
 
 appendWith :: Builder -> SupportsCondInParens -> NonEmpty SupportsCondInParens -> Builder
-appendWith s x y = toBuilder x <> s <> mconcatIntersperse toBuilder s (NE.toList y)
+appendWith s x y = toBuilder x <> s <> mconcatIntersperse toBuilder s (toList y)
 
 -- Note that "general_enclosed" is not included, because, per the spec:
 --

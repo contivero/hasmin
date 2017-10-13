@@ -48,8 +48,8 @@ matrix:
     compiler: ": #stack default"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--resolver lts-8.5"
-    compiler: ": #stack 8.0.1"
+  - env: BUILD=stack ARGS="--resolver lts-9.8"
+    compiler: ": #stack 8.0.2"
     addons: {apt: {packages: [libgmp-dev]}}
 
   # Build on macOS in addition to Linux
@@ -57,8 +57,8 @@ matrix:
     compiler: ": #stack default osx"
     os: osx
 
-  - env: BUILD=stack ARGS="--resolver lts-8.5"
-    compiler: ": #stack 8.0.1 osx"
+  - env: BUILD=stack ARGS="--resolver lts-9.8"
+    compiler: ": #stack 8.0.2 osx"
     os: osx
 
   # Build with the newest GHC and cabal-install. This is an accepted failure.

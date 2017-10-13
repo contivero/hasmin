@@ -192,13 +192,8 @@ instance Minifiable Value where
   minifyWith (ShadowV s)      = ShadowV <$> minifyWith s
   minifyWith (ShadowText l1 l2 ml mc) = minifyPseudoShadow ShadowText l1 l2 ml mc
   minifyWith (BgLayer img pos sz rst att b1 b2) = do
-      conf <- ask
-      i <- handleImage img
-      s <- handleBgSize sz
-      p <- let cannotRemovePos = isJust s -- can only be removed if there is no later <bg-size>
-           in handlePosition cannotRemovePos pos
-      r <- handleRepeatStyle rst
-      a <- handleAttachment att
+      -- conf <- ask
+      (i,s,p,r,a) <- minifyBgLayer img pos sz rst att
       (bgOrigin, bgClip) <- handleBoxes b1 b2
       pure $ if isNothing i && isNothing p && isNothing s && isNothing r
                 && isNothing a && isNothing bgOrigin && isNothing bgClip
@@ -207,13 +202,8 @@ instance Minifiable Value where
                 then BgLayer (Just $ mkOther "none") p s r a bgOrigin bgClip
                 else BgLayer i p s r a bgOrigin bgClip
   minifyWith (FinalBgLayer img pos sz rst att b1 b2 col) = do
-      conf <- ask
-      i <- handleImage img
-      s <- handleBgSize sz
-      p <- let cannotRemovePos = isJust s -- can only be removed if there is no later <bg-size>
-           in handlePosition cannotRemovePos pos
-      r <- handleRepeatStyle rst
-      a <- handleAttachment att
+      -- conf <- ask
+      (i,s,p,r,a) <- minifyBgLayer img pos sz rst att
       c <- handleColor col
       (bgOrigin, bgClip) <- handleBoxes b1 b2
       pure $ if isNothing i && isNothing p && isNothing s && isNothing r
@@ -348,16 +338,16 @@ handleBgSize x = pure x
 
 handlePosition :: Bool -> Maybe Position -> Reader Config (Maybe Position)
 handlePosition _ Nothing = pure Nothing
-handlePosition cannotRemovePos (Just x)
-    | cannotRemovePos = Just <$> minifyWith x
+handlePosition cannotRemovePos (Just p)
+    | cannotRemovePos = Just <$> minifyWith p
     | otherwise    = do
         conf <- ask
-        mx   <- minifyWith x
-        pure $ if mx == Position Nothing l0 Nothing l0
+        mp   <- minifyWith p
+        pure $ if mp == Position Nothing l0 Nothing l0
                   then Nothing
                   else Just $ if True {- shouldMinifyPosition conf -}
-                                 then mx
-                                 else x
+                                 then mp
+                                 else p
 
 data Values = Values Value [(Separator, Value)]
   deriving (Show, Eq)
@@ -439,3 +429,14 @@ optimizeFontFamily (StringV s) = do
               else StringV ffamily
 optimizeFontFamily x = pure x
 
+minifyBgLayer :: Maybe Value -> Maybe Position -> Maybe BgSize
+              -> Maybe RepeatStyle -> Maybe TextV
+              -> Reader Config (Maybe Value, Maybe BgSize, Maybe Position, Maybe RepeatStyle, Maybe TextV)
+minifyBgLayer img pos sz rst att = do
+      i <- handleImage img
+      s <- handleBgSize sz
+      p <- let cannotRemovePos = isJust s -- can only be removed if there is no later <bg-size>
+           in handlePosition cannotRemovePos pos
+      r <- handleRepeatStyle rst
+      a <- handleAttachment att
+      pure (i,s,p,r,a)

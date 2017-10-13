@@ -1,8 +1,8 @@
-resolver: lts-9.0
+resolver: lts-9.8
 packages:
 - '.'
 extra-deps:
 ghc-options:
-    "$everything": -Wall -O2
+    "*": -Wall -O2
 flags: {}
 extra-package-dbs: []

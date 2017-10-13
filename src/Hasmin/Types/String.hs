@@ -18,10 +18,10 @@ module Hasmin.Types.String (
 
 import Control.Applicative (liftA2)
 import Control.Monad.Reader (ask, Reader)
-import Data.Attoparsec.Text (Parser, parse, IResult(..), maybeResult, feed)
+import Data.Attoparsec.Text (Parser, parse, IResult(Done, Partial, Fail), maybeResult, feed)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Text.Lazy.Builder as LB
+import Data.Text.Lazy.Builder (singleton, fromText, toLazyText)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Text as T

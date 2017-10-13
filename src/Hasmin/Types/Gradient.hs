@@ -8,8 +8,12 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Gradient (
-    Gradient(..), Side(..), ColorStop(..), Size(..), Shape(..)
+module Hasmin.Types.Gradient
+    ( Gradient(..)
+    , Side(..)
+    , ColorStop(..)
+    , Size(..)
+    , Shape(..)
     ) where
 
 import Control.Monad.Reader (Reader, ask)
@@ -296,6 +300,7 @@ instance Eq Gradient where
           handleEither (Left a) (Right s)  = angleSideEq a s
           handleEither (Right s) (Left a)  = angleSideEq a s
           handleEither s1 s2               = s1 == s2
+  _ == _ = error "Non supported gradient comparison"
 
 angleSideEq :: Angle -> SideOrCorner -> Bool
 angleSideEq (Angle 0 Deg) (TopSide, Nothing)      = True

@@ -8,8 +8,10 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.PercentageLength (
-    PercentageLength, isZero, isNonZeroPercentage
+module Hasmin.Types.PercentageLength
+    ( PercentageLength
+    , isZero
+    , isNonZeroPercentage
     ) where
 
 import Hasmin.Types.Dimension

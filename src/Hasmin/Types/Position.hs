@@ -25,9 +25,9 @@ import Hasmin.Types.Dimension
 import Hasmin.Types.PercentageLength
 import Hasmin.Utils
 
-data PosKeyword = PosCenter 
+data PosKeyword = PosCenter
                 | PosLeft
-                | PosRight 
+                | PosRight
                 | PosTop
                 | PosBottom
   deriving (Eq, Show)
@@ -92,7 +92,7 @@ minifyPosition p@(Position Nothing (Just x) Nothing (Just y)) = f x y
                           then Position Nothing l0 Nothing l0
                           else case b of
                                  Left 50  -> Position Nothing l0 Nothing Nothing
-                                 Left 100 -> Position Nothing l0 Nothing p100 
+                                 Left 100 -> Position Nothing l0 Nothing p100
                                  _        -> p { offset1 = l0 }
           | isZero b = case a of
                          Left 50  -> Position (Just PosTop) Nothing Nothing Nothing
@@ -100,7 +100,7 @@ minifyPosition p@(Position Nothing (Just x) Nothing (Just y)) = f x y
                          _        -> p { offset2 = l0 }
           | b == Left 50 = Position Nothing (Just a) Nothing Nothing
           | otherwise    = p
-minifyPosition (Position (Just x) (Just y) Nothing Nothing) = 
+minifyPosition (Position (Just x) (Just y) Nothing Nothing) =
   uncurry (\a b -> Position a b Nothing Nothing) (minAxis x y)
 -- 2 keywords
 minifyPosition p@(Position (Just x) Nothing (Just y) Nothing) = f x y
@@ -118,7 +118,7 @@ minifyPosition p@(Position (Just x) Nothing (Just y) Nothing) = f x y
         f PosCenter PosTop    = p { origin1 = Just PosTop, origin2 = Nothing }
         -- 'right top' and 'top right' == '100% 0%'.
         f PosRight PosTop     = Position Nothing p100 Nothing l0
-        f PosTop PosRight     = Position Nothing p100 Nothing l0 
+        f PosTop PosRight     = Position Nothing p100 Nothing l0
         -- 'right', 'right center', 'center right' == '100% 50%'.
         f PosRight PosCenter  = Position Nothing p100 Nothing Nothing
         f PosCenter PosRight  = Position Nothing p100 Nothing Nothing
@@ -135,40 +135,40 @@ minifyPosition p@(Position (Just x) Nothing (Just y) Nothing) = f x y
 -- keyword pl keyword syntax
 minifyPosition p@(Position (Just x) (Just y) (Just z) Nothing)
     | x == PosTop || x == PosBottom || z == PosLeft || z == PosRight =
-        minifyPosition $ Position (Just z) Nothing (Just x) (Just y) 
+        minifyPosition $ Position (Just z) Nothing (Just x) (Just y)
     | otherwise = minifyPos3 x y z
   where minifyPos3 PosLeft b PosBottom
-          | isZero b     = Position Nothing l0 Nothing p100 
-          | b == Left 50 = Position (Just PosBottom) Nothing Nothing Nothing 
-          | otherwise    = Position Nothing (Just b) Nothing p100 
+          | isZero b     = Position Nothing l0 Nothing p100
+          | b == Left 50 = Position (Just PosBottom) Nothing Nothing Nothing
+          | otherwise    = Position Nothing (Just b) Nothing p100
         minifyPos3 PosLeft b PosTop
-          | isZero b     = Position Nothing l0 Nothing l0 
-          | b == Left 50 = Position (Just PosTop) Nothing Nothing Nothing 
-          | otherwise    = Position Nothing (Just b) Nothing l0 
+          | isZero b     = Position Nothing l0 Nothing l0
+          | b == Left 50 = Position (Just PosTop) Nothing Nothing Nothing
+          | otherwise    = Position Nothing (Just b) Nothing l0
         minifyPos3 PosLeft b PosCenter
-          | isZero b     = Position Nothing l0 Nothing Nothing 
-          | b == Left 50 = Position Nothing p50 Nothing Nothing 
-          | otherwise    = Position Nothing (Just b) Nothing p50 
+          | isZero b     = Position Nothing l0 Nothing Nothing
+          | b == Left 50 = Position Nothing p50 Nothing Nothing
+          | otherwise    = Position Nothing (Just b) Nothing p50
         minifyPos3 PosRight b PosTop
-          | isZero b     = Position Nothing p100 Nothing l0 
-          | otherwise    = Position (Just PosRight) (Just b) Nothing l0 
+          | isZero b     = Position Nothing p100 Nothing l0
+          | otherwise    = Position (Just PosRight) (Just b) Nothing l0
         minifyPos3 PosRight b PosBottom
-          | isZero b     = Position Nothing p100 Nothing p100 
+          | isZero b     = Position Nothing p100 Nothing p100
           | otherwise    = Position (Just PosRight) (Just b) Nothing p100
         minifyPos3 PosRight b PosCenter
-          | isZero b     = Position Nothing p100 Nothing Nothing 
-          | otherwise    = Position (Just PosRight) (Just b) Nothing p50 
+          | isZero b     = Position Nothing p100 Nothing Nothing
+          | otherwise    = Position (Just PosRight) (Just b) Nothing p50
         minifyPos3 _ _ _ = p
 minifyPosition p@(Position (Just c) Nothing (Just a) (Just b)) = f $ minAxis a b
-  where f (x, y) 
+  where f (x, y)
           | c == PosLeft && x == Just PosTop && isJust y = minifyPosition $ Position Nothing l0 Nothing y
           | otherwise = if Just a == x && Just b == y
                            then p
                            else minifyPosition $ p {origin2 = x, offset2 = y }
 -- 4 value syntax
-minifyPosition p@(Position (Just PosLeft) (Just _) (Just PosTop) (Just _)) = 
+minifyPosition p@(Position (Just PosLeft) (Just _) (Just PosTop) (Just _)) =
     minifyPosition p { origin1 = Nothing, origin2 = Nothing }
-minifyPosition (Position (Just a) (Just b) (Just c) (Just d)) = 
+minifyPosition (Position (Just a) (Just b) (Just c) (Just d)) =
     minifyPos4 a b c d
 minifyPosition p = p
 
@@ -192,10 +192,10 @@ minifyPos4 v1 v2 v3 v4
         minifyPos4' a b c d = Position (Just a) (Just b) (Just c) (Just d)
 
 minAxis :: PosKeyword -> PercentageLength -> (Maybe PosKeyword, Maybe PercentageLength)
-minAxis PosTop x = 
+minAxis PosTop x =
     case x of
       Left 50 -> (Just PosCenter, Nothing)
-      b       -> if isZero b 
+      b       -> if isZero b
                     then (Just PosTop, Nothing)
                     else (Just PosTop, Just x)
 minAxis PosLeft x =
@@ -213,7 +213,7 @@ minAxis PosBottom x
 minAxis PosCenter x = (Just PosCenter, Just x)
 
 instance Eq Position where
-  a == b = minify a `equals` minify b
+  x == y = minify x `equals` minify y
     where equals (Position a b c d) (Position e f g h) =
             a == e && b == f && c == g && d == h
 

@@ -295,54 +295,54 @@ position :: Parser Position
 position = pos4 <|> pos2 <|> pos1
 
 pos1 :: Parser Position
-pos1 =  (asciiCI "left" $> (f $ Just PosLeft))
-    <|> (asciiCI "center" $> (f $ Just PosCenter))
-    <|> (asciiCI "right" $> (f $ Just PosRight))
-    <|> (asciiCI "top" $> (f $ Just PosTop))
-    <|> (asciiCI "bottom" $> (f $ Just PosBottom))
+pos1 =  (asciiCI "left" $> f (Just PosLeft))
+    <|> (asciiCI "center" $> f (Just PosCenter))
+    <|> (asciiCI "right" $> f (Just PosRight))
+    <|> (asciiCI "top" $> f (Just PosTop))
+    <|> (asciiCI "bottom" $> f (Just PosBottom))
     <|> ((\a -> Position Nothing a Nothing Nothing) <$> (Just <$> percentageLength))
   where f x = Position x Nothing Nothing Nothing
 
 pos2 :: Parser Position
 pos2 = firstx <|> firsty
   where firstx = do
-            a <- (asciiCI "left" $> (Position (Just PosLeft) Nothing))
-                 <|> (asciiCI "center" $> (Position (Just PosCenter) Nothing))
-                 <|> (asciiCI "right" $> (Position (Just PosRight) Nothing))
+            a <- (asciiCI "left" $> Position (Just PosLeft) Nothing)
+                 <|> (asciiCI "center" $> Position (Just PosCenter) Nothing)
+                 <|> (asciiCI "right" $> Position (Just PosRight) Nothing)
                  <|> ((Position Nothing . Just) <$> percentageLength)
-            skipComments *> ((asciiCI "top" $> (a (Just PosTop) Nothing))
-                 <|> (asciiCI "center" $> (a (Just PosCenter) Nothing))
-                 <|> (asciiCI "bottom" $> (a (Just PosBottom) Nothing))
+            skipComments *> ((asciiCI "top" $> a (Just PosTop) Nothing)
+                 <|> (asciiCI "center" $> a (Just PosCenter) Nothing)
+                 <|> (asciiCI "bottom" $> a (Just PosBottom) Nothing)
                  <|> ((a Nothing . Just) <$> percentageLength))
         firsty = do
-            a <- (asciiCI "top" $> (Position (Just PosTop) Nothing))
-                 <|> (asciiCI "center" $> (Position (Just PosCenter) Nothing))
-                 <|> (asciiCI "bottom" $> (Position (Just PosBottom) Nothing))
+            a <- (asciiCI "top" $> Position (Just PosTop) Nothing)
+                 <|> (asciiCI "center" $> Position (Just PosCenter) Nothing)
+                 <|> (asciiCI "bottom" $> Position (Just PosBottom) Nothing)
                  <|> ((Position Nothing . Just) <$> percentageLength)
-            skipComments *> ((asciiCI "left" $> (a (Just PosLeft) Nothing))
-                 <|> (asciiCI "center" $> (a (Just PosCenter) Nothing))
-                 <|> (asciiCI "right" $> (a (Just PosRight) Nothing))
+            skipComments *> ((asciiCI "left" $> a (Just PosLeft) Nothing)
+                 <|> (asciiCI "center" $> a (Just PosCenter) Nothing)
+                 <|> (asciiCI "right" $> a (Just PosRight) Nothing)
                  <|> ((a Nothing . Just) <$> percentageLength))
 
 pos4 :: Parser Position
 pos4 = firstx <|> firsty
-  where posTop    = asciiCI "top" $> (Position (Just PosTop))
-        posRight  = asciiCI "right" $> (Position (Just PosRight))
-        posBottom = asciiCI "bottom" $> (Position (Just PosBottom))
-        posLeft   = asciiCI "left" $> (Position (Just PosLeft))
+  where posTop    = asciiCI "top" $> Position (Just PosTop)
+        posRight  = asciiCI "right" $> Position (Just PosRight)
+        posBottom = asciiCI "bottom" $> Position (Just PosBottom)
+        posLeft   = asciiCI "left" $> Position (Just PosLeft)
         firstx    = do
-            x <- (asciiCI "center" $> (Position (Just PosCenter) Nothing))
+            x <- (asciiCI "center" $> Position (Just PosCenter) Nothing)
                  <|> ((posLeft <|> posRight) <*> (skipComments *> option Nothing (Just <$> percentageLength)))
             _ <- skipComments
-            (asciiCI "center" $> (x (Just PosCenter) Nothing))
-                <|> (((asciiCI "top" $> (x $ Just PosTop)) <|> (asciiCI "bottom" $> (x (Just PosBottom))))
+            (asciiCI "center" $> x (Just PosCenter) Nothing)
+                <|> (((asciiCI "top" $> x (Just PosTop)) <|> (asciiCI "bottom" $> x (Just PosBottom)))
                     <*> (skipComments *> option Nothing (Just <$> percentageLength)))
         firsty = do
-            x <- (asciiCI "center" $> (Position (Just PosCenter) Nothing))
+            x <- (asciiCI "center" $> Position (Just PosCenter) Nothing)
                  <|> ((posTop <|> posBottom) <*> (skipComments *> option Nothing (Just <$> percentageLength)))
             _ <- skipComments
-            (asciiCI "center" $> (x (Just PosCenter) Nothing))
-                <|> (((asciiCI "left" $> (x $ Just PosLeft)) <|> (asciiCI "right" $> (x (Just PosRight))))
+            (asciiCI "center" $> x (Just PosCenter) Nothing)
+                <|> (((asciiCI "left" $> x (Just PosLeft)) <|> (asciiCI "right" $> x (Just PosRight)))
                     <*> (skipComments *> option Nothing (Just <$> percentageLength)))
 
 {-
