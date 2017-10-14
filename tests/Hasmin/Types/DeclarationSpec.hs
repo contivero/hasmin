@@ -22,8 +22,8 @@ propertySpecificTests =
       mapM_ (matchSpec f) propertySpecificTestsInfo
   where f = minify <$> declaration
 
-propertySpecificTestsInfo :: [(Text, Text)] 
-propertySpecificTestsInfo = 
+propertySpecificTestsInfo :: [(Text, Text)]
+propertySpecificTestsInfo =
   [("font-family:Arial Black Long Name", "font-family:arial black long name")
   ,("font:9px Arial Black Long Name", "font:9px arial black long name")
   ,("font-family:\"SANS-SERIF\"", "font-family:\"sans-serif\"")
@@ -145,13 +145,13 @@ propertySpecificTestsInfo =
 
 
 declarationTestsInfo :: [(Text, Text)]
-declarationTestsInfo = 
+declarationTestsInfo =
   [("box-shadow:0 7px 0 #fefefe, 0 14px 0 #fefefe",
     "box-shadow:0 7px 0 #fefefe,0 14px 0 #fefefe")
   ]
 
 cleaningTests :: Spec
-cleaningTests = 
+cleaningTests =
     describe "cleaning function" $
       mapM_ (matchSpecWithDesc f) cleaningTestsInfo
   where f = (Declarations . clean) <$> declarations
@@ -266,11 +266,11 @@ shorthandInitialValuesTests = do
     testMatches "animation minification" animationTestsInfo
     testMatches "font minification" fontTestsInfo
     testMatches "outline minification" outlineTestsInfo
-    anyOrderShorthandTests 
+    anyOrderShorthandTests
   where testMatches a i = describe a $ mapM_ (matchSpecWithDesc (minify <$> declaration)) i
 
 backgroundTestsInfo :: [(String, Text, Text)]
-backgroundTestsInfo = 
+backgroundTestsInfo =
   [("Does not remove <position> from background when the <bg-size> cannot be removed",
     "background: 0 0 / 3px", "background:0 0/3px")
   ,("Removes <position> when it is the default and no <bg-size> is present",
@@ -292,7 +292,7 @@ backgroundTestsInfo =
   ]
 
 transitionTestsInfo :: [(String, Text, Text)]
-transitionTestsInfo = 
+transitionTestsInfo =
   [("Removes transition-duration when it is the default",
     "transition: ease-out some-property 0s", "transition:ease-out some-property")
   ,("Removes transition-delay when it is the default",
@@ -308,7 +308,7 @@ transitionTestsInfo =
   ]
 
 animationTestsInfo :: [(String, Text, Text)]
-animationTestsInfo = 
+animationTestsInfo =
   [("Removes default animation-fill-mode when the animation-name doesn't overlap with its keywords",
     "animation:none animName", "animation:animName")
   ,("Leaves default animation-fill-mode when the animation-name overlaps with one of its keywords",
@@ -336,7 +336,7 @@ animationTestsInfo =
   ]
 
 fontTestsInfo :: [(String, Text, Text)]
-fontTestsInfo = 
+fontTestsInfo =
   [("Removes default font-style",
     "font:normal condensed bolder small-caps 9px/1 sans", "font:small-caps bolder condensed 9px/1 sans")
   ,("Removes default font-variant",
@@ -356,7 +356,7 @@ fontTestsInfo =
 -- Tests for the removal of outline initial values. Almost identical to those
 -- shorthands in the anyOrderShorthandTests, except for the invert color.
 outlineTestsInfo :: [(String, Text, Text)]
-outlineTestsInfo = 
+outlineTestsInfo =
   [("Removes default outline-color",
     "outline:invert solid 1px", "outline:solid 1px")
   ,("Removes default outline-style",
@@ -368,12 +368,12 @@ outlineTestsInfo =
   ]
 
 -- Tests for shorthands whose initial values are "medium none currentColor",
--- and can go on any order. 
+-- and can go on any order.
 anyOrderShorthandTests :: Spec
 anyOrderShorthandTests =
     describe "Shorthands that accept values in any order (mostly: medium none currentColor)" $
       traverse_ (mapM_ (matchSpec (minify <$> declaration))) d
-  where d = fmap f shorthandsToTest 
+  where d = fmap f shorthandsToTest
         f z = fmap (\(x,y) -> (z <> ":" <> x, z <> ":" <> y)) shorthandEquivalences
         shorthandsToTest = ["border"
                            ,"border-top"
@@ -435,9 +435,9 @@ minifyDecTestsInfo =
   ]
 
 spec :: Spec
-spec = do cleaningTests 
+spec = do cleaningTests
           minifyDecTests
-          shorthandInitialValuesTests 
+          shorthandInitialValuesTests
           declarationTests
           propertySpecificTests
 

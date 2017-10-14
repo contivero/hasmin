@@ -16,8 +16,8 @@ module Hasmin.Types.Stylesheet (
     , KeyframeBlock(..)
     , SupportsCondition(..)
     , SupportsCondInParens(..)
-    , isEmpty
     , minifyRules
+    , collapse
     ) where
 
 import Control.Applicative (liftA2)
@@ -156,10 +156,10 @@ instance Minifiable Rule where
   minifyWith (AtKeyframes vp n bs) = AtKeyframes vp n <$> mapM minifyWith bs
   minifyWith (AtBlockWithRules t rs) = AtBlockWithRules t <$> mapM minifyWith rs
   minifyWith (AtBlockWithDec t ds) = do
-      decs <- cleanRule ds >>= compactLonghands >>= mapM minifyWith
+      decs <- cleanRule ds >>= collapseLonghands >>= mapM minifyWith
       pure $ AtBlockWithDec t decs
   minifyWith (StyleRule ss ds) = do
-      decs <- cleanRule ds >>= compactLonghands >>= mapM minifyWith >>= sortDeclarations
+      decs <- cleanRule ds >>= collapseLonghands >>= mapM minifyWith >>= sortDeclarations
       sels <- mapM minifyWith ss >>= removeDuplicateSelectors >>= sortSelectors
       pure $ StyleRule sels decs
   minifyWith (AtImport esu mqs) = AtImport esu <$> mapM minifyWith mqs
@@ -197,53 +197,42 @@ removeDuplicateSelectors sls = do
               then nub' sls
               else sls
 
-gatherLonghands :: [Declaration] -> Map (Text, Bool) Declaration
-gatherLonghands = go Map.empty
-  where go m [] = m
-        go m (d@(Declaration p _ i _):ds)
-            | p `S.member` longhands = go (Map.insert (p,i) d m) ds
-            | otherwise              = go m ds
-        longhands = S.fromList (marginLonghands ++ paddingLonghands)
-
--- TODO delete this.
-marginLonghands = subproperties . fromJust $ Map.lookup "margin" propertiesTraits
-paddingLonghands = subproperties . fromJust $ Map.lookup "padding" propertiesTraits
-
-compactTRBL :: Text -> [Text] -> Map (Text, Bool) Declaration
-            -> (Maybe Declaration, [Declaration])
-compactTRBL name lhs m =
-    case sequenceA (map getDeclaration lhs) of
-      Just l -> (Just (Declaration name (shValues l) False False), l)
-      Nothing -> (Nothing, [])
-  where getDeclaration x = Map.lookup (x, False) m
-        shValues = mkValues . map (head . valuesToList . valueList)
-
-compactMargin  = compactTRBL "margin" marginLonghands
-compactPadding = compactTRBL "padding" paddingLonghands
--- ,("border-color", mergeIntoTRBL)
--- ,("border-width", mergeIntoTRBL)
--- ,("border-style", mergeIntoTRBL)
-
-compacter m ds = compacter' [compactMargin, compactPadding]
-  where compacter' [] = ds
-        compacter' (f:fs) = case f m of
-                              (Just sh, l) -> (compacter' fs \\ l) ++ [sh]
-                              (Nothing, _) -> compacter' fs
-
-compactLonghands :: [Declaration] -> Reader Config [Declaration]
-compactLonghands ds = do
+collapseLonghands :: [Declaration] -> Reader Config [Declaration]
+collapseLonghands decs = do
     conf <- ask
     pure $ if True {- shouldGatherLonghands conf -}
-              then compacter (gatherLonghands ds) ds
-              else ds
+              then collapse decs
+              else decs
 
-isEmpty :: Rule -> Bool
-isEmpty (StyleRule _ ds)        = null ds
-isEmpty (AtMedia _ rs)          = null rs || all isEmpty rs
-isEmpty (AtKeyframes _ _ kfbs)  = null kfbs
-isEmpty (AtBlockWithDec _ ds)   = null ds
-isEmpty (AtBlockWithRules _ rs) = null rs || all isEmpty rs
-isEmpty _                       = False
+collapse :: [Declaration] -> [Declaration]
+collapse ds = collapse' $ zipWith collapseTRBL trbls longhands
+  where collapse' []     = ds
+        collapse' (f:fs) = case f (gatherLonghands ds) of
+                             (Just sh, l) -> (collapse' fs \\ l) ++ [sh]
+                             (Nothing, _) -> collapse' fs
+
+        gatherLonghands :: [Declaration] -> Map (Text, Bool) Declaration
+        gatherLonghands = go Map.empty
+          where go m [] = m
+                go m (d@(Declaration p _ i _):ds)
+                    | p `S.member` longhandsSet = go (Map.insert (p,i) d m) ds
+                    | otherwise              = go m ds
+                longhandsSet = S.fromList (concat longhands)
+
+        trbls = ["margin", "padding", "border-color", "border-width", "border-style"]
+        longhands = map subpropertiesOf trbls
+
+        subpropertiesOf :: Text -> [Text]
+        subpropertiesOf p = subproperties . fromJust $ Map.lookup p propertiesTraits
+
+        collapseTRBL :: Text -> [Text] -> Map (Text, Bool) Declaration
+                     -> (Maybe Declaration, [Declaration])
+        collapseTRBL name longhands m =
+            case sequenceA (map getDeclaration longhands) of
+              Just l  -> (Just (Declaration name (shValues l) False False), l)
+              Nothing -> (Nothing, [])
+          where getDeclaration x = Map.lookup (x, False) m
+                shValues = mkValues . map (head . valuesToList . valueList)
 
 -- O(n log n) implementation, vs. O(n^2) which is the normal nub.
 -- Note that nub has only an Eq constraint, while this one has an Ord one.
@@ -266,9 +255,9 @@ instance ToText SupportsCondition where
   toBuilder (Or x y)   = appendWith " or " x y
   toBuilder (Parens x) = toBuilder x
 instance Minifiable SupportsCondition where
-  minifyWith (And x y)   = And <$> pure x <*> mapM pure y
-  minifyWith (Or x y)    = Or <$> pure x <*> mapM pure y
-  minifyWith (Parens x)  = Parens <$> pure x
+  minifyWith x@And{}    = pure x
+  minifyWith x@Or{}     = pure x
+  minifyWith x@Parens{} = pure x
   minifyWith (Not x) =
     case x of
       ParensCond (Not y) -> case y of
@@ -301,13 +290,6 @@ instance Minifiable SupportsCondInParens where
   minifyWith (ParensDec x) = ParensDec <$> minifyWith x
   minifyWith  (ParensCond x)  = ParensCond <$> minifyWith x
 
-combineAdjacentMediaQueries :: [Rule] -> [Rule]
-combineAdjacentMediaQueries (a@(AtMedia mqs es) : b@(AtMedia mqs2 es2) : xs)
-    | mqs == mqs2 = combineAdjacentMediaQueries (AtMedia mqs (es ++ es2) : xs)
-    | otherwise   = a : combineAdjacentMediaQueries (b:xs)
-combineAdjacentMediaQueries (x:xs) = x : combineAdjacentMediaQueries xs
-combineAdjacentMediaQueries [] = []
-
 -- Set of functions to minify rules
 minifyRules :: [Rule] -> Reader Config [Rule]
 minifyRules = handleAdjacentMediaQueries
@@ -319,10 +301,23 @@ minifyRules = handleAdjacentMediaQueries
           pure $ if shouldRemoveEmptyBlocks conf
                     then filter (not . isEmpty) rs
                     else rs
+        isEmpty :: Rule -> Bool
+        isEmpty (StyleRule _ ds)        = null ds
+        isEmpty (AtMedia _ rs)          = null rs || all isEmpty rs
+        isEmpty (AtKeyframes _ _ kfbs)  = null kfbs
+        isEmpty (AtBlockWithDec _ ds)   = null ds
+        isEmpty (AtBlockWithRules _ rs) = null rs || all isEmpty rs
+        isEmpty _                       = False
         handleAdjacentMediaQueries :: [Rule] -> Reader Config [Rule]
-        handleAdjacentMediaQueries rs = do
-          conf <- ask
-          pure $ combineAdjacentMediaQueries rs
+        handleAdjacentMediaQueries rs =
+            pure $ combineAdjacentMediaQueries rs
+          where combineAdjacentMediaQueries :: [Rule] -> [Rule]
+                combineAdjacentMediaQueries (a@(AtMedia mqs es) : b@(AtMedia mqs2 es2) : xs)
+                    | mqs == mqs2 = combineAdjacentMediaQueries (AtMedia mqs (es ++ es2) : xs)
+                    | otherwise   = a : combineAdjacentMediaQueries (b:xs)
+                combineAdjacentMediaQueries (x:xs) = x : combineAdjacentMediaQueries xs
+                combineAdjacentMediaQueries [] = []
+
 
 {-
 supports_rule

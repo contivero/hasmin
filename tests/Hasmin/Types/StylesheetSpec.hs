@@ -7,6 +7,7 @@ import Data.Text (Text, unpack)
 import Hasmin.Parser.Internal
 import Hasmin.TestUtils
 import Hasmin.Types.Class
+import Hasmin.Types.Stylesheet
 import Hasmin.Utils
 import Hasmin
 
@@ -88,10 +89,33 @@ atRuleTestsInfo =
     -- "@font-feature-values Jupiter Sans{@swash{delicate:1;flowing:2}}",
   ]
 
+collapseLonghandTests :: Spec
+collapseLonghandTests =
+    describe "TRBL Longhand collapsing" $
+      mapM_ (matchSpec f) collapseLonghandsTestsInfo
+  where f = (Declarations . collapse) <$> declarations
+
+collapseLonghandsTestsInfo :: [(Text, Text)]
+collapseLonghandsTestsInfo =
+  [("margin-top:1px;margin-right:2px;margin-bottom:3px;margin-left:4px",
+    "margin:1px 2px 3px 4px")
+  ,("margin-left:4px;margin-bottom:3px;margin-right:2px;margin-top:1px;",
+    "margin:1px 2px 3px 4px")
+  ,("margin-left:4px;margin-bottom:3px;padding-top:0;margin-right:2px;margin-top:1px;",
+    "padding-top:0;margin:1px 2px 3px 4px")
+  ,("margin-bottom:3px;padding-top:0;margin-right:2px;margin-top:1px;",
+    "margin-bottom:3px;padding-top:0;margin-right:2px;margin-top:1px")
+  ,("padding-left:4px;padding-bottom:3px;padding-right:2px;padding-top:1px;",
+    "padding:1px 2px 3px 4px")
+  ,("border-left-color:#004;border-bottom-color:#003;border-right-color:#002;border-top-color:#001;",
+    "border-color:#001 #002 #003 #004")
+  ]
+
+
 spec :: Spec
 spec = do atRuleTests
           combineAdjacentMediaQueriesTests
-
+          collapseLonghandTests
 
 main :: IO ()
 main = hspec spec
