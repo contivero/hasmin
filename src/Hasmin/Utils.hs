@@ -38,9 +38,9 @@ mconcatIntersperse toMonoid y (x:xs) = toMonoid x <> rest
              | otherwise = y <> mconcatIntersperse toMonoid y xs
 
 replaceAt :: Int -> a -> [a] -> [a]
-replaceAt i v ls = case splitAt i ls of
-                    (xs, _:vs) -> xs ++ (v:vs)
-                    (xs, [])   -> xs
+replaceAt index val ls = case splitAt index ls of
+                           (xs, _:vs) -> xs ++ (val:vs)
+                           (xs, [])   -> xs
 
 fromRight' :: Either a b -> b
 fromRight' (Right x) = x

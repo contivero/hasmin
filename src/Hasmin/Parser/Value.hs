@@ -45,8 +45,8 @@ import Data.Text (Text)
 import Data.Word (Word8)
 import Data.Char (isAscii)
 import Text.Parser.Permutation ((<|?>), (<$$>), (<$?>), (<||>), permute)
-import qualified Data.Set as Set
 import Numeric (readSigned, readFloat)
+import qualified Data.Set as Set
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Map.Strict as Map
@@ -113,17 +113,26 @@ alphavalue = mkAlphavalue <$> rational
 hexvalue :: Parser Value
 hexvalue = ColorV <$> hex
 
--- TODO improve this parser
 hex :: Parser Color
-hex = char '#' *> (constructHex <$> choice ps)
-  where hexadecimal = satisfy C.isHexDigit
-        ps = [count 8 hexadecimal, count 6 hexadecimal,
-              count 4 hexadecimal, count 3 hexadecimal]
-        constructHex [r,g,b] = mkHex3 r g b
-        constructHex [r,g,b,a] = mkHex4 r g b a
-        constructHex [r1,r2,g1,g2,b1,b2] = mkHex6 [r1,r2] [g1,g2] [b1,b2]
-        constructHex [r1,r2,g1,g2,b1,b2,a1,a2] = mkHex8 [r1,r2] [g1,g2] [b1,b2] [a1,a2]
-        constructHex _ = error "invalid list size for a hex color"
+hex = do
+    _ <- char '#'
+    a <- hexadecimal
+    b <- hexadecimal
+    c <- hexadecimal
+    x <- optional hexadecimal
+    case x of
+      Nothing -> pure $ mkHex3 a b c
+      Just d  -> do y <- optional hexadecimal
+                    case y of
+                      Nothing -> pure $ mkHex4 a b c d
+                      Just e  -> do f <- hexadecimal
+                                    z <- optional hexadecimal
+                                    case z of
+                                      Nothing -> pure $ mkHex6 [a,b] [c,d] [e,f]
+                                      Just g  -> do h <- hexadecimal
+                                                    pure $ mkHex8 [a,b] [c,d] [e,f] [g,h]
+  where optional w  = option Nothing (Just <$> w)
+        hexadecimal = satisfy C.isHexDigit
 
 -- ---------------------------------------------------------------------------
 -- Dimensions Parsers
@@ -287,7 +296,7 @@ where <font-variant-css21> = [normal | small-caps]
 
 -}
 
--- TODO clean this parser!!
+-- TODO clean parsers pos1, pos2, and pos4
 positionvalue :: Parser Value
 positionvalue = PositionV <$> position
 
