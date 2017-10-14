@@ -26,7 +26,7 @@ import Control.Monad.Reader (Reader, ask)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Text.Lazy.Builder (singleton, fromText, Builder)
-import Data.List (sortBy, (\\))
+import Data.List (sort, sortBy, (\\))
 import Data.Map.Strict (Map)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Foldable (toList)
@@ -177,18 +177,18 @@ sortSelectors :: [Selector] -> Reader Config [Selector]
 sortSelectors sls = do
     conf <- ask
     pure $ case selectorSorting conf of
-                   Lexicographical -> sortBy lexico sls
+                   -- Selector's Ord instance implements lexicographical order
+                   Lexicographical -> sort sls
                    NoSorting       -> sls
+
 sortDeclarations :: [Declaration] -> Reader Config [Declaration]
 sortDeclarations ds = do
     conf <- ask
     pure $ case declarationSorting conf of
              Lexicographical -> sortBy lexico ds
              NoSorting       -> ds
-
--- Used for sorting selectors lexicographically
-lexico :: ToText a => a -> a -> Ordering
-lexico s1 s2 = compare (toText s1) (toText s2)
+  where lexico :: ToText a => a -> a -> Ordering
+        lexico s1 s2 = compare (toText s1) (toText s2)
 
 removeDuplicateSelectors :: [Selector] -> Reader Config [Selector]
 removeDuplicateSelectors sls = do
@@ -201,8 +201,8 @@ gatherLonghands :: [Declaration] -> Map (Text, Bool) Declaration
 gatherLonghands = go Map.empty
   where go m [] = m
         go m (d@(Declaration p _ i _):ds)
-            | S.member p longhands = go (Map.insert (p,i) d m) ds
-            | otherwise            = go m ds
+            | p `S.member` longhands = go (Map.insert (p,i) d m) ds
+            | otherwise              = go m ds
         longhands = S.fromList (marginLonghands ++ paddingLonghands)
 
 -- TODO delete this.

@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings
-           , FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Hasmin.Types.Selector
@@ -18,6 +18,7 @@ module Hasmin.Types.Selector (
     , AnPlusB(..)
     , Att(..)
     , specialPseudoElements
+    , specificity
     ) where
 
 import Control.Applicative (liftA2)
@@ -33,16 +34,6 @@ import Hasmin.Config
 import Hasmin.Types.Class
 import Hasmin.Types.String
 import Hasmin.Utils
-
-{-
-class Specificity a where
-  specificity :: a -> (Int, Int, Int, Int)
-
-addSpecificity :: (Int, Int, Int, Int)
-               -> (Int, Int, Int, Int)
-               -> (Int, Int, Int, Int)
-addSpecificity (a1,b1,c1,d1) (a2,b2,c2,d2) = (a1 + a2, b1 + b2, c1 + c2, d1 + d2)
--}
 
 -- | Combinators are: whitespace, "greater-than sign" (U+003E, >), "plus sign"
 -- (U+002B, +) and "tilde" (U+007E, ~). White space may appear between a
@@ -82,15 +73,27 @@ instance Minifiable Selector where
       newCs <- (mapM . mapM) minifyWith xs
       pure $ Selector newC newCs
 
-{-
-instance Specificity Selector where
-  specificity (Selector (x :| xs) ss) =
-      case x of
-        (Type _ _) -> f (0,0,0,1) xs `addSpecificity` g (0,0,0,0) ss
-        (Universal _) -> f (0,0,0,0) xs `addSpecificity` g (0,0,0,0) ss
-    where f = foldr (addSpecificity . specificity)
-          g = foldr (addSpecificity . specificity . snd)
--}
+type Specificity = (Int, Int, Int)
+
+specificity :: Selector -> Specificity
+specificity (Selector cs css) =
+    foldr (\x ys -> specificity' (snd x) `addSpe` ys) (specificity' cs) css
+  where spe Universal{}              = (0,0,0)
+        spe Type{}                   = (0,0,1)
+        spe PseudoElem{}             = (0,0,1)
+        spe AttributeSel{}           = (0,1,0)
+        spe ClassSel{}               = (0,1,0)
+        spe PseudoClass{}            = (0,1,0)
+        spe Lang{}                   = (0,1,0)
+        spe FunctionalPseudoClass{}  = (0,1,0)
+        spe FunctionalPseudoClass1{} = (0,1,0)
+        spe FunctionalPseudoClass2{} = (0,1,0)
+        spe FunctionalPseudoClass3{} = (0,1,0)
+        spe IdSel{}                  = (1,0,0)
+        addSpe :: Specificity -> Specificity -> Specificity
+        addSpe (a1,b1,c1) (a2,b2,c2) = (a1 + a2, b1 + b2, c1 + c2)
+        specificity' :: CompoundSelector -> Specificity
+        specificity' = foldr (\x ys -> spe x `addSpe` ys) (0,0,0)
 
 -- | Called <https://www.w3.org/TR/css3-selectors/#grammar simple_sequence_selector>
 -- in CSS2.1, but <https://drafts.csswg.org/selectors-4/#typedef-compound-selector
@@ -105,11 +108,6 @@ instance ToText CompoundSelector where
 
 instance Minifiable CompoundSelector where
   minifyWith (a :| xs) = liftA2 (:|) (minifyWith a) (mapM minifyWith xs)
-
-{-
-instance Specificity a => Specificity (NonEmpty a) where
-  specificity = foldr (\x y -> specificity x `addSpecificity` y) (0,0,0,0)
--}
 
 -- | Certain selectors support namespace prefixes. Namespace prefixes are
 -- declared with the @namespace rule. A type selector containing a namespace
@@ -214,10 +212,7 @@ instance ToText Sign where
   toBuilder Plus  = singleton '+'
   toBuilder Minus = singleton '-'
 
--- We could maybe model the AB constructor with an Either,
--- to make sure AB NoValue Nothing isn't possible (which is invalid).
--- Also, modelling a BValue would cover all remaining cases,
--- for example +6 vs 6, -0 vs 0 vs +0.
+-- | <an+b> data type
 data AnPlusB = Even
              | Odd
              | A (Maybe Sign) (Maybe Int) -- "sign n number", e.g. +3n, -2n, 1n.
