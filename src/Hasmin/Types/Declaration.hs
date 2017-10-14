@@ -67,7 +67,7 @@ propertyTraits d@(Declaration p _ _ _) = do
     conf <- ask
     pure $ if shouldUsePropertyTraits conf
               then case Map.lookup (T.toCaseFold p) propertiesTraits of
-                     Just (vals, inhs) -> minifyDec d vals inhs
+                     (Just (PropertyInfo vals inhs _ _)) -> minifyDec d vals inhs
                      Nothing           -> d
               else d
 
@@ -167,10 +167,11 @@ replaceWithZero s d@(Declaration p (Values v vs) _ _)
     | not (null vs) = pure d -- Some error occured, since there should be only one value
     | otherwise     =
         case Map.lookup (T.toCaseFold p) propertiesTraits of
-          Just (iv, inhs) -> if f iv inhs == mkOther s
-                                then pure $ d { valueList = Values (DistanceV (Distance 0 Q)) [] }
-                                else pure d
-          Nothing         -> pure d
+          Just (PropertyInfo iv inhs _ _) -> 
+              if f iv inhs == mkOther s
+                 then pure $ d { valueList = Values (DistanceV (Distance 0 Q)) [] }
+                 else pure d
+          Nothing -> pure d
   where f (Just (Values x _)) inh
           | v == Initial || v == Unset && not inh = x
           | otherwise                             = v
@@ -401,8 +402,8 @@ clean (d:ds) =
     in case newD of
          Just x  -> x : clean newDs
          Nothing -> clean newDs -- drop and keep cleaning
-  where pinfo = fromMaybe (PropertyInfo mempty mempty) -- No info on the property, use an empty one.
-                  (Map.lookup (propertyName d) shorthandAndLonghandsMap)
+  where pinfo = fromMaybe (PropertyInfo Nothing False mempty mempty) -- No info on the property, use an empty one.
+                  (Map.lookup (propertyName d) propertiesTraits)
 
 -- Given a declaration, if it is a shorthand and it has a corresponding
 -- longhand later in the list, merges them. If it is a longhand overwritten by
