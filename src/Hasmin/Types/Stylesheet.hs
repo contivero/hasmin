@@ -30,6 +30,7 @@ import Data.List (sortBy, (\\))
 import Data.Map.Strict (Map)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Foldable (toList)
+import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -42,6 +43,7 @@ import Hasmin.Types.Declaration
 import Hasmin.Types.String
 import Hasmin.Types.Numeric
 import Hasmin.Utils
+import Hasmin.Properties
 
 -- | Data type for media queries. For the syntax, see
 -- <https://www.w3.org/TR/css3-mediaqueries/#syntax media query syntax>.
@@ -184,6 +186,10 @@ sortDeclarations ds = do
              Lexicographical -> sortBy lexico ds
              NoSorting       -> ds
 
+-- Used for sorting selectors lexicographically
+lexico :: ToText a => a -> a -> Ordering
+lexico s1 s2 = compare (toText s1) (toText s2)
+
 removeDuplicateSelectors :: [Selector] -> Reader Config [Selector]
 removeDuplicateSelectors sls = do
     conf <- ask
@@ -200,8 +206,8 @@ gatherLonghands = go Map.empty
         longhands = S.fromList (marginLonghands ++ paddingLonghands)
 
 -- TODO delete this.
-marginLonghands = ["margin-top", "margin-right", "margin-bottom", "margin-left"]
-paddingLonghands = ["padding-top", "padding-right", "padding-bottom", "padding-left"]
+marginLonghands = subproperties . fromJust $ Map.lookup "margin" propertiesTraits
+paddingLonghands = subproperties . fromJust $ Map.lookup "padding" propertiesTraits
 
 compactTRBL :: Text -> [Text] -> Map (Text, Bool) Declaration
             -> (Maybe Declaration, [Declaration])
@@ -230,11 +236,6 @@ compactLonghands ds = do
     pure $ if True {- shouldGatherLonghands conf -}
               then compacter (gatherLonghands ds) ds
               else ds
-
--- Used for sorting selectors
--- TODO: move to the correct place, and maybe rename.
-lexico :: ToText a => a -> a -> Ordering
-lexico s1 s2 = compare (toText s1) (toText s2)
 
 isEmpty :: Rule -> Bool
 isEmpty (StyleRule _ ds)        = null ds

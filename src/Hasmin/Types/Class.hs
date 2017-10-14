@@ -45,5 +45,5 @@ instance ToText Int where
 instance ToText Text where
   toText = id
 instance (ToText a, ToText b) => ToText (Either a b) where
-  toText = either toText toText
+  toText    = either toText toText
   toBuilder = either toBuilder toBuilder

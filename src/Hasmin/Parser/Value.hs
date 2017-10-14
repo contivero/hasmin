@@ -36,8 +36,8 @@ import Control.Applicative ((<|>), many, liftA3)
 import Control.Arrow (first, (&&&))
 import Control.Monad (mzero)
 import Data.Functor (($>))
-import Data.Attoparsec.Text (asciiCI, char, choice, count, many1,
-  option, Parser, satisfy, skipSpace, string, digit)
+import Data.Attoparsec.Text (asciiCI, char, count, many1, option, Parser,
+  satisfy, skipSpace, string, digit)
 import Data.Map.Strict (Map)
 import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe, isNothing)

@@ -167,13 +167,13 @@ replaceWithZero s d@(Declaration p (Values v vs) _ _)
     | not (null vs) = pure d -- Some error occured, since there should be only one value
     | otherwise     =
         case Map.lookup (T.toCaseFold p) propertiesTraits of
-          Just (PropertyInfo iv inhs _ _) -> 
+          Just (PropertyInfo iv inhs _ _) ->
               if f iv inhs == mkOther s
                  then pure $ d { valueList = Values (DistanceV (Distance 0 Q)) [] }
                  else pure d
           Nothing -> pure d
   where f (Just (Values x _)) inh
-          | v == Initial || v == Unset && not inh = x
+          | v == Initial || v == Unset && inh == NonInherited = x
           | otherwise                             = v
         f _ _ = v
 
@@ -282,19 +282,19 @@ transformOriginKeywords = Map.fromList
 -- | Minifies a declaration, based on the property's specific traits (i.e. if
 -- it inherits or not, and what its initial value is), and the chosen
 -- configurations.
-minifyDec :: Declaration -> Maybe Values -> Bool -> Declaration
-minifyDec d@(Declaration p vs _ _) mv inherits =
+minifyDec :: Declaration -> Maybe Values -> Inheritance -> Declaration
+minifyDec d@(Declaration p vs _ _) mv inhs =
     case mv of
       -- Use the found initial values to try to reduce the declaration
       Just vals ->
           case Map.lookup (T.toCaseFold p) declarationExceptions of
             -- Use a specific function to reduce the property if
             -- needed, otherwise use the general property reducer
-            Just f  -> f d vals inherits
-            Nothing -> reduceDeclaration d vals inherits
+            Just f  -> f d vals inhs
+            Nothing -> reduceDeclaration d vals inhs
       -- Property with no defined initial values. Try to reduce css-wide keywords
       Nothing   ->
-          if not inherits && vs == initial || inherits && vs == inherit
+          if inhs == NonInherited && vs == initial || inhs == Inherited && vs == inherit
              then d { valueList = unset }
              else d
 
@@ -309,7 +309,7 @@ inherit = Values Inherit mempty
 
 -- Map of property specific reducers, for properties that don't fit in the
 -- normal declaration minification scheme and need special treatment.
-declarationExceptions :: Map Text (Declaration -> Values -> Bool -> Declaration)
+declarationExceptions :: Map Text (Declaration -> Values -> Inheritance -> Declaration)
 declarationExceptions = Map.fromList $ map (first T.toCaseFold)
   [("background-size",         backgroundSizeReduce)
   ,("-webkit-background-size", backgroundSizeReduce)
@@ -334,19 +334,19 @@ combineTransformFunctions d@(Declaration _ vs _ _) = do
                 splitValues' (ts, os) (x:xs)            = splitValues' (ts, os |> x) xs
                 splitValues  (ts, os) []                = (ts, os)
 
-backgroundSizeReduce :: Declaration -> Values -> Bool -> Declaration
-backgroundSizeReduce d@(Declaration _ vs _ _) initVals inherits =
+backgroundSizeReduce :: Declaration -> Values -> Inheritance -> Declaration
+backgroundSizeReduce d@(Declaration _ vs _ _) initVals inhs =
     case valuesToList vs of
       [v1,v2] -> if v2 == mkOther "auto"
                     then d { valueList = mkValues [v1] }
                     else d
-      _       -> d { valueList = shortestEquiv vs initVals inherits }
+      _       -> d { valueList = shortestEquiv vs initVals inhs }
 
-fontSynthesisReduce :: Declaration -> Values -> Bool -> Declaration
-fontSynthesisReduce d@(Declaration _ vs _ _) initVals inherits =
+fontSynthesisReduce :: Declaration -> Values -> Inheritance -> Declaration
+fontSynthesisReduce d@(Declaration _ vs _ _) initVals inhs =
     case valuesToList initVals \\ valuesToList vs of
       [] -> d {valueList = initial} -- "initial" is shorter than "weight style"
-      _  -> d {valueList = shortestEquiv vs initVals inherits}
+      _  -> d {valueList = shortestEquiv vs initVals inhs}
 
 -- Function to reduce the great mayority of properties. Requires that:
 -- 1. The order between values doesn't matter, which is true for most
@@ -355,11 +355,11 @@ fontSynthesisReduce d@(Declaration _ vs _ _) initVals inherits =
 --    because the default value is used when it isn't present. An example of a
 --    property that qualifies is border-bottom, and one that doesn't is
 --    font-synthesis (because it isn't a shorthand).
-reduceDeclaration :: Declaration -> Values -> Bool -> Declaration
-reduceDeclaration d@(Declaration _ vs _ _) initVals inherits =
+reduceDeclaration :: Declaration -> Values -> Inheritance -> Declaration
+reduceDeclaration d@(Declaration _ vs _ _) initVals inhs =
     case analyzeValueDifference vs initVals of
-      Just v  -> d {valueList = shortestEquiv v shortestInitialValue inherits}
-      Nothing -> d {valueList = minVal inherits shortestInitialValue}
+      Just v  -> d {valueList = shortestEquiv v shortestInitialValue inhs}
+      Nothing -> d {valueList = minVal inhs shortestInitialValue}
   where comparator x y = compare (textualLength x) (textualLength y)
         shortestInitialValue = mkValues [minimumBy comparator (valuesToList initVals)]
 
@@ -367,19 +367,19 @@ reduceDeclaration d@(Declaration _ vs _ _) initVals inherits =
 -- keywords and the shortest initial value for the property.
 -- Otherwise, no property specific reduction could be done, so just return the
 -- values.
-shortestEquiv :: Values -> Values -> Bool -> Values
-shortestEquiv vs siv inherits
-    | inherits     && vs == inherit                = unset
-    | not inherits && vs == unset || vs == initial = minVal inherits siv
+shortestEquiv :: Values -> Values -> Inheritance -> Values
+shortestEquiv vs siv inhs
+    | inhs == Inherited && vs == inherit           = unset
+    | inhs == NonInherited && vs == unset || vs == initial = minVal inhs siv
     | otherwise = vs
 
 -- Returns the minimum value (in character length) between the shortest initial
 -- value, and the shortest css-wide keyword (initial or unset)
-minVal :: Bool -> Values -> Values
-minVal inherits vs
+minVal :: Inheritance -> Values -> Values
+minVal inhs vs
     | textualLength globalKeyword <= textualLength vs = globalKeyword
     | otherwise                                       = vs
-  where globalKeyword = mkValues [if not inherits then Unset else Initial]
+  where globalKeyword = mkValues [if inhs == NonInherited then Unset else Initial]
 
 -- Substract declaration values to the property's initial value list.
 -- If nothing remains (i.e. every value declared was an initial one and may be
@@ -402,7 +402,7 @@ clean (d:ds) =
     in case newD of
          Just x  -> x : clean newDs
          Nothing -> clean newDs -- drop and keep cleaning
-  where pinfo = fromMaybe (PropertyInfo Nothing False mempty mempty) -- No info on the property, use an empty one.
+  where pinfo = fromMaybe (PropertyInfo Nothing NonInherited mempty mempty) -- No info on the property, use an empty one.
                   (Map.lookup (propertyName d) propertiesTraits)
 
 -- Given a declaration, if it is a shorthand and it has a corresponding
@@ -441,12 +441,11 @@ solveClashes' newDs (laterDec:ds) dec pinfo
 
 hasVendorPrefix :: Declaration -> Bool
 hasVendorPrefix (Declaration _ vs _ _) = any isVendorPrefixedValue $ valuesToList vs
-
-isVendorPrefixedValue :: Value -> Bool
-isVendorPrefixedValue (Other t)         = T.isPrefixOf "-" $ getText t
-isVendorPrefixedValue (GradientV t _)   = T.isPrefixOf "-" t
-isVendorPrefixedValue (GenericFunc t _) = T.isPrefixOf "-" t
-isVendorPrefixedValue _                 = False
+  where isVendorPrefixedValue :: Value -> Bool
+        isVendorPrefixedValue (Other t)         = T.isPrefixOf "-" $ getText t
+        isVendorPrefixedValue (GradientV t _)   = T.isPrefixOf "-" t
+        isVendorPrefixedValue (GenericFunc t _) = T.isPrefixOf "-" t
+        isVendorPrefixedValue _                 = False
 
 attemptMerge :: [Declaration] -> [Declaration] -> Declaration
              -> Declaration -> PropertyInfo
@@ -554,6 +553,6 @@ reduceTRBL d@(Declaration _ (Values v1 vs) _ _) =
 
 mapValues :: (Value -> Reader Config Value) -> Values -> Reader Config Values
 mapValues f (Values v1 vs) = do
-    x <- f v1
+    x  <- f v1
     xs <- (mapM . mapM) f vs
     pure $ Values x xs

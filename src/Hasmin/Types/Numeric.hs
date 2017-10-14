@@ -11,10 +11,15 @@
 -- All Rational newtypes to ensure dimension conversion precision.
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Numeric (
-    Percentage(..), toPercentage,
-    Number(..), toNumber, fromNumber,
-    Alphavalue(..), toAlphavalue, mkAlphavalue
+module Hasmin.Types.Numeric
+    ( Percentage(..)
+    , toPercentage
+    , Number(..)
+    , toNumber
+    , fromNumber
+    , Alphavalue(..)
+    , toAlphavalue
+    , mkAlphavalue
     ) where
 
 import Data.Text (pack)
@@ -55,13 +60,13 @@ newtype Alphavalue = Alphavalue Rational
   deriving (Eq, Show, Ord, Real, RealFrac)
 
 instance Num Alphavalue where
-  a + b = mkAlphavalue $ toRational a + toRational b
-  a * b = mkAlphavalue $ toRational a * toRational b
-  abs = id -- numbers are never negative, so abs doesn't do anything
+  abs         = id -- numbers are never negative, so abs doesn't do anything
+  a - b       = mkAlphavalue $ toRational a - toRational b
+  a + b       = mkAlphavalue $ toRational a + toRational b
+  a * b       = mkAlphavalue $ toRational a * toRational b
+  fromInteger = toAlphavalue
   signum a | toRational a == 0 = 0
            | otherwise         = 1
-  fromInteger = toAlphavalue
-  a - b = mkAlphavalue $ toRational a - toRational b
 
 instance ToText Alphavalue where
   toText = pack .  trimLeadingZeros . showRat . toRational
