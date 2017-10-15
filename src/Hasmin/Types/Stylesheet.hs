@@ -86,11 +86,10 @@ instance Minifiable KeyframeSelector where
       pure $ if shouldMinifyKeyframeSelectors conf
                 then minifyKFS x
                 else x
-
-minifyKFS :: KeyframeSelector -> KeyframeSelector
-minifyKFS From                            = KFPercentage $ Percentage 0
-minifyKFS (KFPercentage (Percentage 100)) = To
-minifyKFS x = x
+    where minifyKFS :: KeyframeSelector -> KeyframeSelector
+          minifyKFS From                            = KFPercentage $ Percentage 0
+          minifyKFS (KFPercentage (Percentage 100)) = To
+          minifyKFS x = x
 
 data KeyframeBlock = KeyframeBlock [KeyframeSelector] [Declaration]
   deriving (Eq, Show)
@@ -162,6 +161,31 @@ instance Minifiable Rule where
       decs <- cleanRule ds >>= collapseLonghands >>= mapM minifyWith >>= sortDeclarations
       sels <- mapM minifyWith ss >>= removeDuplicateSelectors >>= sortSelectors
       pure $ StyleRule sels decs
+    where sortSelectors :: [Selector] -> Reader Config [Selector]
+          sortSelectors sls = do
+              conf <- ask
+              pure $ case selectorSorting conf of
+                            -- Selector's Ord instance implements lexicographical order
+                            Lexicographical -> sort sls
+                            NoSorting       -> sls
+
+          sortDeclarations :: [Declaration] -> Reader Config [Declaration]
+          sortDeclarations ds = do
+              conf <- ask
+              pure $ case declarationSorting conf of
+                      Lexicographical -> sortBy lexico ds
+                      NoSorting       -> ds
+            where lexico :: ToText a => a -> a -> Ordering
+                  lexico s1 s2 = compare (toText s1) (toText s2)
+
+          removeDuplicateSelectors :: [Selector] -> Reader Config [Selector]
+          removeDuplicateSelectors sls = do
+              conf <- ask
+              pure $ if shouldRemoveDuplicateSelectors conf
+                        then nub' sls
+                        else sls
+
+
   minifyWith (AtImport esu mqs) = AtImport esu <$> mapM minifyWith mqs
   minifyWith (AtCharset s) = AtCharset <$> mapString lowercaseText s
   minifyWith x = pure x
@@ -172,30 +196,6 @@ cleanRule ds = do
     pure $ if shouldCleanRules conf
               then clean ds
               else ds
-
-sortSelectors :: [Selector] -> Reader Config [Selector]
-sortSelectors sls = do
-    conf <- ask
-    pure $ case selectorSorting conf of
-                   -- Selector's Ord instance implements lexicographical order
-                   Lexicographical -> sort sls
-                   NoSorting       -> sls
-
-sortDeclarations :: [Declaration] -> Reader Config [Declaration]
-sortDeclarations ds = do
-    conf <- ask
-    pure $ case declarationSorting conf of
-             Lexicographical -> sortBy lexico ds
-             NoSorting       -> ds
-  where lexico :: ToText a => a -> a -> Ordering
-        lexico s1 s2 = compare (toText s1) (toText s2)
-
-removeDuplicateSelectors :: [Selector] -> Reader Config [Selector]
-removeDuplicateSelectors sls = do
-    conf <- ask
-    pure $ if shouldRemoveDuplicateSelectors conf
-              then nub' sls
-              else sls
 
 collapseLonghands :: [Declaration] -> Reader Config [Declaration]
 collapseLonghands decs = do
@@ -228,8 +228,10 @@ collapse ds = collapse' $ zipWith collapseTRBL trbls longhands
         collapseTRBL :: Text -> [Text] -> Map (Text, Bool) Declaration
                      -> (Maybe Declaration, [Declaration])
         collapseTRBL name longhands m =
-            case sequenceA (map getDeclaration longhands) of
+            case traverse getDeclaration longhands of
+              -- If every longhand is present, return the collapsed ones
               Just l  -> (Just (Declaration name (shValues l) False False), l)
+              -- If a longhand was missing, don't combine because it's unsafe
               Nothing -> (Nothing, [])
           where getDeclaration x = Map.lookup (x, False) m
                 shValues = mkValues . map (head . valuesToList . valueList)
@@ -301,6 +303,7 @@ minifyRules = handleAdjacentMediaQueries
           pure $ if shouldRemoveEmptyBlocks conf
                     then filter (not . isEmpty) rs
                     else rs
+
         isEmpty :: Rule -> Bool
         isEmpty (StyleRule _ ds)        = null ds
         isEmpty (AtMedia _ rs)          = null rs || all isEmpty rs
@@ -308,6 +311,7 @@ minifyRules = handleAdjacentMediaQueries
         isEmpty (AtBlockWithDec _ ds)   = null ds
         isEmpty (AtBlockWithRules _ rs) = null rs || all isEmpty rs
         isEmpty _                       = False
+
         handleAdjacentMediaQueries :: [Rule] -> Reader Config [Rule]
         handleAdjacentMediaQueries rs =
             pure $ combineAdjacentMediaQueries rs
@@ -317,7 +321,6 @@ minifyRules = handleAdjacentMediaQueries
                     | otherwise   = a : combineAdjacentMediaQueries (b:xs)
                 combineAdjacentMediaQueries (x:xs) = x : combineAdjacentMediaQueries xs
                 combineAdjacentMediaQueries [] = []
-
 
 {-
 supports_rule

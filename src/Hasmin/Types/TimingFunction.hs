@@ -43,11 +43,22 @@ instance Eq TimingFunction where
   Steps i1 ms1 == Steps i2 ms2 = i1 == i2 && (ms1 == ms2
                                     || (isNothing ms1 && fromJust ms2 == End)
                                     || (fromJust ms1 == End && isNothing ms2))
-  s@Steps{} == x         = maybe False (== s) (toSteps x)
-  x == s@Steps{}         = s == x
+  s@Steps{} == x         = toSteps x == Just s
+    where toSteps :: TimingFunction -> Maybe TimingFunction
+          toSteps StepEnd   = Just $ Steps 1 (Just End)
+          toSteps StepStart = Just $ Steps 1 (Just Start)
+          toSteps _         = Nothing
+  x == s@Steps{} = s == x
   CubicBezier x1 x2 x3 x4 == CubicBezier y1 y2 y3 y4 =
       x1 == y1 && x2 == y2 && x3 == y3 && x4 == y4
-  c@CubicBezier{} == x   = maybe False (== c) (toCubicBezier x)
+  c@CubicBezier{} == x   = toCubicBezier x == Just c
+    where toCubicBezier :: TimingFunction -> Maybe TimingFunction
+          toCubicBezier Ease      = Just $ CubicBezier 0.25 0.1 0.25 1
+          toCubicBezier EaseIn    = Just $ CubicBezier 0.42 0   1    1
+          toCubicBezier EaseInOut = Just $ CubicBezier 0.42 0   0.58 1
+          toCubicBezier Linear    = Just $ CubicBezier 0    0   1    1
+          toCubicBezier EaseOut   = Just $ CubicBezier 0    0   0.58 1
+          toCubicBezier _         = Nothing
   x == c@CubicBezier{}   = c == x
   StepEnd == StepEnd     = True
   StepStart == StepStart = True
@@ -57,20 +68,6 @@ instance Eq TimingFunction where
   EaseOut == EaseOut     = True
   EaseInOut == EaseInOut = True
   _ == _                 = False
-
-toCubicBezier :: TimingFunction -> Maybe TimingFunction
-toCubicBezier Ease      = Just $ CubicBezier 0.25 0.1 0.25 1
-toCubicBezier EaseIn    = Just $ CubicBezier 0.42 0   1    1
-toCubicBezier EaseInOut = Just $ CubicBezier 0.42 0   0.58 1
-toCubicBezier Linear    = Just $ CubicBezier 0    0   1    1
-toCubicBezier EaseOut   = Just $ CubicBezier 0    0   0.58 1
-toCubicBezier _         = Nothing
-
-toSteps :: TimingFunction -> Maybe TimingFunction
-toSteps StepEnd   = Just $ Steps 1 (Just End)
-toSteps StepStart = Just $ Steps 1 (Just Start)
-toSteps _         = Nothing
-
 
 data StepsSecondParam = Start
                       | End -- End is the default value
@@ -98,27 +95,26 @@ instance Minifiable TimingFunction where
       pure $ if shouldMinifyTimingFunctions conf
                 then minifyTimingFunction x
                 else x
-
-minifyTimingFunction :: TimingFunction -> TimingFunction
-minifyTimingFunction x@(CubicBezier a b c 1)
-    | a == 0.25 && b == 0.1 && c == 0.25 = Ease
-    | b == 0 = if a == 0.42
-                  then if c == 1
-                          then EaseIn
-                          else if c == 0.58
-                                  then EaseInOut
-                                  else x
-                   else if a == 0
-                           then if c == 1
-                                   then Linear
-                                   else if c == 0.58
-                                           then EaseOut
-                                           else x
-                           else x
-minifyTimingFunction x@CubicBezier{} = x
-minifyTimingFunction (Steps 1 ms) =
-    case ms of
-    Just Start -> StepStart
-    _          -> StepEnd
-minifyTimingFunction (Steps i (Just End)) = Steps i Nothing
-minifyTimingFunction x = x
+    where minifyTimingFunction :: TimingFunction -> TimingFunction
+          minifyTimingFunction x@(CubicBezier a b c 1)
+              | a == 0.25 && b == 0.1 && c == 0.25 = Ease
+              | b == 0 = if a == 0.42
+                            then if c == 1
+                                    then EaseIn
+                                    else if c == 0.58
+                                            then EaseInOut
+                                            else x
+                            else if a == 0
+                                    then if c == 1
+                                            then Linear
+                                            else if c == 0.58
+                                                    then EaseOut
+                                                    else x
+                                    else x
+          minifyTimingFunction x@CubicBezier{} = x
+          minifyTimingFunction (Steps 1 ms) =
+              case ms of
+                Just Start -> StepStart
+                _          -> StepEnd
+          minifyTimingFunction (Steps i (Just End)) = Steps i Nothing
+          minifyTimingFunction x = x

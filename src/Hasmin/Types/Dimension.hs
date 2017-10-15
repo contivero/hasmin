@@ -67,14 +67,11 @@ instance Eq Angle where
     | u1 == u2  = r1 == r2
     | otherwise = toDegrees r1 u1 == toDegrees r2 u2
 instance Minifiable Angle where
-  minifyWith a = do
-      shouldMinifyUnits <- asks ((DimMinOn ==) . dimensionSettings)
-      pure $ if shouldMinifyUnits
-                then minifyAngle a
-                else a
-
-minifyAngle :: Angle -> Angle
-minifyAngle (Angle r u) = minDim Angle r u [Turn, Grad, Rad, Deg]
+  minifyWith a@(Angle r u) = do
+      dimSettings <- asks dimensionSettings
+      pure $ case dimSettings of
+               DimMinOn  -> minDim Angle r u [Turn, Grad, Rad, Deg]
+               DimMinOff -> a
 
 instance ToText Angle where
   toBuilder (Angle r u)
@@ -90,10 +87,10 @@ instance Eq Duration where
     | otherwise = toSeconds r1 u1 == toSeconds r2 u2
 instance Minifiable Duration where
   minifyWith d@(Duration r u) = do
-      shouldMinifyUnits <- asks ((DimMinOn ==) . dimensionSettings)
-      pure $ if shouldMinifyUnits
-                then minDim Duration r u [S, Ms]
-                else d
+      dimSettings <- asks dimensionSettings
+      pure $ case dimSettings of
+                DimMinOn  -> minDim Duration r u [S, Ms]
+                DimMinOff -> d
 instance ToText Duration where
   toBuilder (Duration r u) = toBuilder r <> toBuilder u
 
@@ -122,10 +119,10 @@ instance Eq Resolution where
     | otherwise = toDpi r1 u1 == toDpi r2 u2
 instance Minifiable Resolution where
   minifyWith x@(Resolution r u) = do
-      shouldMinifyUnits <- asks ((DimMinOn ==) . dimensionSettings)
-      pure $ if shouldMinifyUnits
-                then minDim Resolution r u [Dpcm, Dppx, Dpi]
-                else x
+      dimSettings <- asks dimensionSettings
+      pure $ case dimSettings of
+               DimMinOn  -> minDim Resolution r u [Dpcm, Dppx, Dpi]
+               DimMinOff -> x
 instance ToText Resolution where
   toBuilder (Resolution r u) = toBuilder r <> toBuilder u
 

@@ -468,7 +468,7 @@ simplify (Skew a ma)
       | defaultSecondArgument = do ang <- minifyWith a
                                    simplify $ Skew ang Nothing
       | otherwise             = liftA2 Skew (minifyWith a) (mapM minifyWith ma)
-    where defaultSecondArgument = maybe False (== Angle 0 Deg) ma
+    where defaultSecondArgument = ma == Just (Angle 0 Deg)
 simplify (SkewY a)
       | a == Angle 0 Deg = pure $ Skew (Angle 0 Deg) Nothing
       | otherwise        = fmap SkewY (minifyWith a)

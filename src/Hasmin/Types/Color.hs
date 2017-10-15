@@ -28,7 +28,7 @@ module Hasmin.Types.Color (
   ) where
 
 import Control.Arrow (first)
-import Control.Monad.Reader (ask)
+import Control.Monad.Reader (asks)
 import Data.Monoid ((<>))
 import Data.Char (isHexDigit, digitToInt, intToDigit, toLower)
 import Data.Maybe (fromMaybe)
@@ -98,8 +98,8 @@ instance Ord Color where
   c1 <= c2 = toLongHex c1 <= toLongHex c2
 instance Minifiable Color where
   minifyWith c = do
-      conf <- ask
-      pure $ case colorSettings conf of
+      colSettings <- asks colorSettings
+      pure $ case colSettings of
                 ColorMinOn  -> minifyColor c
                 ColorMinOff -> c
 

@@ -195,21 +195,20 @@ fontWeightOptimizer = optimizeValues f
           | otherwise           = Other t
 
 optimizeTransformOrigin :: Declaration -> Reader Config Declaration
-optimizeTransformOrigin d@(Declaration _ v _ _) = do
+optimizeTransformOrigin d@(Declaration _ vals _ _) = do
     conf <- ask
     pure $ if shouldMinifyTransformOrigin conf
-              then d { valueList = optimizeTransformOrigin' v}
+              then d { valueList = optimizeTransformOrigin' vals}
               else d
-
-optimizeTransformOrigin' :: Values -> Values
-optimizeTransformOrigin' v =
-    mkValues $ case valuesToList v of
-                 [x, y, z] -> if isZeroVal z
-                                 then transformOrigin2 x y
-                                 else transformOrigin3 x y z
-                 [x, y]    -> transformOrigin2 x y
-                 [x]       -> transformOrigin1 x
-                 x         -> x
+  where optimizeTransformOrigin' :: Values -> Values
+        optimizeTransformOrigin' v =
+          mkValues $ case valuesToList v of
+                       [x, y, z] -> if isZeroVal z
+                                       then transformOrigin2 x y
+                                       else transformOrigin3 x y z
+                       [x, y]    -> transformOrigin2 x y
+                       [x]       -> transformOrigin1 x
+                       x         -> x
 
 -- isZeroVal is needed because we are using a generic parser for
 -- transform-origin, so 0 parses as a number instead of a distance.
@@ -255,9 +254,9 @@ transformOrigin2 x y
         per50 = PercentageV $ Percentage 50
         per100 = PercentageV $ Percentage 100
         convertValue (Other t) = fromMaybe (Other t) (Map.lookup (getText t) transformOriginKeywords)
-        convertValue n@(PercentageV p) = if p == 0
-                              then DistanceV (Distance 0 Q)
-                              else n
+        convertValue n@(PercentageV p)
+            | p == 0    = DistanceV (Distance 0 Q)
+            | otherwise = n
         convertValue i = i
 
 transformOrigin3 :: Value -> Value -> Value -> [Value]
@@ -267,7 +266,7 @@ transformOrigin3 x y z
     | otherwise = fmap replaceKeywords [x, y, z]
   where replaceKeywords :: Value -> Value
         replaceKeywords (Other t) = fromMaybe x (Map.lookup (getText t) transformOriginKeywords)
-        replaceKeywords e = e
+        replaceKeywords e         = e
 
 -- transform-origin keyword meanings.
 transformOriginKeywords :: Map Text Value
@@ -332,7 +331,7 @@ combineTransformFunctions d@(Declaration _ vs _ _) = do
                              -> (Seq TransformFunction, Seq Value)
                 splitValues' (ts, os) (TransformV x:xs) = splitValues' (ts |> x, os) xs
                 splitValues' (ts, os) (x:xs)            = splitValues' (ts, os |> x) xs
-                splitValues  (ts, os) []                = (ts, os)
+                splitValues' (ts, os) []                = (ts, os)
 
 backgroundSizeReduce :: Declaration -> Values -> Inheritance -> Declaration
 backgroundSizeReduce d@(Declaration _ vs _ _) initVals inhs =
@@ -369,7 +368,7 @@ reduceDeclaration d@(Declaration _ vs _ _) initVals inhs =
 -- values.
 shortestEquiv :: Values -> Values -> Inheritance -> Values
 shortestEquiv vs siv inhs
-    | inhs == Inherited && vs == inherit           = unset
+    | inhs == Inherited && vs == inherit = unset
     | inhs == NonInherited && vs == unset || vs == initial = minVal inhs siv
     | otherwise = vs
 

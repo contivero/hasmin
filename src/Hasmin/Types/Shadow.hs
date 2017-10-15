@@ -21,12 +21,12 @@ import Hasmin.Types.Class
 import Hasmin.Types.Color
 import Hasmin.Types.Dimension
 
-data Shadow = Shadow { inset :: Bool
-                     , sOffsetX :: Distance
-                     , sOffsetY :: Distance
-                     , blurRadius :: Maybe Distance
+data Shadow = Shadow { inset        :: Bool
+                     , sOffsetX     :: Distance
+                     , sOffsetY     :: Distance
+                     , blurRadius   :: Maybe Distance
                      , spreadRadius :: Maybe Distance
-                     , sColor :: Maybe Color
+                     , sColor       :: Maybe Color
                      } deriving (Eq, Show)
 
 instance ToText Shadow where
@@ -48,13 +48,11 @@ instance Minifiable Shadow where
                 then let (a, b) = minifyBlurAndSpread nb ns
                      in Shadow i x y a b c2
                 else Shadow i x y nb ns c2
-
-minifyBlurAndSpread :: Maybe Distance -> Maybe Distance
-             -> (Maybe Distance, Maybe Distance)
-minifyBlurAndSpread (Just br) Nothing
-    | br == Distance 0 Q = (Nothing, Nothing)
-    | otherwise          = (Just br, Nothing)
-minifyBlurAndSpread (Just br) (Just sr)
-    | sr == Distance 0 Q = minifyBlurAndSpread (Just br) Nothing
-    | otherwise          = (Just br, Just sr)
-minifyBlurAndSpread x y = (x, y)
+    where minifyBlurAndSpread :: Maybe Distance -> Maybe Distance -> (Maybe Distance, Maybe Distance)
+          minifyBlurAndSpread (Just br) Nothing
+              | br == Distance 0 Q = (Nothing, Nothing)
+              | otherwise          = (Just br, Nothing)
+          minifyBlurAndSpread (Just br) (Just sr)
+              | sr == Distance 0 Q = minifyBlurAndSpread (Just br) Nothing
+              | otherwise          = (Just br, Just sr)
+          minifyBlurAndSpread x y = (x, y)

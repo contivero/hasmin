@@ -31,10 +31,17 @@ instance ToText RepeatStyle where
   toBuilder (RSPair r1 r2 ) = toBuilder r1 <> maybe mempty (\x -> singleton ' ' <> toBuilder x) r2
 instance Minifiable RepeatStyle where
   minifyWith r = do
-    conf <- ask
-    pure $ if True {- shouldMinifyRepeatStyle conf -}
-              then minifyRepeatStyle r
-              else r
+      conf <- ask
+      pure $ if True {- shouldMinifyRepeatStyle conf -}
+                then minifyRepeatStyle r
+                else r
+    where minifyRepeatStyle :: RepeatStyle -> RepeatStyle
+          minifyRepeatStyle (RSPair RsRepeat (Just RsNoRepeat)) = RepeatX
+          minifyRepeatStyle (RSPair RsNoRepeat (Just RsRepeat)) = RepeatY
+          minifyRepeatStyle (RSPair x (Just y))
+              | x == y    = RSPair x Nothing
+              | otherwise = RSPair x (Just y)
+          minifyRepeatStyle x = x
 instance Eq RepeatStyle where
   RepeatX == RepeatX = True
   a@RepeatX == b@RSPair{} = b == a
@@ -57,7 +64,7 @@ instance Eq RepeatStyle where
   RSPair x y == RSPair z w = x == z && y == w
   _ == _ = False
 
-data RSKeyword = RsRepeat 
+data RSKeyword = RsRepeat
                | RsSpace
                | RsRound
                | RsNoRepeat
@@ -67,11 +74,3 @@ instance ToText RSKeyword where
   toBuilder RsSpace    = "space"
   toBuilder RsRound    = "round"
   toBuilder RsNoRepeat = "no-repeat"
-
-minifyRepeatStyle :: RepeatStyle -> RepeatStyle
-minifyRepeatStyle (RSPair RsRepeat (Just RsNoRepeat)) = RepeatX
-minifyRepeatStyle (RSPair RsNoRepeat (Just RsRepeat)) = RepeatY
-minifyRepeatStyle (RSPair x (Just y))
-    | x == y    = RSPair x Nothing
-    | otherwise = RSPair x (Just y)
-minifyRepeatStyle x = x

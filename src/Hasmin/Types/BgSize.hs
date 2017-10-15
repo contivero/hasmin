@@ -44,13 +44,13 @@ instance Eq BgSize where
   _ == _ = False
 
 instance ToText BgSize where
-  toBuilder Cover = "cover"
-  toBuilder Contain = "contain"
+  toBuilder Cover        = "cover"
+  toBuilder Contain      = "contain"
   toBuilder (BgSize x y) = toBuilder x <> maybe mempty (\a -> singleton ' ' <> toBuilder a) y
 
 instance Minifiable BgSize where
   minifyWith (BgSize x y) = do
-      conf <- ask
+      -- conf <- ask
       nx   <- minFirst x
       ny   <- mapM minFirst y
       let b = BgSize nx ny
@@ -59,8 +59,7 @@ instance Minifiable BgSize where
                 else b
     where minFirst (Left a)     = Left <$> minifyWith a
           minFirst (Right Auto) = pure (Right Auto)
-  minifyWith x = pure x
 
-minifyBgSize :: BgSize -> BgSize
-minifyBgSize (BgSize l (Just (Right Auto))) = BgSize l Nothing
-minifyBgSize x = x
+          minifyBgSize (BgSize l (Just (Right Auto))) = BgSize l Nothing
+          minifyBgSize x = x
+  minifyWith x = pure x

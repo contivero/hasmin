@@ -43,7 +43,7 @@ instance ToText Side where
 type SideOrCorner = (Side, Maybe Side)
 
 -- | CSS <color-stop> data type
-data ColorStop = ColorStop { csColor :: Color
+data ColorStop = ColorStop { csColor   :: Color
                            , colorHint :: Maybe PercentageLength
                            } deriving (Show, Eq)
 instance ToText ColorStop where
@@ -55,13 +55,6 @@ instance Minifiable ColorStop where
     newC   <- minifyWith c
     newMlp <- (mapM . mapM) minifyWith mlp
     pure $ ColorStop newC newMlp
-
-{-
-percentageLengthEq :: PercentageLength -> PercentageLength -> Bool
-x `percentageLengthEq` y
-    | isZero x  = isZero y
-    | otherwise = x == y
--}
 
 -- minifies color hints in a \<color-stops\> list
 minifyColorHints :: [ColorStop] -> [ColorStop]
@@ -101,7 +94,7 @@ y `notGreaterThan` x
 -- last, and see if the middle one can be removed. As long as the color hints
 -- are Nothing, keeps accumulating until it finds a Just it can use to interpolate.
 analyzeList :: PercentageLength -> Int -> [ColorStop]
-   -> [ColorStop] -> [ColorStop]
+            -> [ColorStop] -> [ColorStop]
 analyzeList start n list (ColorStop _ mpl:xs)
     | n < 2 = analyzeList start (n+1) list xs
     | otherwise =
@@ -122,7 +115,7 @@ analyzeList start n list [] =
 -- interpolated values, and based on the list decides if it should remove a
 -- color hint or not.
 minifySegment :: PercentageLength -> PercentageLength -> Int -> [ColorStop]
-     -> ([ColorStop], [ColorStop], PercentageLength)
+              -> ([ColorStop], [ColorStop], PercentageLength)
 minifySegment start end n list
     | all isPercentage segment = handlePercentages (fromLeft' start) (fromLeft' end) n remainingList
     -- add here support for dimension interpolation
@@ -264,11 +257,8 @@ minifyAngleOrSide mas =
         minifySide (LeftSide, Nothing)   = Left (Angle 270 Deg)
         minifySide z                     = Right z
 
-defaultGradientAngle :: Angle
-defaultGradientAngle = Angle 180 Deg
-
-defaultGradientSideOrCorner :: SideOrCorner
-defaultGradientSideOrCorner = (BottomSide, Nothing)
+        defaultGradientAngle = Angle 180 Deg
+        defaultGradientSideOrCorner = (BottomSide, Nothing)
 
 instance ToText Gradient where
   toBuilder (OldLinearGradient mas csl) = maybe mempty f mas

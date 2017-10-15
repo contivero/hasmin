@@ -103,14 +103,16 @@ toPercentage = Percentage . toRational
 -- | Show a Rational in decimal notation, removing leading zeros,
 -- and not displaying fractional part if the number is an integer.
 showRat :: Rational -> String
-showRat r | abs (r - fromInteger x) < eps = printf "%d" x
-          | otherwise                     = printf "%f" d
+showRat r
+    | abs (r - fromInteger x) < eps = printf "%d" x
+    | otherwise                     = printf "%f" d
   where x = round r
         d = fromRational r :: Double
 
 trimLeadingZeros :: String -> String
-trimLeadingZeros l@(x:xs) | x == '-'  = x : go xs
-                          | otherwise = go l
+trimLeadingZeros l@(x:xs)
+    | x == '-'  = x : go xs
+    | otherwise = go l
   where go ('0':y:ys) = go (y:ys)
         go z = z
 trimLeadingZeros []  = ""

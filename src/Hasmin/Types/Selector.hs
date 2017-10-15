@@ -188,6 +188,14 @@ instance Minifiable SimpleSelector where
       pure $ if shouldRemoveQuotes conf
                 then AttributeSel (removeAttributeQuotes att)
                 else a
+    where removeAttributeQuotes :: Att -> Att
+          removeAttributeQuotes (attId :=: val)  = attId :=:  either Left removeQuotes val
+          removeAttributeQuotes (attId :~=: val) = attId :~=: either Left removeQuotes val
+          removeAttributeQuotes (attId :|=: val) = attId :|=: either Left removeQuotes val
+          removeAttributeQuotes (attId :^=: val) = attId :^=: either Left removeQuotes val
+          removeAttributeQuotes (attId :$=: val) = attId :$=: either Left removeQuotes val
+          removeAttributeQuotes (attId :*=: val) = attId :*=: either Left removeQuotes val
+          removeAttributeQuotes x@Attribute{}    = x
   minifyWith a@(Lang x) = do
       conf <- ask
       pure $ if shouldRemoveQuotes conf
@@ -202,11 +210,6 @@ instance Minifiable SimpleSelector where
 
 data Sign = Plus | Minus
   deriving (Eq, Show)
-
-isPositive :: Maybe Sign -> Bool
-isPositive Nothing      = True
-isPositive (Just Plus)  = True
-isPositive (Just Minus) = False
 
 instance ToText Sign where
   toBuilder Plus  = singleton '+'
@@ -237,35 +240,38 @@ an2Builder ms mi = maybeToBuilder ms <> maybeToBuilder mi <> singleton 'n'
 
 instance Minifiable AnPlusB where
   minifyWith x = do
-    conf <- ask
-    pure $ if shouldMinifyMicrosyntax conf
-              then minifyAnPlusB x
-              else x
+      conf <- ask
+      pure $ if shouldMinifyMicrosyntax conf
+                then minifyAnPlusB x
+                else x
+    where minifyAN :: Maybe Sign -> Maybe Int -> (Maybe Sign, Maybe Int)
+          minifyAN (Just Plus) i = minifyAN Nothing i
+          minifyAN s (Just 1)    = minifyAN s Nothing
+          minifyAN s i           = (s, i)
 
-minifyAnPlusB :: AnPlusB -> AnPlusB
-minifyAnPlusB Even = A Nothing (Just 2)
-minifyAnPlusB (A ms mi) =
-    case mi of
-      Just 0 -> B 0
-      _      -> uncurry A (minifyAN ms mi)
-minifyAnPlusB (AB _ (Just 0) b) = B b
-minifyAnPlusB (AB ms mi b)
-    | isPositive ms && mi == Just 2 =
-        if b == 1 || b < 0 && odd b
-           then Odd
-           else if even b && b <= 0
-                then minifyAnPlusB Even
-                else AB ms' mi' b
-    | otherwise = if b == 0
-                     then A ms' mi'
-                     else AB ms' mi' b
-  where (ms', mi') = minifyAN ms mi
-minifyAnPlusB x = x
+          minifyAnPlusB :: AnPlusB -> AnPlusB
+          minifyAnPlusB Even = A Nothing (Just 2)
+          minifyAnPlusB (A ms mi) =
+              case mi of
+                Just 0 -> B 0
+                _      -> uncurry A (minifyAN ms mi)
+          minifyAnPlusB (AB _ (Just 0) b) = B b
+          minifyAnPlusB (AB ms mi b)
+              | isPositive ms && mi == Just 2 =
+                  if b == 1 || b < 0 && odd b
+                    then Odd
+                    else if even b && b <= 0
+                          then minifyAnPlusB Even
+                          else AB ms' mi' b
+              | b == 0    = A ms' mi'
+              | otherwise = AB ms' mi' b
+            where (ms', mi') = minifyAN ms mi
+                  isPositive :: Maybe Sign -> Bool
+                  isPositive Nothing      = True
+                  isPositive (Just Plus)  = True
+                  isPositive (Just Minus) = False
 
-minifyAN :: Maybe Sign -> Maybe Int -> (Maybe Sign, Maybe Int)
-minifyAN (Just Plus) i = minifyAN Nothing i
-minifyAN s (Just 1)    = minifyAN s Nothing
-minifyAN s i           = (s, i)
+          minifyAnPlusB y = y
 
 type AttId = Text
 type AttValue = Either Text StringType
@@ -286,12 +292,3 @@ instance ToText Att where
   toBuilder (attid :^=: attval) = fromText attid <> fromText "^=" <> toBuilder attval
   toBuilder (attid :$=: attval) = fromText attid <> fromText "$=" <> toBuilder attval
   toBuilder (attid :*=: attval) = fromText attid <> fromText "*=" <> toBuilder attval
-
-removeAttributeQuotes :: Att -> Att
-removeAttributeQuotes (attId :=: val)  = attId :=: either Left removeQuotes val
-removeAttributeQuotes (attId :~=: val) = attId :~=: either Left removeQuotes val
-removeAttributeQuotes (attId :|=: val) = attId :|=: either Left removeQuotes val
-removeAttributeQuotes (attId :^=: val) = attId :^=: either Left removeQuotes val
-removeAttributeQuotes (attId :$=: val) = attId :$=: either Left removeQuotes val
-removeAttributeQuotes (attId :*=: val) = attId :*=: either Left removeQuotes val
-removeAttributeQuotes a@Attribute{}    = a

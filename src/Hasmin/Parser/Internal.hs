@@ -46,8 +46,8 @@ import Hasmin.Types.Declaration
 import Hasmin.Types.String
 
 selector :: Parser Selector
-selector = Selector <$> compoundSelector
-      <*> many ((,) <$> combinator <* skipComments  <*> compoundSelector)
+selector = Selector <$> compoundSelector <*> combinatorsAndSelectors
+  where combinatorsAndSelectors = many ((,) <$> combinator <* skipComments  <*> compoundSelector)
 
 -- First tries with '>>' (descendant), '>' (child), '+' (adjacent sibling), and
 -- '~' (general sibling) combinators. If those fail, it tries with the
@@ -406,8 +406,6 @@ stylesheet = do
   _ <- skipComments -- if there is no charset, import, or namespace at rule we need this here.
   rest <- rules
   pure $ charset <> imports <> namespaces <> rest
-
--- data AtRule = AtMedia (Maybe [MediaQuery])
 
 -- | Media Feature values. Per the
 -- <https://www.w3.org/TR/css3-mediaqueries/#values original spec (6.1)>,
