@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Hasmin.Types.Stylesheet
@@ -18,21 +19,22 @@ module Hasmin.Types.Stylesheet (
     , SupportsCondInParens(..)
     , minifyRules
     , collapse
+    , mergeRules
     ) where
 
 import Control.Applicative (liftA2)
 import Control.Monad ((>=>))
-import Control.Monad.Reader (Reader, ask)
+import Control.Monad.Reader (Reader, ask, asks)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Text.Lazy.Builder (singleton, fromText, Builder)
-import Data.List (sort, sortBy, (\\))
+import Data.List (union, sort, sortBy, (\\))
 import Data.Map.Strict (Map)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Foldable (toList)
 import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as S
+import qualified Data.Set as Set
 import qualified Data.Text as T
 
 import Hasmin.Config
@@ -81,11 +83,11 @@ instance ToText KeyframeSelector where
   toText To               = "to"
   toText (KFPercentage p) = toText p
 instance Minifiable KeyframeSelector where
-  minifyWith x = do
+  minifyWith kfs = do
       conf <- ask
       pure $ if shouldMinifyKeyframeSelectors conf
-                then minifyKFS x
-                else x
+                then minifyKFS kfs
+                else kfs
     where minifyKFS :: KeyframeSelector -> KeyframeSelector
           minifyKFS From                            = KFPercentage $ Percentage 0
           minifyKFS (KFPercentage (Percentage 100)) = To
@@ -169,15 +171,6 @@ instance Minifiable Rule where
                             Lexicographical -> sort sls
                             NoSorting       -> sls
 
-          sortDeclarations :: [Declaration] -> Reader Config [Declaration]
-          sortDeclarations ds = do
-              conf <- ask
-              pure $ case declarationSorting conf of
-                      Lexicographical -> sortBy lexico ds
-                      NoSorting       -> ds
-            where lexico :: ToText a => a -> a -> Ordering
-                  lexico s1 s2 = compare (toText s1) (toText s2)
-
           removeDuplicateSelectors :: [Selector] -> Reader Config [Selector]
           removeDuplicateSelectors sls = do
               conf <- ask
@@ -185,10 +178,18 @@ instance Minifiable Rule where
                         then nub' sls
                         else sls
 
-
   minifyWith (AtImport esu mqs) = AtImport esu <$> mapM minifyWith mqs
   minifyWith (AtCharset s) = AtCharset <$> mapString lowercaseText s
   minifyWith x = pure x
+
+sortDeclarations :: [Declaration] -> Reader Config [Declaration]
+sortDeclarations ds = do
+    conf <- ask
+    pure $ case declarationSorting conf of
+             Lexicographical -> sortBy lexico ds
+             NoSorting       -> ds
+  where lexico :: ToText a => a -> a -> Ordering
+        lexico s1 s2 = compare (toText s1) (toText s2)
 
 cleanRule :: [Declaration] -> Reader Config [Declaration]
 cleanRule ds = do
@@ -205,9 +206,9 @@ collapseLonghands decs = do
               else decs
 
 collapse :: [Declaration] -> [Declaration]
-collapse ds = collapse' $ zipWith collapseTRBL trbls longhands
-  where collapse' []     = ds
-        collapse' (f:fs) = case f (gatherLonghands ds) of
+collapse decs = collapse' $ zipWith collapseTRBL trbls longhands
+  where collapse' []     = decs
+        collapse' (f:fs) = case f (gatherLonghands decs) of
                              (Just sh, l) -> (collapse' fs \\ l) ++ [sh]
                              (Nothing, _) -> collapse' fs
 
@@ -215,11 +216,14 @@ collapse ds = collapse' $ zipWith collapseTRBL trbls longhands
         gatherLonghands = go Map.empty
           where go m [] = m
                 go m (d@(Declaration p _ i _):ds)
-                    | p `S.member` longhandsSet = go (Map.insert (p,i) d m) ds
+                    | p `Set.member` longhandsSet = go (Map.insert (p,i) d m) ds
                     | otherwise              = go m ds
-                longhandsSet = S.fromList (concat longhands)
+                longhandsSet = Set.fromList (concat longhands)
 
+        trbls :: [Text]
         trbls = ["margin", "padding", "border-color", "border-width", "border-style"]
+
+        longhands :: [[Text]]
         longhands = map subpropertiesOf trbls
 
         subpropertiesOf :: Text -> [Text]
@@ -227,8 +231,8 @@ collapse ds = collapse' $ zipWith collapseTRBL trbls longhands
 
         collapseTRBL :: Text -> [Text] -> Map (Text, Bool) Declaration
                      -> (Maybe Declaration, [Declaration])
-        collapseTRBL name longhands m =
-            case traverse getDeclaration longhands of
+        collapseTRBL name lnhs m =
+            case traverse getDeclaration lnhs of
               -- If every longhand is present, return the collapsed ones
               Just l  -> (Just (Declaration name (shValues l) False False), l)
               -- If a longhand was missing, don't combine because it's unsafe
@@ -240,11 +244,10 @@ collapse ds = collapse' $ zipWith collapseTRBL trbls longhands
 -- Note that nub has only an Eq constraint, while this one has an Ord one.
 -- taken from: http://buffered.io/posts/a-better-nub/
 nub' :: (Ord a) => [a] -> [a]
-nub' = go S.empty
+nub' = go Set.empty
   where go _ [] = []
-        go s (x:xs) | S.member x s = go s xs
-                    | otherwise    = x : go (S.insert x s) xs
-
+        go s (x:xs) | Set.member x s = go s xs
+                    | otherwise    = x : go (Set.insert x s) xs
 
 data SupportsCondition = Not SupportsCondInParens
                        | And SupportsCondInParens (NonEmpty SupportsCondInParens)
@@ -292,10 +295,13 @@ instance Minifiable SupportsCondInParens where
   minifyWith (ParensDec x) = ParensDec <$> minifyWith x
   minifyWith  (ParensCond x)  = ParensCond <$> minifyWith x
 
--- Set of functions to minify rules
+instance Minifiable [Rule] where
+  minifyWith = minifyRules
+
 minifyRules :: [Rule] -> Reader Config [Rule]
 minifyRules = handleAdjacentMediaQueries
           >=> handleEmptyBlocks
+          >=> mergeStyleRules
           >=> traverse minifyWith -- minify rules individually
   where handleEmptyBlocks :: [Rule] -> Reader Config [Rule]
         handleEmptyBlocks rs = do
@@ -321,6 +327,81 @@ minifyRules = handleAdjacentMediaQueries
                     | otherwise   = a : combineAdjacentMediaQueries (b:xs)
                 combineAdjacentMediaQueries (x:xs) = x : combineAdjacentMediaQueries xs
                 combineAdjacentMediaQueries [] = []
+
+mergeStyleRules :: [Rule] -> Reader Config [Rule]
+mergeStyleRules xs = do
+    mergeSettings <- asks rulesMergeSettings
+    pure $ case mergeSettings of
+             MergeRulesOn  -> mergeRules xs
+             MergeRulesOff -> xs
+
+-- Imperative pseudocode:
+--
+-- for rule r1 in positions [0..n-2]
+--    for rule r2 in positions [r1 pos..n-1]
+--      if r1 and r2 have the same declarations:
+--          merge (i.e. combine both into r1, remove r2 from map)
+--      else if r1 and r2 have the same specificity, and some declaration overlaps
+--          continue with next r1
+--      else
+--          continue with the next r2
+mergeRules :: [Rule] -> [Rule]
+mergeRules zs = Map.elems $ mergeRules' 0 1 rulesInMap
+  where rulesInMap = Map.fromList $ zip [0..] zs
+        mapSize    = Map.size rulesInMap
+
+        mergeRules' :: Int -> Int -> Map Int Rule -> Map Int Rule
+        mergeRules' i j m
+            | i == mapSize - 1 = m
+            | j == mapSize     = mergeRules' (i+1) (i+2) m
+            | otherwise        =
+                case Map.lookupGE i m of
+                  Nothing -> m
+                  Just (key, r) ->
+                    let index = if key >= j then key + 1 else j
+                    in case Map.lookupGE index m of
+                         Nothing -> m
+                         Just (key2, r2) ->
+                           let newIndex = key2 + 1
+                           in case mergeAndRemove r r2 key key2 newIndex m of
+                                Nothing -> if shouldSkip r r2
+                                              then mergeRules' (key+1) (key+2) m
+                                              else mergeRules' key newIndex m
+                                Just m' -> m'
+
+        mergeAndRemove :: Rule -> Rule -> Int -> Int -> Int -> Map Int Rule -> Maybe (Map Int Rule)
+        mergeAndRemove (StyleRule ss ds) (StyleRule ss2 ds2) key key2 newIndex m
+            | Set.fromList ds2 == Set.fromList ds =
+                let ruleMergedBySelectors = StyleRule (ss `union` ss2) ds
+                    newMap = Map.delete key2 (Map.insert key ruleMergedBySelectors m)
+                in Just $ mergeRules' key newIndex newMap
+            | Set.fromList ss == Set.fromList ss2 =
+                let ruleMergedByDeclarations = StyleRule ss (ds `union` ds2)
+                    newMap = Map.delete key2 (Map.insert key ruleMergedByDeclarations m)
+                in Just $ mergeRules' key newIndex newMap
+            | otherwise = Nothing
+        mergeAndRemove _ _ _ _ _ _ = Nothing
+
+        overlaps :: Declaration -> Declaration -> Bool
+        overlaps (Declaration p1 _ _ _) (Declaration p2 _ _ _) =
+            p1 == p2 || overlaps'
+          where overlaps' =
+                  case Map.lookup p2 propertiesTraits of
+                    Nothing    -> True -- Be safe, in the absence of information, assume the worst
+                    Just pinfo -> p1 `elem` subproperties pinfo || p1 `elem` overwrittenBy pinfo
+
+        shouldSkip :: Rule -> Rule -> Bool
+        shouldSkip (StyleRule ss ds) (StyleRule ss2 ds2) =
+            thereIsAPairOfSelectorsWithTheSameSpecificity && twoDeclarationsClash
+          where thereIsAPairOfSelectorsWithTheSameSpecificity = any (\x -> any (\y -> specificity x == specificity y) ss) ss2
+                twoDeclarationsClash = any (\x -> any (`overlaps` x) ds) ds2
+         -- TODO see better what needs to be skipped and what doesn't need to
+         -- be, e.g. what should be done between a style rule and a at-media
+         -- rule?
+         --
+         -- Skip whatever isn't a pair of style rules
+        shouldSkip _ _ = True
+
 
 {-
 supports_rule

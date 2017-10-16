@@ -19,6 +19,7 @@ module Hasmin.Config (
     , defaultConfig
     , Instructions
     , Commands(..)
+    , RulesMergeSettings(..)
     ) where
 
 type Instructions = (Commands, Config)
@@ -41,32 +42,35 @@ data SortingMethod = NoSorting | Lexicographical
   deriving (Show, Eq)
 data FontWeightSettings = FontWeightMinOff | FontWeightMinOn
   deriving (Show, Eq)
+data RulesMergeSettings = MergeRulesOn | MergeRulesOff
+  deriving (Show, Eq)
 
 -- TODO: * avoid boolean blindness
 --       * Use a more declarative style for the names, e.g. shouldLowercase vs.
 --       preferredCasing, shouldSortSelectors vs. selectorSorting, etc.
 -- | The configuration used for minifying.
-data Config = Config { colorSettings :: ColorSettings
-                     , dimensionSettings :: DimensionSettings
-                     , gradientSettings :: GradientSettings
-                     , shouldUsePropertyTraits :: Bool
-                     , shouldCleanRules :: Bool
-                     , shouldMinifyTimingFunctions :: Bool
-                     , shouldMinifyFilterFunctions :: Bool
-                     , shouldRemoveQuotes :: Bool
-                     , fontweightSettings :: FontWeightSettings
-                     , shouldMinifyTransformOrigin :: Bool
-                     , shouldMinifyMicrosyntax :: Bool
-                     , shouldMinifyKeyframeSelectors :: Bool
-                     , shouldMinifyTransformFunction :: Bool
-                     , shouldConvertEscaped :: Bool
-                     , shouldConvertNullPercentages :: Bool
-                     , shouldRemoveEmptyBlocks :: Bool
+data Config = Config { colorSettings                  :: ColorSettings
+                     , dimensionSettings              :: DimensionSettings
+                     , gradientSettings               :: GradientSettings
+                     , shouldUsePropertyTraits        :: Bool
+                     , shouldCleanRules               :: Bool
+                     , shouldMinifyTimingFunctions    :: Bool
+                     , shouldMinifyFilterFunctions    :: Bool
+                     , shouldRemoveQuotes             :: Bool
+                     , fontweightSettings             :: FontWeightSettings
+                     , shouldMinifyTransformOrigin    :: Bool
+                     , shouldMinifyMicrosyntax        :: Bool
+                     , shouldMinifyKeyframeSelectors  :: Bool
+                     , shouldMinifyTransformFunction  :: Bool
+                     , shouldConvertEscaped           :: Bool
+                     , shouldConvertNullPercentages   :: Bool
+                     , shouldRemoveEmptyBlocks        :: Bool
                      , shouldRemoveDuplicateSelectors :: Bool
-                     , shouldNormalizeQuotes :: Bool
-                     , letterCase :: LetterCase
-                     , selectorSorting :: SortingMethod
-                     , declarationSorting :: SortingMethod
+                     , shouldNormalizeQuotes          :: Bool
+                     , letterCase                     :: LetterCase
+                     , selectorSorting                :: SortingMethod
+                     , declarationSorting             :: SortingMethod
+                     , rulesMergeSettings             :: RulesMergeSettings
                      } deriving (Show)
 
 -- | A default config with most settings enabled. Used by the minify function,
@@ -93,4 +97,5 @@ defaultConfig = Config { colorSettings                  = ColorMinOn
                        , letterCase                     = Lowercase
                        , selectorSorting                = NoSorting
                        , declarationSorting             = NoSorting
+                       , rulesMergeSettings             = MergeRulesOn
                        }

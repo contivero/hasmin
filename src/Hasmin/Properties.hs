@@ -38,8 +38,8 @@ data PropertyInfo =
 processTuples :: [(Text, Text, Inheritance, [Text], [Text])] -> [(Text, PropertyInfo)]
 processTuples = foldr (\(p,t,i,a,b) xs -> (p, PropertyInfo (getValues p t) i a b) : xs) []
   where getValues p s = case parseOnly (values p <|> valuesFallback) s of
-                          Right initialValues -> Just initialValues
-                          Left _              -> Nothing
+                          Right initValues -> Just initValues
+                          Left _           -> Nothing
 
 propertiesTraits :: Map Text PropertyInfo
 propertiesTraits = Map.fromList $ processTuples

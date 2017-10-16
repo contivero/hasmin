@@ -36,8 +36,9 @@ minifyCSSWith cfg t = do
     let rs = runReader (minifyRules sheet) cfg
     pure . TL.toStrict . toLazyText . mconcat $ map toBuilder rs
 
--- | Minify Text CSS, using a default set of configurations (with most
--- minification techniques enabled).
+-- | Minify 'Text' CSS, using a default set of configurations (with most
+-- minification techniques enabled). 'minifyCSS' is equivalent to
+-- @'minifyCSSWith' 'defaultConfig'@.
 minifyCSS :: Text -> Either String Text
 minifyCSS = minifyCSSWith defaultConfig
 

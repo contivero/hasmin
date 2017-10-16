@@ -92,7 +92,7 @@ test-suite spec
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             Spec.hs
-  ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-import-lists -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints
+  ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints
   default-extensions:  OverloadedStrings
   other-modules:       Hasmin.Parser.InternalSpec
                      , Hasmin.Parser.ValueSpec

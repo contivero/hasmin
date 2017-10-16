@@ -13,7 +13,7 @@ module Main where
 import Codec.Compression.Hopfli
 import Control.Applicative (liftA2)
 import Data.Monoid ((<>))
-import Data.Text (Text) 
+import Data.Text (Text)
 import Options.Applicative hiding (command)
 import Data.Version (showVersion)
 import Development.GitRev (gitHash)
@@ -26,7 +26,7 @@ import Hasmin.Config
 import Hasmin
 
 command :: Parser Commands
-command = Commands 
+command = Commands
     <$> switch (long "beautify" <> short 'b' <> help "Beautify output")
     <*> switch (long "zopfli" <> short 'z' <> help "Compress result using zopfli")
     <*> argument str (metavar "FILE")
@@ -84,6 +84,8 @@ config = Config
                            <> help "Disable sorting selectors lexicographically")
          <*> flag Lexicographical NoSorting (long "no-property-sorting"
                            <> help "Disable sorting properties lexicographically")
+         <*> flag MergeRulesOn MergeRulesOff (long "no-rule-merging"
+                           <> help "Disable merging style rules")
 
 instructions :: ParserInfo Instructions
 instructions = info (helper <*> versionOption <*> liftA2 (,) command config)

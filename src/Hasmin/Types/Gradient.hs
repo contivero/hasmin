@@ -290,7 +290,9 @@ instance Eq Gradient where
           handleEither (Left a) (Right s)  = angleSideEq a s
           handleEither (Right s) (Left a)  = angleSideEq a s
           handleEither s1 s2               = s1 == s2
-  _ == _ = error "Non supported gradient comparison"
+  LinearGradient{} == _ = False
+  _ == LinearGradient{} = False
+  _ == _ = False -- TODO implement other comparisons
 
 angleSideEq :: Angle -> SideOrCorner -> Bool
 angleSideEq (Angle 0 Deg) (TopSide, Nothing)      = True

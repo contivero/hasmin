@@ -90,11 +90,11 @@ instance ToText TimingFunction where
   toBuilder StepEnd   = "step-end"
 
 instance Minifiable TimingFunction where
-  minifyWith x = do
+  minifyWith tf = do
       conf <- ask
       pure $ if shouldMinifyTimingFunctions conf
-                then minifyTimingFunction x
-                else x
+                then minifyTimingFunction tf
+                else tf
     where minifyTimingFunction :: TimingFunction -> TimingFunction
           minifyTimingFunction x@(CubicBezier a b c 1)
               | a == 0.25 && b == 0.1 && c == 0.25 = Ease

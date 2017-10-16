@@ -12,6 +12,7 @@ module Hasmin.Parser.Internal (
       stylesheet
     , atRule
     , rule
+    , rules
     , declaration
     , declarations
     , selector

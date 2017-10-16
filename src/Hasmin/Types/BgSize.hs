@@ -13,7 +13,6 @@ module Hasmin.Types.BgSize (
     , Auto(..)
     ) where
 
-import Control.Monad.Reader (ask)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
 
@@ -61,5 +60,5 @@ instance Minifiable BgSize where
           minFirst (Right Auto) = pure (Right Auto)
 
           minifyBgSize (BgSize l (Just (Right Auto))) = BgSize l Nothing
-          minifyBgSize x = x
+          minifyBgSize z = z
   minifyWith x = pure x

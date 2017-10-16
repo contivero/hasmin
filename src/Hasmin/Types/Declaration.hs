@@ -50,6 +50,10 @@ instance ToText Declaration where
     where imp | i         = "!important"
               | otherwise = mempty
 
+instance Ord Declaration where
+  -- Just use a lexicographical ordering, since the instance is required by Set
+  d1 <= d2 = toText d1 <= toText d2
+
 instance Minifiable Declaration where
   minifyWith d@(Declaration p vs _ _) = do
       minifiedValues <- minifyWith vs

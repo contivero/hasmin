@@ -3,6 +3,7 @@
 module Hasmin.Types.StylesheetSpec where
 
 import Data.Text (Text, unpack)
+import Data.Foldable (concatMap)
 
 import Hasmin.Parser.Internal
 import Hasmin.TestUtils
@@ -29,6 +30,41 @@ atRuleTests = do
       mapM_ (matchSpec atRule) atRuleTestsInfo
     describe "@supports minification" $
       mapM_ (matchSpec (minify <$> atRule)) atSupportsTestInfo
+
+mergeRulesTest :: Spec
+mergeRulesTest =
+    describe "Rules merging" $
+      mapM_ (matchSpecWithDesc ((f . minify) <$> rules)) mergeRulesTestsInfo
+  where f = mconcat . map toText
+
+mergeRulesTestsInfo :: [(String, Text, Text)]
+mergeRulesTestsInfo =
+  [("Combine adjacent rules with the same declarations",
+      "h1{margin:10px}h2{margin:10px}", "h1,h2{margin:10px}")
+  ,("Don't combine rules with the same selectors when there is another in-between with the same specificity and a declaration that clashes",
+    ".a p{margin:10px 0}.b p{margin:10px auto}.a p{margin-bottom:5px}",
+    ".a p{margin:10px 0}.b p{margin:10px auto}.a p{margin-bottom:5px}")
+  ,("Merge example from csso/issues/217 properly",
+    ".a{float:left}.b{background:red}.c{color:#fff}.d{text-decoration:none}.e{float:left}.d{float:left}",
+    ".a,.e,.d{float:left}.b{background:red}.c{color:#fff}.d{text-decoration:none}")
+  ,("Merge rules with identical selectors, and combine margin-bottom into margin",
+    ".a{margin:10px}.a{margin-bottom:5px}",
+    ".a{margin:10px 10px 5px}")
+  ,("Merge rules with identical selectors, and remove overwritten margin-bottom",
+    ".a{margin-bottom:10px}.a{margin:5px}",
+    ".a{margin:5px}")
+    {- TODO
+  ,("Merge rules with identical selectors, and combine font-weight into font",
+    ".a{font:700 65%/1.5 sans-serif}.a{font-weight:400}",
+    ".a{font:400 65%/1.5 sans-serif}")
+    -}
+  ,("Merge rules with identical declarations, when a same specificity rule is in between but the declarations don't interfere",
+    ".a{border-left-color:red}.b{border-right-color:blue}.c{border-left-color:red}",
+    ".a,.c{border-left-color:red}.b{border-right-color:blue}")
+  ,("Don't merge rules that share selectors, but not every selector",
+    "table,video{margin:0}ol,ul{list-style:none}table{border-collapse:collapse}",
+    "table,video{margin:0}ol,ul{list-style:none}table{border-collapse:collapse}")
+  ]
 
 atSupportsTestInfo :: [(Text, Text)]
 atSupportsTestInfo =
@@ -116,6 +152,7 @@ spec :: Spec
 spec = do atRuleTests
           combineAdjacentMediaQueriesTests
           collapseLonghandTests
+          mergeRulesTest
 
 main :: IO ()
 main = hspec spec

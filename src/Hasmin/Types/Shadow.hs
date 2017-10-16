@@ -33,8 +33,9 @@ instance ToText Shadow where
   toBuilder (Shadow i ox oy br sr c) =
       bool mempty "inset " i
       <> toBuilder ox <> singleton ' '
-      <> toBuilder oy <> f br <> f sr <> f c
-    where f x = maybe mempty (\y -> singleton ' ' <> toBuilder y) x -- don't eta reduce this!
+      <> toBuilder oy <> prependSpace br
+      <> prependSpace sr <> prependSpace c
+    where prependSpace x = maybe mempty (\y -> singleton ' ' <> toBuilder y) x -- don't eta reduce this!
 
 instance Minifiable Shadow where
   minifyWith (Shadow i ox oy br sr c) = do
@@ -49,10 +50,10 @@ instance Minifiable Shadow where
                      in Shadow i x y a b c2
                 else Shadow i x y nb ns c2
     where minifyBlurAndSpread :: Maybe Distance -> Maybe Distance -> (Maybe Distance, Maybe Distance)
-          minifyBlurAndSpread (Just br) Nothing
-              | br == Distance 0 Q = (Nothing, Nothing)
-              | otherwise          = (Just br, Nothing)
-          minifyBlurAndSpread (Just br) (Just sr)
-              | sr == Distance 0 Q = minifyBlurAndSpread (Just br) Nothing
-              | otherwise          = (Just br, Just sr)
+          minifyBlurAndSpread (Just br') Nothing
+              | br' == Distance 0 Q = (Nothing, Nothing)
+              | otherwise           = (Just br', Nothing)
+          minifyBlurAndSpread (Just br') (Just sr')
+              | sr' == Distance 0 Q = minifyBlurAndSpread (Just br') Nothing
+              | otherwise           = (Just br', Just sr')
           minifyBlurAndSpread x y = (x, y)
