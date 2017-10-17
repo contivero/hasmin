@@ -7,9 +7,6 @@
 -- Stability   : experimental
 -- Portability : unknown
 --
--- \<repeat-style> data type used in background-repeat. Specification:
--- <https://drafts.csswg.org/css-backgrounds-3/#the-background-repeat CSS Backgrounds and Borders Module Level 3 (§3.4)>
---
 -----------------------------------------------------------------------------
 module Hasmin.Types.RepeatStyle (
       RepeatStyle(..)
@@ -21,6 +18,8 @@ import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
 import Hasmin.Types.Class
 
+-- | CSS <https://drafts.csswg.org/css-backgrounds-3/#typedef-repeat-style \<repeat-style\>>
+-- data type, used in the properties @background-repeat@ and @background@.
 data RepeatStyle = RepeatX
                  | RepeatY
                  | RSPair RSKeyword (Maybe RSKeyword)

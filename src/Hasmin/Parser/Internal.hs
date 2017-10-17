@@ -8,8 +8,8 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Parser.Internal (
-      stylesheet
+module Hasmin.Parser.Internal
+    ( stylesheet
     , atRule
     , rule
     , rules
@@ -70,12 +70,13 @@ compoundSelector =
                            <*> many p
                        <|> ((Universal mempty :|) <$> many1 p)
   where p = idSel <|> classSel <|> attributeSel <|> pseudo
-
+-- | Parses a \"number sign\" (U+0023, \#) immediately followed by the ID value,
+-- which must be a CSS identifier.
 idSel :: Parser SimpleSelector
 idSel = do
-    _ <- char '#'
+    _    <- char '#'
     name <- mconcat <$> many1 nmchar
-    pure $ IdSel (TL.toStrict (toLazyText name))
+    pure . IdSel . TL.toStrict $ toLazyText name
 
 -- class: '.' IDENT
 classSel :: Parser SimpleSelector
@@ -222,7 +223,7 @@ selectors = lexeme selector `sepBy` char ','
 declaration :: Parser Declaration
 declaration = do
     p  <- property <* colon
-    v  <- values p <|> valuesFallback
+    v  <- valuesFor p <|> valuesFallback
     i  <- important
     ie <- lexeme iehack
     pure $ Declaration p v i ie
@@ -337,11 +338,19 @@ atSupports = do
   _ <- char '}'
   pure $ AtSupports sc r
 
+-- | Parses a supports condition, needed by the \@supports rules.
+-- See <https://drafts.csswg.org/css-conditional-3/#supports_condition __@supports_condition@__>.
 supportsCondition :: Parser SupportsCondition
 supportsCondition = asciiCI "not" *> skipComments *> (Not <$> supportsCondInParens)
-    <|> supportsConjunction
-    <|> supportsDisjunction
-    <|> (Parens <$> supportsCondInParens)
+                <|> supportsConjunction
+                <|> supportsDisjunction
+                <|> (Parens <$> supportsCondInParens)
+  where
+    supportsDisjunction :: Parser SupportsCondition
+    supportsDisjunction = supportsHelper Or "or"
+
+    supportsConjunction :: Parser SupportsCondition
+    supportsConjunction = supportsHelper And "and"
 
 supportsCondInParens :: Parser SupportsCondInParens
 supportsCondInParens = do
@@ -353,7 +362,7 @@ supportsCondInParens = do
 atSupportsDeclaration :: Parser Declaration
 atSupportsDeclaration = do
     p  <- property <* colon
-    v  <- values p <|> valuesInParens
+    v  <- valuesFor p <|> valuesInParens
     pure $ Declaration p v False False
 
 -- customPropertyIdent :: Parser Text
@@ -365,12 +374,6 @@ supportsHelper c t = do
     x  <- supportsCondInParens <* skipComments
     xs <- some (asciiCI t *> lexeme supportsCondInParens)
     pure $ c x (NE.fromList xs)
-
-supportsConjunction :: Parser SupportsCondition
-supportsConjunction = supportsHelper And "and"
-
-supportsDisjunction :: Parser SupportsCondition
-supportsDisjunction = supportsHelper Or "or"
 
 -- TODO clean code
 -- the "manyTill .. lookAhead" was added because if we only used "rules", it
@@ -399,10 +402,13 @@ rule = atRule <|> styleRule
 rules :: Parser [Rule]
 rules = manyTill (rule <* skipComments) endOfInput
 
+-- | Parse a stylesheet, starting by the \@charset, \@import and \@namespace
+-- rules, followed by the list of rules, and ignoring any unneeded whitespace
+-- and comments.
 stylesheet :: Parser [Rule]
 stylesheet = do
-  charset <- option [] ((:[]) <$> atCharset <* skipComments)
-  imports <- many (atImport <* skipComments)
+  charset    <- option [] ((:[]) <$> atCharset <* skipComments)
+  imports    <- many (atImport <* skipComments)
   namespaces <- many (atNamespace <* skipComments)
   _ <- skipComments -- if there is no charset, import, or namespace at rule we need this here.
   rest <- rules
@@ -440,6 +446,7 @@ mediaQuery = mediaQuery1 <|> mediaQuery2
         h = lexeme (asciiCI "and" *> satisfy C.isSpace)
         optionalNotOrOnly = option mempty (asciiCI "not" <|> asciiCI "only")
 
+-- https://www.w3.org/TR/mediaqueries-4/#typedef-media-condition-without-or
 expression :: Parser Expression
 expression = char '(' *> skipComments *> (expr <|> expFallback)
   where expr = do
@@ -449,8 +456,7 @@ expression = char '(' *> skipComments *> (expr <|> expFallback)
              pure $ Expression e v
         expFallback = InvalidExpression <$> A.takeWhile (/= ')') <* char ')'
 
-
-
+-- TODO implement the whole spec 4, or at least 3.
 -- Note: The code below pertains to CSS Media Queries Level 4.
 -- Since it is still too new and nobody implements it (afaik),
 -- I leave it here for future reference, when the need to cater for it

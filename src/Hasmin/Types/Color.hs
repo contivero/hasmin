@@ -7,11 +7,9 @@
 -- Stability   : experimental
 -- Portability : unknown
 --
--- \<color> data type.
---
 -----------------------------------------------------------------------------
-module Hasmin.Types.Color (
-    Color(Named)
+module Hasmin.Types.Color
+  ( Color(Named)
   , mkHex3
   , mkHex4
   , mkHex6
@@ -44,12 +42,8 @@ import Hasmin.Types.Class
 import Hasmin.Types.Numeric
 import Hasmin.Utils
 
--- | The \<color\> CSS data type. Specifications:
---
--- 4. <https://drafts.csswg.org/css-color/#colorunits  CSS Color Module Level 4>
--- 3. <https://drafts.csswg.org/css-color-3/#colorunits CSS Color Module Level 3>
--- 2. <https://www.w3.org/TR/CSS2/syndata.html#value-def-color CSS2.1>
--- 1. <https://www.w3.org/TR/CSS1/#color-units CSS1>
+-- | CSS <https://drafts.csswg.org/css-color/#colorunits \<color\>>
+-- data type.
 data Color = Hex3     Char Char Char
            | Hex4     Char Char Char Char
            | Hex6     String String String
@@ -296,49 +290,49 @@ hueToRgb t1 t2 hue | hue < 0   = test t1 t2 (hue+1)
 -- | A map with hex values as keys, and their minimal colorname as value
 minimalColorMap :: Map.Map Color Color
 minimalColorMap = Map.fromList minimalColors
-
-minimalColors :: [(Color, Color)]
-minimalColors = [(Hex6 "ff" "00" "00", Named "red")
-                ,(Hex6 "d2" "b4" "8c", Named "tan")
-                ,(Hex6 "00" "ff" "ff", Named "aqua")
-                ,(Hex6 "00" "00" "ff", Named "blue")
-                ,(Hex6 "00" "ff" "ff", Named "cyan")
-                ,(Hex6 "ff" "d7" "00", Named "gold")
-                ,(Hex6 "80" "80" "80", Named "gray")
-                ,(Hex6 "80" "80" "80", Named "grey")
-                ,(Hex6 "00" "ff" "00", Named "lime")
-                ,(Hex6 "00" "00" "80", Named "navy")
-                ,(Hex6 "cd" "85" "3f", Named "peru")
-                ,(Hex6 "ff" "c0" "cb", Named "pink")
-                ,(Hex6 "dd" "a0" "dd", Named "plum")
-                ,(Hex6 "ff" "fa" "fa", Named "snow")
-                ,(Hex6 "00" "80" "80", Named "teal")
-                ,(Hex6 "f0" "ff" "ff", Named "azure")
-                ,(Hex6 "f5" "f5" "dc", Named "beige")
-                ,(Hex6 "a5" "2a" "2a", Named "brown")
-                ,(Hex6 "ff" "7f" "50", Named "coral")
-                ,(Hex6 "00" "80" "00", Named "green")
-                ,(Hex6 "ff" "ff" "f0", Named "ivory")
-                ,(Hex6 "f0" "e6" "8c", Named "khaki")
-                ,(Hex6 "fa" "f0" "e6", Named "linen")
-                ,(Hex6 "80" "80" "00", Named "olive")
-                ,(Hex6 "f5" "de" "b3", Named "wheat")
-                ,(Hex6 "ff" "e4" "c4", Named "bisque")
-                ,(Hex6 "4b" "00" "82", Named "indigo")
-                ,(Hex6 "80" "00" "00", Named "maroon")
-                ,(Hex6 "ff" "a5" "00", Named "orange")
-                ,(Hex6 "da" "70" "d6", Named "orchid")
-                ,(Hex6 "80" "00" "80", Named "purple")
-                ,(Hex6 "fa" "80" "72", Named "salmon")
-                ,(Hex6 "a0" "52" "2d", Named "sienna")
-                ,(Hex6 "c0" "c0" "c0", Named "silver")
-                ,(Hex6 "ff" "63" "47", Named "tomato")
-                ,(Hex6 "ee" "82" "ee", Named "violet")]
+  where minimalColors =
+          [(Hex6 "ff" "00" "00", Named "red")
+          ,(Hex6 "d2" "b4" "8c", Named "tan")
+          ,(Hex6 "00" "ff" "ff", Named "aqua")
+          ,(Hex6 "00" "00" "ff", Named "blue")
+          ,(Hex6 "00" "ff" "ff", Named "cyan")
+          ,(Hex6 "ff" "d7" "00", Named "gold")
+          ,(Hex6 "80" "80" "80", Named "gray")
+          ,(Hex6 "80" "80" "80", Named "grey")
+          ,(Hex6 "00" "ff" "00", Named "lime")
+          ,(Hex6 "00" "00" "80", Named "navy")
+          ,(Hex6 "cd" "85" "3f", Named "peru")
+          ,(Hex6 "ff" "c0" "cb", Named "pink")
+          ,(Hex6 "dd" "a0" "dd", Named "plum")
+          ,(Hex6 "ff" "fa" "fa", Named "snow")
+          ,(Hex6 "00" "80" "80", Named "teal")
+          ,(Hex6 "f0" "ff" "ff", Named "azure")
+          ,(Hex6 "f5" "f5" "dc", Named "beige")
+          ,(Hex6 "a5" "2a" "2a", Named "brown")
+          ,(Hex6 "ff" "7f" "50", Named "coral")
+          ,(Hex6 "00" "80" "00", Named "green")
+          ,(Hex6 "ff" "ff" "f0", Named "ivory")
+          ,(Hex6 "f0" "e6" "8c", Named "khaki")
+          ,(Hex6 "fa" "f0" "e6", Named "linen")
+          ,(Hex6 "80" "80" "00", Named "olive")
+          ,(Hex6 "f5" "de" "b3", Named "wheat")
+          ,(Hex6 "ff" "e4" "c4", Named "bisque")
+          ,(Hex6 "4b" "00" "82", Named "indigo")
+          ,(Hex6 "80" "00" "00", Named "maroon")
+          ,(Hex6 "ff" "a5" "00", Named "orange")
+          ,(Hex6 "da" "70" "d6", Named "orchid")
+          ,(Hex6 "80" "00" "80", Named "purple")
+          ,(Hex6 "fa" "80" "72", Named "salmon")
+          ,(Hex6 "a0" "52" "2d", Named "sienna")
+          ,(Hex6 "c0" "c0" "c0", Named "silver")
+          ,(Hex6 "ff" "63" "47", Named "tomato")
+          ,(Hex6 "ee" "82" "ee", Named "violet")]
 
 -- | Mapping between color names and hex values
 colorMap :: Map.Map Text Color
 colorMap = Map.fromList keywordColors
 
+-- | Pairs of color keywords, and their equivalent hexadecimal value.
 keywordColors :: [(Text, Color)]
 keywordColors = map (first T.toLower)
   [("aliceblue",            Hex6 "f0" "f8" "ff")

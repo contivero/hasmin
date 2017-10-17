@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      : Hasmin.Parser.Internal
+-- Module      : Hasmin.Parser.Utils
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
@@ -11,10 +11,11 @@
 module Hasmin.Parser.Utils
     ( ident
     , fontfamilyname
-    , nonquotedurl
+    , unquotedURL
     , skipComments
     , lexeme
     , functionParser
+    , digits
     , comma
     , colon
     , opt
@@ -23,7 +24,7 @@ module Hasmin.Parser.Utils
 
 import Control.Applicative ((<|>), many)
 import Control.Monad (void, mzero)
-import Data.Attoparsec.Text (char,
+import Data.Attoparsec.Text (char, many1, digit,
   option, Parser, satisfy, skipSpace, string, takeWhile1, (<?>))
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -37,6 +38,7 @@ import qualified Data.Text.Lazy as TL
 skipComments :: Parser ()
 skipComments = void $ many (skipSpace *> comment) <* skipSpace
 
+-- | Parse a comment, i.e. a string starting with \"\/\*\" and ending with \"\*\/\"
 comment :: Parser Text
 comment = mappend <$> string "/*" <*> (string "*/" <|> untilAsterisk)
   where untilAsterisk = mappend <$> A.takeWhile (/= '*') <*> checkAsterisk
@@ -51,11 +53,15 @@ colon = lexeme $ char ':'
 lexeme :: Parser a -> Parser a
 lexeme p = skipComments *> p <* skipComments
 
+-- | Given a parser, makes it optional, defaulting to whatever value its 'Monoid'
+-- instance defines for 'mempty'.
 opt :: Monoid m => Parser m -> Parser m
 opt = option mempty
 
-nonquotedurl :: Parser Text
-nonquotedurl = do
+-- | Parse a URL without enclosing quotes.
+-- See <https://drafts.csswg.org/css-syntax-3/#consume-a-url-token §4.3.6. Consume a url token>
+unquotedURL :: Parser Text
+unquotedURL = do
     t <- many (escape <|> (LB.singleton <$> satisfy validChar))
     pure $ TL.toStrict (toLazyText (mconcat t))
   where validChar x = x /= '\"' && x /= '\'' && x /= '(' && x /= ')'
@@ -119,7 +125,11 @@ unicode = do
   where ws x = x == ' ' || x == '\n' || x == '\r' || x == '\t' || x == '\f'
 
 -- | Assumes the identifier and the left parenthesis have been parsed
--- Parses p, ignoring comments before and after it, and consumes the final
--- right parenthesis
+-- Parses p, ignoring surrounding whitespace and comments, and consumes the
+-- final right parenthesis.
 functionParser :: Parser a -> Parser a
 functionParser p = lexeme p <* char ')'
+
+-- | Parser one or more digits.
+digits :: Parser String
+digits = many1 digit

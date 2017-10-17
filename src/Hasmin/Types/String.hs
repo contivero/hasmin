@@ -98,7 +98,7 @@ toIdent :: Text -> Maybe Text
 toIdent = unquote ident
 
 toUnquotedURL :: Text -> Maybe Text
-toUnquotedURL = unquote nonquotedurl
+toUnquotedURL = unquote unquotedURL
 
 toUnquotedFontFamily :: Text -> Maybe Text
 toUnquotedFontFamily = unquote fontfamilyname

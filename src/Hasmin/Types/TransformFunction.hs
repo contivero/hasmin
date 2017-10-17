@@ -7,8 +7,6 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- CSS \<transform-function> data type.
---
 -----------------------------------------------------------------------------
 module Hasmin.Types.TransformFunction
     ( TransformFunction(..)
@@ -30,6 +28,7 @@ import Data.List (groupBy)
 import Data.Maybe (fromMaybe, isNothing, isJust, fromJust)
 import Data.Text.Lazy.Builder (toLazyText, singleton, Builder)
 import Data.Text.Lazy (toStrict)
+
 import Hasmin.Config
 import Hasmin.Types.Class
 import Hasmin.Utils
@@ -43,29 +42,32 @@ import Hasmin.Types.Numeric
 -- takes two \<length-percentage\> (which makes sense since translateX() and
 -- translateY() also do).
 
+-- | CSS <https://drafts.csswg.org/css-transforms/#typedef-transform-function \<transform-function\>>
+-- data type.
 data TransformFunction = Mat (Matrix Number)
                        | Mat3d (Matrix Number)
                        | Perspective Distance
                        | Rotate Angle
-                       | Rotate3d Number Number Number Angle
                        | RotateX Angle
                        | RotateY Angle
                        | RotateZ Angle
+                       | Rotate3d Number Number Number Angle
                        | Scale Number (Maybe Number)
-                       | Scale3d Number Number Number
                        | ScaleX Number
                        | ScaleY Number
                        | ScaleZ Number
+                       | Scale3d Number Number Number
                        | Skew Angle (Maybe Angle)
                        | SkewX Angle
                        | SkewY Angle
                        | Translate PercentageLength (Maybe PercentageLength)
-                       | Translate3d PercentageLength PercentageLength Distance
                        | TranslateX PercentageLength
                        | TranslateY PercentageLength
                        | TranslateZ Distance
+                       | Translate3d PercentageLength PercentageLength Distance
   deriving (Eq, Show)
--- | There are a series of equivalences to keep in mind: translate(0),
+
+-- There are a series of equivalences to keep in mind: translate(0),
 -- translate3d(0, 0, 0), translateX(0), translateY(0), translateZ(0), scale(1),
 -- scaleX(1), scaleY(1), scaleZ(1), rotate(0), rotate3d(1,1,1,0), rotateX(0),
 -- rotateY(0), rotateZ(0), perspective(infinity), matrix(1,0,0,1,0,0),
@@ -513,20 +515,22 @@ simplify (Translate3d x y z )
           g con a = simplify . con $ Right a -- A distance, transform an minify
 simplify x = pure x
 
--- | Combines consecutive \<transform-functions\> whenever possible, leaving
+-- | Combines consecutive @\<transform-functions\>@ whenever possible, leaving
 -- translate functions that can't be converted to a matrix (because they use
 -- percentages or relative units) as they are, in the position they are in the
--- list (since matrix multiplication isn't conmutative)
+-- list (since matrix multiplication isn't commutative)
 -- Example:
+--
 -- >>> import Control.Monad.Reader
 -- >>> let t10 = Translate (Right (Distance 10 PX)) Nothing
--- >>> let tp  = Translate (Left (Percentage 100)) Nothing
--- >>> let s90 = Skew (Angle 90 Deg) Nothing
 -- >>> let s45 = Skew (Angle 45 Deg) Nothing
 -- >>> let sx5 = ScaleX 5
 -- >>> let f x = runReader (combine x) defaultConfig
+--
 -- >>> fmap toText $ f [t10, s45, sx5]
 -- ["matrix(5,0,1,1,10,0)"]
+--
+-- >>> let tp  = Translate (Left (Percentage 100)) Nothing
 -- >>> fmap toText $ f [s45,tp,sx5,sx5,sx5]
 -- ["skew(45deg)","translate(100%)","scale(125)"]
 combine :: [TransformFunction] -> Reader Config [TransformFunction]

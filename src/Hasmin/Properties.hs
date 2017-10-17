@@ -37,7 +37,7 @@ data PropertyInfo =
 -- and maintainable format.
 processTuples :: [(Text, Text, Inheritance, [Text], [Text])] -> [(Text, PropertyInfo)]
 processTuples = foldr (\(p,t,i,a,b) xs -> (p, PropertyInfo (getValues p t) i a b) : xs) []
-  where getValues p s = case parseOnly (values p <|> valuesFallback) s of
+  where getValues p s = case parseOnly (valuesFor p <|> valuesFallback) s of
                           Right initValues -> Just initValues
                           Left _           -> Nothing
 

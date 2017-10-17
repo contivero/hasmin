@@ -8,8 +8,8 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.BgSize (
-      BgSize(..)
+module Hasmin.Types.BgSize
+    ( BgSize(..)
     , Auto(..)
     ) where
 
@@ -19,15 +19,19 @@ import Data.Text.Lazy.Builder (singleton)
 import Hasmin.Types.Class
 import Hasmin.Types.PercentageLength
 
+-- | The CSS @auto@ keyword.
 data Auto = Auto
   deriving (Eq, Show)
 
 instance ToText Auto where
   toBuilder Auto = "auto"
 
+-- | CSS <https://drafts.csswg.org/css-backgrounds-3/#typedef-bg-size \<bg-size\>>
+-- data type, used by the @background-size@ and @background@ properties.
 data BgSize = Cover
             | Contain
             | BgSize (Either PercentageLength Auto) (Maybe (Either PercentageLength Auto))
+            -- TODO Avoid Maybe by adding another constructor
   deriving Show
 
 instance Eq BgSize where
@@ -47,6 +51,9 @@ instance ToText BgSize where
   toBuilder Contain      = "contain"
   toBuilder (BgSize x y) = toBuilder x <> maybe mempty (\a -> singleton ' ' <> toBuilder a) y
 
+-- | Minifying a @\<bg-size\>@ value entails, apart from minifying the
+-- individual values, removing any @auto@ value in the second position (if
+-- present).
 instance Minifiable BgSize where
   minifyWith (BgSize x y) = do
       -- conf <- ask

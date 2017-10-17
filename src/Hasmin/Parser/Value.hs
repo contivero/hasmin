@@ -12,18 +12,17 @@
 --
 -----------------------------------------------------------------------------
 module Hasmin.Parser.Value (
-      values
-    , percentage
-    , value
+      valuesFor
     , valuesFallback
+    , value
     , valuesInParens
     , stringOrUrl
+    , percentage
     , url
     , stringtype
-    , digits
     , textualvalue
-    , stringvalue
-    , shadowList
+    , stringvalue    -- used in StringSpec
+    , shadowList     -- used in ShadowSpec 
     , timingFunction
     , repeatStyle
     , position
@@ -36,8 +35,8 @@ import Control.Applicative ((<|>), many, liftA3)
 import Control.Arrow (first, (&&&))
 import Control.Monad (mzero)
 import Data.Functor (($>))
-import Data.Attoparsec.Text (asciiCI, char, count, many1, option, Parser,
-  satisfy, skipSpace, string, digit)
+import Data.Attoparsec.Text (asciiCI, char, count, option, Parser, satisfy,
+       skipSpace, string)
 import Data.Map.Strict (Map)
 import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe, isNothing)
@@ -69,11 +68,15 @@ import Hasmin.Types.TimingFunction
 import Hasmin.Types.TransformFunction
 import Hasmin.Types.Value
 
-values :: Text -> Parser Values
-values p = case Map.lookup (T.toLower p) propertyValueParsersMap of
-             Just x  -> x <* skipComments
-             Nothing -> mzero
+-- | Given a propery name, it returns a specific parser of values for that
+-- property. Fails if no specific parser is found.
+valuesFor :: Text -> Parser Values
+valuesFor propName =
+  case Map.lookup (T.toLower propName) propertyValueParsersMap of
+    Just x  -> x <* skipComments
+    Nothing -> mzero
 
+-- | Parser for <https://www.w3.org/TR/css-values-3/#numbers \<number\>>.
 number :: Parser Number
 number = Number <$> rational
 
@@ -212,6 +215,7 @@ distanceConstructorsList :: [(Text, Number -> Distance)]
 distanceConstructorsList = fmap (toText &&& flip Distance)
     [EM, EX, CH, VH, VW, VMIN, VMAX, REM, Q, CM, MM, IN, PC, PT, PX]
 
+-- | Parser for <https://drafts.csswg.org/css-values-3/#percentages \<percentage\>>.
 percentage :: Parser Percentage
 percentage = Percentage <$> rational <* char '%'
 
@@ -234,16 +238,13 @@ int' = do
 int :: Parser Int
 int = read <$> int'
 
-digits :: Parser String
-digits = many1 digit
-
 word8 :: Parser Word8
 word8 = read <$> digits
 
 -- Note that many properties that allow an integer or real number as a value
 -- actually restrict the value to some range, often to a non-negative value.
 --
--- | Real numbers parser. \<number\>: <'int' integer> | [0-9]*.[0-9]+
+-- | Real number parser. \<number\>: <'int' integer> | [0-9]*.[0-9]+
 rational :: Parser Rational
 rational = do
     sign <- option [] (wrapMinus <$> (char '-' <|> char '+'))
@@ -253,10 +254,10 @@ rational = do
     pure . fst . head $ readSigned readFloat (sign ++ dgts ++ e)
   where fractionalPart = (:) <$> char '.' <*> digits
         expo = (:) <$> satisfy (\c -> c == 'e' || c == 'E') <*> int'
-        wrapMinus x = if x == '-' -- we use this since read fails with leading '+'
-                         then [x]
-                         else []
+        wrapMinus x = [x | x == '-'] -- we use this since read fails with leading '+'
 
+-- | Parser for <https://drafts.csswg.org/css-fonts-3/#propdef-font-style \<font-style\>>,
+-- used in the @font-style@ and @font@ properties.
 fontStyle :: Parser Value
 fontStyle = do
     k <- ident
@@ -300,6 +301,7 @@ where <font-variant-css21> = [normal | small-caps]
 positionvalue :: Parser Value
 positionvalue = PositionV <$> position
 
+-- | Parser for <https://drafts.csswg.org/css-values-3/#position \<position\>>.
 position :: Parser Position
 position = pos4 <|> pos2 <|> pos1
 
@@ -502,6 +504,7 @@ singleTransition = do
                else pure $ TextV i
         excludedKeywords = Set.fromList ["initial", "inherit", "unset", "default", "none"]
 
+-- | Parser for <https://drafts.csswg.org/css-timing-1/#single-timing-function-production \<single-timing-function\>>.
 timingFunction :: Parser TimingFunction
 timingFunction = do
     i <- ident
@@ -588,13 +591,6 @@ propertyValueParsersMap = Map.fromList
 -- helper wrapper
 singleValue :: Parser Value -> Parser Values
 singleValue = (flip Values [] <$>)
-
-value :: Parser Value
-value =  textualvalue
-     <|> numericalvalue
-     <|> hexvalue
-     <|> (StringV <$> stringtype)
-     <|> invalidvalue
 
 -- | Parses until the end of the declaration, i.e. ';' or '}'.
 -- Used to deal with invalid input, or an IE specific hack.
@@ -769,7 +765,8 @@ stringOrUrl = (Left <$> stringtype) <|> (Right <$> someUrl)
   where someUrl :: Parser Url
         someUrl = asciiCI "url" *> char '(' *> url
 
--- <repeat-style> parser, for background-repeat.
+-- | Parser for <https://www.w3.org/TR/css-backgrounds-3/#typedef-repeat-style \<repeat-style\>>,
+-- used in @background-repeat@ and @background@.
 repeatStyle :: Parser RepeatStyle
 repeatStyle = do
   i <- ident
@@ -903,6 +900,8 @@ shadowText = permute (mkShadowText <$$> (lns <* skipComments)
             l3 <- option Nothing ((Just <$> distance) <* skipComments)
             pure (l1,l2,l3)
 
+-- | Parser for <https://drafts.csswg.org/css-backgrounds-3/#typedef-shadow \<shadow>>
+-- values, used in the @box-shadow@ property.
 shadowList :: Parser Values
 shadowList = parseCommaSeparated (ShadowV <$> shadow)
 
@@ -1005,6 +1004,7 @@ colorStop :: Parser ColorStop
 colorStop = ColorStop <$> color <* skipComments
         <*> option Nothing (Just <$> percentageLength <* skipComments)
 
+-- | Parser for <https://drafts.csswg.org/css-color-3/#colorunits \<color\>>.
 color :: Parser Color
 color = hex <|> othercolor
   where othercolor = do
@@ -1107,11 +1107,13 @@ steps = functionParser $ do
   where startOrEnd = (asciiCI "end" $> End)
                  <|> (asciiCI "start" $> Start)
 
--- We use skipSpace instead of skipComments, since comments aren't valid inside
+-- It uses skipSpace instead of skipComments, since comments aren't valid inside
 -- the url-token. From the spec:
 -- COMMENT tokens cannot occur within other tokens: thus, "url(/*x*/pic.png)"
 -- denotes the URI "/*x*/pic.png", not "pic.png".
--- Assumes "url(" has been already parsed
+--
+-- | Parser for <https://drafts.csswg.org/css-values-3/#urls \<url\>>. Assumes
+-- @\"url(\"@ has already been parsed.
 url :: Parser Url
 url = Url <$> (skipSpace *> someUri <* skipSpace <* char ')')
   where someUri = (Right <$> stringtype) <|> (Left <$> nonQuotedUri)
@@ -1128,10 +1130,16 @@ namedColorsParsersMap = Map.fromList $ foldr f [] keywordColors
   where f x xs = let a = fst x
                  in (a, pure $ ColorV (Named a)) : xs
 
--- | For cases when CSS hacks are used, e.g.:
--- margin-top: 1px \9;
+-- | For cases when CSS hacks are used, e.g.: @margin-top: 1px \\9;@.
 valuesFallback :: Parser Values
 valuesFallback = Values <$> value <*> many ((,) <$> separator <*> value) <* skipComments
+
+value :: Parser Value
+value =  textualvalue
+     <|> numericalvalue
+     <|> hexvalue
+     <|> (StringV <$> stringtype)
+     <|> invalidvalue
 
 separator :: Parser Separator
 separator = lexeme $ (char ',' $> Comma)

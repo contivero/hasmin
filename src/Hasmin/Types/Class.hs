@@ -30,7 +30,7 @@ class Minifiable a where
   minify :: a -> a
   minify x = runReader (minifyWith x) defaultConfig
 
--- | Class for types that can be converted to Text. Used for priting the
+-- | Class for types that can be converted to Text. Used for printing the
 -- minified results.
 class ToText a where
   {-# MINIMAL toText | toBuilder #-}

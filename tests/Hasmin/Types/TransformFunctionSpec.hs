@@ -21,7 +21,7 @@ transformTests =
 combinationTests :: Spec
 combinationTests =
     describe "transform function combination" $
-      mapM_ (matchSpecWithDesc (g <$> (values "transform" <|> valuesFallback))) functionCombinationTestsInfo
+      mapM_ (matchSpecWithDesc (g <$> (valuesFor "transform" <|> valuesFallback))) functionCombinationTestsInfo
   where g = mkValues . fmap TransformV . f . fmap (\(TransformV t) -> t) . valuesToList
         f x = runReader (combine x) defaultConfig
 

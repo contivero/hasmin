@@ -395,7 +395,7 @@ analyzeValueDifference vs initVals =
       _  -> Just $ mkValues valuesDifference -- At least a value wasn't an initial one, or it was a css-wide keyword
   where valuesDifference = valuesToList vs \\ valuesToList initVals
 
--- Removes longhand rules overwritten by their shorthand further down in the
+-- | Removes longhand rules overwritten by their shorthand further down in the
 -- declaration list, and merges shorthand declarations with longhand properties
 -- later declared.
 clean :: [Declaration] -> [Declaration]
