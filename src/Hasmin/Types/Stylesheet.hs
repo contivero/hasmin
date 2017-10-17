@@ -395,6 +395,10 @@ mergeRules zs = Map.elems $ mergeRules' 0 1 rulesInMap
             thereIsAPairOfSelectorsWithTheSameSpecificity && twoDeclarationsClash
           where thereIsAPairOfSelectorsWithTheSameSpecificity = any (\x -> any (\y -> specificity x == specificity y) ss) ss2
                 twoDeclarationsClash = any (\x -> any (`overlaps` x) ds) ds2
+        shouldSkip StyleRule{} AtKeyframes{} = False
+        shouldSkip StyleRule{} (AtBlockWithDec t _) 
+            | t == "font-face" = False
+            | otherwise        = True
          -- TODO see better what needs to be skipped and what doesn't need to
          -- be, e.g. what should be done between a style rule and a at-media
          -- rule?
