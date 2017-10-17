@@ -20,7 +20,8 @@ repeatStyleTests =
 instance Arbitrary RepeatStyle where
   arbitrary = frequency [(1, pure RepeatX)
                         ,(1, pure RepeatY)
-                        ,(6, liftA2 RSPair arbitrary arbitrary)
+                        ,(8, liftA2 RepeatStyle2 arbitrary arbitrary)
+                        ,(8, fmap RepeatStyle1 arbitrary)
                         ]
 
 instance Arbitrary RSKeyword where

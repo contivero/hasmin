@@ -49,6 +49,7 @@ import qualified Data.Set as Set
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Map.Strict as Map
+import qualified Data.List as L
 import qualified Data.Text as T
 
 import Hasmin.Parser.Utils
@@ -770,18 +771,16 @@ repeatStyle :: Parser RepeatStyle
 repeatStyle = do
   i <- ident
   let lowercased = T.toLower i
-  case Map.lookup lowercased singleKeywords of
+  case L.lookup lowercased singleKeywords of
     Nothing -> case Map.lookup lowercased keywordPairs of
                  Nothing -> mzero
-                 Just y -> do j <- option Nothing secondKeyword
-                              pure $ RSPair y j
+                 Just y  -> (RepeatStyle2 y <$> secondKeyword)
+                            <|> pure (RepeatStyle1 y)
     Just x -> pure x
   where secondKeyword = do
             z <- skipComments *> ident
-            case Map.lookup (T.toLower z) keywordPairs of
-              Nothing -> mzero
-              Just a -> pure $ Just a
-        singleKeywords = Map.fromList [("repeat-x", RepeatX), ("repeat-y", RepeatY)]
+            maybe mzero pure $ Map.lookup (T.toLower z) keywordPairs
+        singleKeywords = [("repeat-x", RepeatX), ("repeat-y", RepeatY)]
         keywordPairs = Map.fromList [("repeat",    RsRepeat)
                                     ,("no-repeat", RsNoRepeat)
                                     ,("space",     RsSpace)

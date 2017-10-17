@@ -299,8 +299,8 @@ instance Minifiable Value where
 
 handleRepeatStyle :: Maybe RepeatStyle -> Reader Config (Maybe RepeatStyle)
 handleRepeatStyle (Just x)
-    | x == RSPair RsRepeat Nothing = pure Nothing
-    | otherwise                    = Just <$> minifyWith x
+    | x == RepeatStyle1 RsRepeat = pure Nothing
+    | otherwise                  = Just <$> minifyWith x
 handleRepeatStyle Nothing = pure Nothing
 
 handleImage :: Maybe Value -> Reader Config (Maybe Value)

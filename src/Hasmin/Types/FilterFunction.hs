@@ -22,12 +22,8 @@ import Hasmin.Types.Dimension
 import Hasmin.Types.Color
 import Hasmin.Types.Numeric
 
--- Note: In a previous specification, translate3d() took two
--- <https://www.w3.org/TR/css-transforms-1/#typedef-translation-value \<translation-value\>>,
--- however in the <https://drafts.csswg.org/css-transforms/ latest draft>, it
--- takes two \<length-percentage\> (which makes sense since translateX() and
--- translateY() also do).
-
+-- | CSS <https://drafts.fxtf.org/filter-effects/#typedef-filter-function \<filter-function\>>
+-- data type.
 data FilterFunction = Blur Distance
                     | Brightness (Either Number Percentage)
                     | Contrast (Either Number Percentage)

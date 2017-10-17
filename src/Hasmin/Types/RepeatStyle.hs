@@ -8,8 +8,8 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.RepeatStyle (
-      RepeatStyle(..)
+module Hasmin.Types.RepeatStyle
+    ( RepeatStyle(..)
     , RSKeyword(..)
     ) where
 
@@ -22,12 +22,14 @@ import Hasmin.Types.Class
 -- data type, used in the properties @background-repeat@ and @background@.
 data RepeatStyle = RepeatX
                  | RepeatY
-                 | RSPair RSKeyword (Maybe RSKeyword)
+                 | RepeatStyle1 RSKeyword
+                 | RepeatStyle2 RSKeyword RSKeyword
   deriving Show
 instance ToText RepeatStyle where
-  toBuilder RepeatX = "repeat-x"
-  toBuilder RepeatY = "repeat-y"
-  toBuilder (RSPair r1 r2 ) = toBuilder r1 <> maybe mempty (\x -> singleton ' ' <> toBuilder x) r2
+  toBuilder RepeatX            = "repeat-x"
+  toBuilder RepeatY            = "repeat-y"
+  toBuilder (RepeatStyle1 x)   = toBuilder x
+  toBuilder (RepeatStyle2 x y) = toBuilder x <> singleton ' ' <> toBuilder y
 instance Minifiable RepeatStyle where
   minifyWith r = do
       conf <- ask
@@ -35,32 +37,33 @@ instance Minifiable RepeatStyle where
                 then minifyRepeatStyle r
                 else r
     where minifyRepeatStyle :: RepeatStyle -> RepeatStyle
-          minifyRepeatStyle (RSPair RsRepeat (Just RsNoRepeat)) = RepeatX
-          minifyRepeatStyle (RSPair RsNoRepeat (Just RsRepeat)) = RepeatY
-          minifyRepeatStyle (RSPair x (Just y))
-              | x == y    = RSPair x Nothing
-              | otherwise = RSPair x (Just y)
+          minifyRepeatStyle (RepeatStyle2 RsRepeat RsNoRepeat) = RepeatX
+          minifyRepeatStyle (RepeatStyle2 RsNoRepeat RsRepeat) = RepeatY
+          minifyRepeatStyle rs2@(RepeatStyle2 x y)
+              | x == y    = RepeatStyle1 x
+              | otherwise = rs2
           minifyRepeatStyle x = x
+
 instance Eq RepeatStyle where
   RepeatX == RepeatX = True
-  a@RepeatX == b@RSPair{} = b == a
+  a@RepeatX == b@RepeatStyle2{} = b == a
+  RepeatStyle2 RsRepeat RsNoRepeat == RepeatX = True
   RepeatY == RepeatY = True
-  a@RepeatY == b@RSPair{} = b == a
-  RSPair RsNoRepeat (Just RsRepeat) == RepeatY = True
-  RSPair RsRepeat (Just RsNoRepeat) == RepeatX = True
-  RSPair RsNoRepeat (Just RsRepeat) == RSPair RsNoRepeat (Just RsRepeat) = True
-  RSPair RsRepeat (Just RsNoRepeat) == RSPair RsRepeat (Just RsNoRepeat) = True
-  RSPair RsSpace (Just RsSpace) == RSPair RsSpace Nothing = True
-  RSPair RsSpace (Just RsSpace) == RSPair RsSpace (Just RsSpace) = True
-  RSPair RsRound (Just RsRound) == RSPair RsRound Nothing = True
-  RSPair RsRound (Just RsRound) == RSPair RsRound (Just RsRound) = True
-  RSPair RsNoRepeat (Just RsNoRepeat) == RSPair RsNoRepeat Nothing = True
-  RSPair RsNoRepeat (Just RsNoRepeat) == RSPair RsNoRepeat (Just RsNoRepeat) = True
-  RSPair RsRepeat (Just RsRepeat) == RSPair RsRepeat Nothing = True
-  RSPair RsRepeat (Just RsRepeat) == RSPair RsRepeat (Just RsRepeat) = True
-  RSPair x Nothing == RSPair y Nothing = x == y
-  a@(RSPair _ Nothing) == b@(RSPair _ _) = b == a
-  RSPair x y == RSPair z w = x == z && y == w
+  a@RepeatY == b@RepeatStyle2{} = b == a
+  RepeatStyle2 RsNoRepeat RsRepeat == RepeatY = True
+  RepeatStyle2 RsNoRepeat RsRepeat == RepeatStyle2 RsNoRepeat RsRepeat = True
+  RepeatStyle2 RsRepeat RsNoRepeat == RepeatStyle2 RsRepeat RsNoRepeat = True
+  RepeatStyle2 RsSpace RsSpace == RepeatStyle2 RsSpace RsSpace = True
+  RepeatStyle2 RsSpace RsSpace == RepeatStyle1 RsSpace = True
+  RepeatStyle2 RsRound RsRound == RepeatStyle2 RsRound RsRound = True
+  RepeatStyle2 RsRound RsRound == RepeatStyle1 RsRound = True
+  RepeatStyle2 RsNoRepeat RsNoRepeat == RepeatStyle2 RsNoRepeat RsNoRepeat = True
+  RepeatStyle2 RsNoRepeat RsNoRepeat == RepeatStyle1 RsNoRepeat = True
+  RepeatStyle2 RsRepeat RsRepeat == RepeatStyle2 RsRepeat RsRepeat = True
+  RepeatStyle2 RsRepeat RsRepeat == RepeatStyle1 RsRepeat = True
+  RepeatStyle1 x == RepeatStyle1 y = x == y
+  a@RepeatStyle1{} == b@RepeatStyle2{} = b == a
+  RepeatStyle2 x1 y1 == RepeatStyle2 x2 y2 = x1 == x2 && y1 == y2
   _ == _ = False
 
 data RSKeyword = RsRepeat
