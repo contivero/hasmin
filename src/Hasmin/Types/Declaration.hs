@@ -156,7 +156,11 @@ nullPercentageToLength d = do
           where zeroPercentageToLength :: Percentage -> Value
                 zeroPercentageToLength 0 = DistanceV (Distance 0 Q)
                 zeroPercentageToLength x = PercentageV x
-        f (BgSizeV (BgSize x y)) = pure . BgSizeV $ BgSize (zeroPerToLength x) (fmap zeroPerToLength y)
+        f (BgSizeV bgsz) = pure . BgSizeV $
+            case bgsz of
+              BgSize1 x   -> BgSize1 (zeroPerToLength x) 
+              BgSize2 x y -> BgSize2 (zeroPerToLength x) (zeroPerToLength y)
+              x           -> x
           where zeroPerToLength (Left (Left 0)) = Left $ Right (Distance 0 Q)
                 zeroPerToLength z = z
         f x = pure x

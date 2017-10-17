@@ -387,10 +387,9 @@ bgSize = twovaluesyntax <|> contain <|> cover
   where cover   = asciiCI "cover" $> Cover
         contain = asciiCI "contain" $> Contain
         twovaluesyntax = do
-            v1 <- (Left <$> percentageLength) <|> (Right <$> auto)
-            _  <- skipComments
-            v2 <- option Nothing (Just <$> ((Left <$> percentageLength) <|> (Right <$> auto)))
-            pure $ BgSize v1 v2
+            x <- bgsizeValue <* skipComments
+            (BgSize2 x <$> bgsizeValue) <|> pure (BgSize1 x)
+        bgsizeValue = (Left <$> percentageLength) <|> (Right <$> auto)
 
 bgAttachment :: Parser TextV
 bgAttachment = matchKeywords ["scroll", "fixed", "local"]

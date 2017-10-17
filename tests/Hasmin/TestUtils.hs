@@ -99,7 +99,9 @@ instance Arbitrary FilterFunction where
     ]
 
 instance Arbitrary BgSize where
-  arbitrary = liftA2 BgSize arbitrary arbitrary
+  arbitrary = oneof [ liftA2 BgSize2 arbitrary arbitrary
+                    , fmap BgSize1 arbitrary
+                    ]
 
 instance Arbitrary Auto where
   arbitrary = pure Auto

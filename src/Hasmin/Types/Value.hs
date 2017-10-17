@@ -329,9 +329,9 @@ handleColor = maybe (pure Nothing) f
                  else Just <$> minifyWith x
 
 handleBgSize :: Maybe BgSize -> Reader Config (Maybe BgSize)
-handleBgSize (Just b@BgSize{}) = do
+handleBgSize (Just b) = do 
     minb <- minifyWith b
-    pure $ if minb == BgSize (Right Auto) Nothing
+    pure $ if minb == BgSize1 (Right Auto)
               then Nothing
               else Just minb
 handleBgSize x = pure x

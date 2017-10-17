@@ -13,10 +13,12 @@ module Hasmin.Types.BgSize
     , Auto(..)
     ) where
 
+import Control.Monad.Reader (Reader)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
 
 import Hasmin.Types.Class
+import Hasmin.Config
 import Hasmin.Types.PercentageLength
 
 -- | The CSS @auto@ keyword.
@@ -30,42 +32,46 @@ instance ToText Auto where
 -- data type, used by the @background-size@ and @background@ properties.
 data BgSize = Cover
             | Contain
-            | BgSize (Either PercentageLength Auto) (Maybe (Either PercentageLength Auto))
-            -- TODO Avoid Maybe by adding another constructor
+            | BgSize1 (Either PercentageLength Auto)
+            | BgSize2 (Either PercentageLength Auto) (Either PercentageLength Auto)
   deriving Show
 
 instance Eq BgSize where
-  Cover == Cover           = True
-  Contain == Contain       = True
-  BgSize a b == BgSize c d = ftsArgEq a c && b `equals` d
-    where equals (Just (Right Auto)) Nothing     = True
-          equals Nothing (Just (Right Auto))     = True
-          equals (Just (Left x)) (Just (Left y)) = isZero x && isZero y || x == y
-          equals x y                             = x == y
-          ftsArgEq (Left x) (Left y) = isZero x && isZero y || x == y
-          ftsArgEq x y = x == y
+  BgSize1 x1 == BgSize1 x2       = x1 `bgsizeArgEq` x2
+  BgSize2 x1 y == BgSize1 x2     = x1 `bgsizeArgEq` x2 && y == Right Auto
+  x@BgSize1{} == y@BgSize2{}     = y == x
+  BgSize2 x1 y1 == BgSize2 x2 y2 = x1 `bgsizeArgEq` x2 && y1 `bgsizeArgEq` y2
+  Cover == Cover                 = True
+  Contain == Contain             = True
   _ == _ = False
 
+bgsizeArgEq :: Either PercentageLength Auto -> Either PercentageLength Auto -> Bool
+bgsizeArgEq (Left x) (Left y) = isZero x && isZero y || x == y
+bgsizeArgEq x y = x == y
+
 instance ToText BgSize where
-  toBuilder Cover        = "cover"
-  toBuilder Contain      = "contain"
-  toBuilder (BgSize x y) = toBuilder x <> maybe mempty (\a -> singleton ' ' <> toBuilder a) y
+  toBuilder Cover         = "cover"
+  toBuilder Contain       = "contain"
+  toBuilder (BgSize1 x)   = toBuilder x
+  toBuilder (BgSize2 x y) = toBuilder x <> singleton ' ' <> toBuilder y
 
 -- | Minifying a @\<bg-size\>@ value entails, apart from minifying the
 -- individual values, removing any @auto@ value in the second position (if
 -- present).
 instance Minifiable BgSize where
-  minifyWith (BgSize x y) = do
-      -- conf <- ask
-      nx   <- minFirst x
-      ny   <- mapM minFirst y
-      let b = BgSize nx ny
+  minifyWith (BgSize1 x)   = BgSize1 <$> minifyBgSizeArg x
+  minifyWith (BgSize2 x y) = do
+      nx   <- minifyBgSizeArg x
+      ny   <- minifyBgSizeArg y
+      let b = BgSize2 nx ny
       pure $ if True {- shouldMinifyBgSize conf -}
                 then minifyBgSize b
                 else b
-    where minFirst (Left a)     = Left <$> minifyWith a
-          minFirst (Right Auto) = pure (Right Auto)
-
-          minifyBgSize (BgSize l (Just (Right Auto))) = BgSize l Nothing
+    where minifyBgSize (BgSize2 l (Right Auto)) = BgSize1 l
           minifyBgSize z = z
   minifyWith x = pure x
+
+minifyBgSizeArg :: Either PercentageLength Auto
+                -> Reader Config (Either PercentageLength Auto)
+minifyBgSizeArg (Left a)     = Left <$> minifyWith a
+minifyBgSizeArg (Right Auto) = pure $ Right Auto
