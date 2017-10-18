@@ -24,7 +24,7 @@ import Hasmin.Types.Numeric
 
 -- | CSS <https://drafts.fxtf.org/filter-effects/#typedef-filter-function \<filter-function\>>
 -- data type.
-data FilterFunction = Blur Distance
+data FilterFunction = Blur Length
                     | Brightness (Either Number Percentage)
                     | Contrast (Either Number Percentage)
                     | Grayscale (Either Number Percentage)
@@ -33,7 +33,7 @@ data FilterFunction = Blur Distance
                     | Saturate (Either Number Percentage)
                     | Sepia (Either Number Percentage)
                     | HueRotate Angle
-                    | DropShadow Distance Distance (Maybe Distance) (Maybe Color)
+                    | DropShadow Length Length (Maybe Length) (Maybe Color)
   deriving (Show)
 instance Eq FilterFunction where
   Blur a == Blur b                         = a == b
@@ -47,8 +47,8 @@ instance Eq FilterFunction where
   HueRotate a == HueRotate b               = a == b
   DropShadow a b c d == DropShadow e f g h =
       a == e && b == f && d == h && c `thirdValueEq` g
-    where thirdValueEq Nothing (Just (Distance 0 _)) = True
-          thirdValueEq (Just (Distance 0 _)) Nothing = True
+    where thirdValueEq Nothing (Just (Length 0 _)) = True
+          thirdValueEq (Just (Length 0 _)) Nothing = True
           thirdValueEq x y = x == y
   _ == _                                   = False
 instance ToText FilterFunction where
@@ -83,13 +83,13 @@ instance Minifiable FilterFunction where
          else pure s
 
 minifyPseudoShadow :: (Minifiable b, Minifiable t1, Minifiable t2, Traversable t)
-                   => (t2 -> t1 -> Maybe Distance -> t b -> b1)
-                   -> t2 -> t1 -> Maybe Distance -> t b -> Reader Config b1
+                   => (t2 -> t1 -> Maybe Length -> t b -> b1)
+                   -> t2 -> t1 -> Maybe Length -> t b -> Reader Config b1
 minifyPseudoShadow constr a b c d = do
               x  <- minifyWith a
               y  <- minifyWith b
               z  <- case c of
-                      Just r -> if r == Distance 0 Q
+                      Just r -> if r == Length 0 Q
                                    then pure Nothing
                                    else mapM minifyWith c
                       Nothing -> pure Nothing

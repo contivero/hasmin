@@ -159,7 +159,7 @@ numericalConstructorsMap   = Map.fromList $ fmap (first T.toCaseFold) l
             ,("dpcm", resolutionFunc Dpcm)
             ,("dppx", resolutionFunc Dppx)
             ,("%", \x -> PercentageV (Percentage $ toRational x))
-            ] ++ (fmap . fmap) (DistanceV .) distanceConstructorsList
+            ] ++ (fmap . fmap) (LengthV .) distanceConstructorsList
               ++ (fmap . fmap) (AngleV .) angleConstructorsList
 
 -- Unified numerical parser.
@@ -188,8 +188,8 @@ dimensionParser m unitlessValue = do
               Just f  -> pure $ f n
               Nothing -> mzero -- parsed units aren't angle units, fail
 
-distance :: Parser Distance
-distance = dimensionParser distanceConstructorsMap (Distance 0 Q)
+distance :: Parser Length
+distance = dimensionParser distanceConstructorsMap (Length 0 Q)
   where distanceConstructorsMap = Map.fromList distanceConstructorsList
 
 angle :: Parser Angle
@@ -212,8 +212,8 @@ angleConstructorsList :: [(Text, Number -> Angle)]
 angleConstructorsList = fmap (toText &&& flip Angle)
     [Deg, Grad, Rad, Turn]
 
-distanceConstructorsList :: [(Text, Number -> Distance)]
-distanceConstructorsList = fmap (toText &&& flip Distance)
+distanceConstructorsList :: [(Text, Number -> Length)]
+distanceConstructorsList = fmap (toText &&& flip Length)
     [EM, EX, CH, VH, VW, VMIN, VMAX, REM, Q, CM, MM, IN, PC, PT, PX]
 
 -- | Parser for <https://drafts.csswg.org/css-values-3/#percentages \<percentage\>>.
@@ -280,7 +280,7 @@ fontWeight = do
 
 fontSize :: Parser Value
 fontSize = fontSizeKeyword
-        <|> (DistanceV <$> distance)
+        <|> (LengthV <$> distance)
         <|> (PercentageV <$> percentage)
   where fontSizeKeyword = do
             v1 <- ident
@@ -370,7 +370,7 @@ transformOrigin = twoVal <|> oneVal
           (v1, v2) <- ((,) <$> yAxis <*> (skipComments *> (xAxis <|> numericalvalue)))
                     <|> ((,) <$> xAxis <*> (skipComments *> (yAxis <|> numericalvalue)))
                     <|> ((,) <$> numericalvalue <*> (skipComments *> (yAxis <|> xAxis)))
-          option (mkValues [v1,v2]) ((\x -> mkValues [v1,v2, DistanceV x]) <$> distance)
+          option (mkValues [v1,v2]) ((\x -> mkValues [v1,v2, LengthV x]) <$> distance)
         yAxis = do
           v1 <- ident
           if v1 == "top" || v1 == "bottom" || v1 == "center"
@@ -615,7 +615,7 @@ font = systemFonts <|> do
                                        case n of
                                          NumberV _     -> pure n
                                          PercentageV _ -> pure n
-                                         DistanceV _   -> pure n
+                                         LengthV _     -> pure n
                                          _             -> mzero
                      in (Other <$> parseIdents ["normal"]) <|> validNum
         fontWeightNumber :: Parser Value
@@ -1017,8 +1017,8 @@ percentageLength = do
     n <- numericalvalue
     case n of
       PercentageV p -> pure $ Left p
-      NumberV 0     -> pure $ Right (Distance 0 PX)
-      DistanceV d   -> pure $ Right d
+      NumberV 0     -> pure $ Right (Length 0 PX)
+      LengthV d     -> pure $ Right d
       _             -> mzero
 
 numberPercentage :: Parser (Either Number Percentage)

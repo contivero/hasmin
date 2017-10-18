@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Hasmin.TestUtils (
-      module Hasmin.TestUtils
+module Hasmin.TestUtils 
+    ( module Hasmin.TestUtils
     , module Test.QuickCheck
     , module Test.Hspec
     , module Test.Hspec.Attoparsec
@@ -50,8 +50,8 @@ newtype Declarations = Declarations [Declaration]
 instance ToText Declarations where
   toText (Declarations ds) = mconcatIntersperse toText (singleton ';') ds
 
-instance Arbitrary Distance where
-  arbitrary = liftA2 Distance arbitrary distanceUnit
+instance Arbitrary Length where
+  arbitrary = liftA2 Length arbitrary distanceUnit
     -- TODO keep it DRY, avoid repeating constructor list here (i.e. SPOF)
     where distanceUnit = mkGen [IN, CM, MM, Q, PC, PT, PX, EM, EX,
                                 CH, VH, VW, VMIN, VMAX, REM]

@@ -13,7 +13,7 @@ dimensionTests :: Spec
 dimensionTests =
     describe "Dimension tests with quickcheck" $ do
       it "Minified <length>s are equivalent to the original ones" $
-        property (prop_minificationEq :: Distance -> Bool)
+        property (prop_minificationEq :: Length -> Bool)
       it "Minified <angle>s are equivalent to the original ones" $
         property (prop_minificationEq :: Angle -> Bool)
       it "Minified <time>s are equivalent to the original ones" $
@@ -29,43 +29,43 @@ spec = do
     describe "<length> units equivalences" $ do
       -- inches conversions
       it "1in == 2.54cm" $
-        Distance 1 IN `shouldBe` Distance 2.54 CM
+        Length 1 IN `shouldBe` Length 2.54 CM
       it "1in == 25.4cm" $
-        Distance 1 IN `shouldBe` Distance 25.4 MM
+        Length 1 IN `shouldBe` Length 25.4 MM
       it "1in == 101.6q" $
-        Distance 1 IN `shouldBe` Distance 101.6 Q
+        Length 1 IN `shouldBe` Length 101.6 Q
       it "1in == 72pt" $
-        Distance 1 IN `shouldBe` Distance 72 PT
+        Length 1 IN `shouldBe` Length 72 PT
       it "1in == 6pc" $
-        Distance 1 IN `shouldBe` Distance 6 PC
+        Length 1 IN `shouldBe` Length 6 PC
       it "1in == 96px" $
-        Distance 1 IN `shouldBe` Distance 96 PX
+        Length 1 IN `shouldBe` Length 96 PX
       -- pixel conversions
       it "48px == .5in" $
-        Distance 48 PX `shouldBe` Distance 0.5 IN
+        Length 48 PX `shouldBe` Length 0.5 IN
       it "72px == 1.905cm" $
-        Distance 72 PX `shouldBe` Distance 1.905 CM
+        Length 72 PX `shouldBe` Length 1.905 CM
       it "72px == 19.05mm" $
-        Distance 72 PX `shouldBe` Distance 19.05 MM
+        Length 72 PX `shouldBe` Length 19.05 MM
       it "60px == 63.5q" $
-        Distance 60 PX `shouldBe` Distance 63.5 Q
+        Length 60 PX `shouldBe` Length 63.5 Q
       it "12px == 9pt" $
-        Distance 12 PX `shouldBe` Distance 9 PT
+        Length 12 PX `shouldBe` Length 9 PT
       it "16px == 1pc" $
-        Distance 16 PX `shouldBe` Distance 1 PC
+        Length 16 PX `shouldBe` Length 1 PC
       -- centimeter conversion
       it "5.08cm == 2in" $
-        Distance 5.08 CM `shouldBe` Distance 2 IN
+        Length 5.08 CM `shouldBe` Length 2 IN
       it "1cm == 10mm" $
-        Distance 1 CM `shouldBe` Distance 10 MM
+        Length 1 CM `shouldBe` Length 10 MM
       it "2cm == 80q" $
-        Distance 2 CM `shouldBe` Distance 80 Q
+        Length 2 CM `shouldBe` Length 80 Q
       it "1.27cm == 36pt" $
-        Distance 1.27 CM `shouldBe` Distance 36 PT
+        Length 1.27 CM `shouldBe` Length 36 PT
       it "1.27cm == 3pc" $
-        Distance 1.27 CM `shouldBe` Distance 3 PC
+        Length 1.27 CM `shouldBe` Length 3 PC
       it "1.27cm == 48px" $
-        Distance 1.27 CM `shouldBe` Distance 48 PX
+        Length 1.27 CM `shouldBe` Length 48 PX
     -- describe "<time> conversions" $ do
       -- it "" $ Duration 1 S `shouldBe` Duration 1000 Ms
     -- describe "<frequency> conversions" $ do

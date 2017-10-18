@@ -12,9 +12,9 @@
 -- dimensions into other equivalent dimensions.
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Dimension (
-      Distance(..)
-    , DistanceUnit(..)
+module Hasmin.Types.Dimension 
+    ( Length(..)
+    , LengthUnit(..)
     , Angle(..)
     , AngleUnit(..)
     , Duration(..)
@@ -38,26 +38,26 @@ import Hasmin.Config
 import Hasmin.Utils
 
 -- | The \<length\> CSS data type
-data Distance = Distance Number DistanceUnit
+data Length = Length Number LengthUnit
   deriving (Show)
-instance Eq Distance where
-  (Distance r1 u1) == (Distance r2 u2)
+instance Eq Length where
+  (Length r1 u1) == (Length r2 u2)
     | u1 == u2  = r1 == r2
     | otherwise = toInches r1 u1 == toInches r2 u2
-instance Minifiable Distance where
-  minifyWith d@(Distance r u) = do
+instance Minifiable Length where
+  minifyWith d@(Length r u) = do
       shouldMinifyUnits <- asks ((DimMinOn ==) . dimensionSettings)
       pure $ if (not . isRelative) u && shouldMinifyUnits
-                then minDim Distance r u [Q, CM, MM, IN, PC, PT, PX]
+                then minDim Length r u [Q, CM, MM, IN, PC, PT, PX]
                 else d
 
-isRelative :: DistanceUnit -> Bool
+isRelative :: LengthUnit -> Bool
 isRelative x = x == EM || x == EX || x == CH || x == VH
             || x == VW || x == VMIN || x == VMAX || x == REM
 
-instance ToText Distance where
-  toBuilder (Distance 0 _) = singleton '0'
-  toBuilder (Distance r u) = (fromText . toText) r <> (fromText . toText) u
+instance ToText Length where
+  toBuilder (Length 0 _) = singleton '0'
+  toBuilder (Length r u) = (fromText . toText) r <> (fromText . toText) u
 
 -- | The \<angle\> CSS data type
 data Angle = Angle Number AngleUnit
@@ -141,10 +141,10 @@ minDim constructor r u (x:xs)
 class Unit a where
   convertTo :: a -> Number -> a -> Number
 
-data DistanceUnit = IN | CM | MM | Q | PC | PT | PX            -- absolute
+data LengthUnit = IN | CM | MM | Q | PC | PT | PX            -- absolute
                   | EM | EX | CH | VH | VW | VMIN | VMAX | REM -- relative
   deriving (Show, Eq)
-instance ToText DistanceUnit where
+instance ToText LengthUnit where
   toBuilder IN   = "in"
   toBuilder CM   = "cm"
   toBuilder MM   = "mm"
@@ -160,7 +160,7 @@ instance ToText DistanceUnit where
   toBuilder VMIN = "vmin"
   toBuilder VMAX = "vmax"
   toBuilder REM  = "rem"
-instance  Unit DistanceUnit where
+instance  Unit LengthUnit where
   convertTo IN = toInches
   convertTo CM = toCentimeters
   convertTo MM = toMilimeters
@@ -213,7 +213,7 @@ instance Unit ResolutionUnit where
   convertTo Dpcm = toDpcm
   convertTo Dppx = toDppx
 
-toInches :: Number -> DistanceUnit -> Number
+toInches :: Number -> LengthUnit -> Number
 toInches d CM = d / 2.54
 toInches d MM = d / 25.4
 toInches d Q  = d / 101.6
@@ -222,7 +222,7 @@ toInches d PC = d / 6
 toInches d PX = d / 96
 toInches d _  = d -- IN, or any relative value
 
-toCentimeters :: Number -> DistanceUnit -> Number
+toCentimeters :: Number -> LengthUnit -> Number
 toCentimeters d IN = d * 2.54
 toCentimeters d MM = d / 10
 toCentimeters d Q  = d / 40
@@ -231,7 +231,7 @@ toCentimeters d PC = d * (2.54 / 6)
 toCentimeters d PX = d * (2.54 / 96)
 toCentimeters d _  = d -- CM, or any relative value
 
-toMilimeters :: Number -> DistanceUnit -> Number
+toMilimeters :: Number -> LengthUnit -> Number
 toMilimeters d IN = d * 25.4
 toMilimeters d CM = d * 10
 toMilimeters d Q  = d / 4
@@ -240,7 +240,7 @@ toMilimeters d PC = d * (25.4 / 6)
 toMilimeters d PX = d * (25.4 / 96)
 toMilimeters d _  = d
 
-toQuarterMilimeter :: Number -> DistanceUnit -> Number
+toQuarterMilimeter :: Number -> LengthUnit -> Number
 toQuarterMilimeter d IN = d * 101.6
 toQuarterMilimeter d CM = d * 40
 toQuarterMilimeter d MM = d * 4
@@ -249,7 +249,7 @@ toQuarterMilimeter d PC = d * (101.6 / 6)
 toQuarterMilimeter d PX = d * (101.6 / 96)
 toQuarterMilimeter d _  = d
 
-toPoints :: Number -> DistanceUnit -> Number
+toPoints :: Number -> LengthUnit -> Number
 toPoints d IN = d * 72
 toPoints d CM = d * (72 / 2.54)
 toPoints d MM = d * (72 / 25.4)
@@ -258,7 +258,7 @@ toPoints d PC = d * 12
 toPoints d PX = d * (3 / 4)
 toPoints d _  = d
 
-toPica :: Number -> DistanceUnit -> Number
+toPica :: Number -> LengthUnit -> Number
 toPica d IN = d * 6
 toPica d CM = d * (6 / 2.54)
 toPica d MM = d * (6 / 25.4)
@@ -267,7 +267,7 @@ toPica d PT = d / 12
 toPica d PX = d / 16
 toPica d _  = d
 
-toPixels :: Number -> DistanceUnit -> Number
+toPixels :: Number -> LengthUnit -> Number
 toPixels d IN = d * 96
 toPixels d CM = d * (96 / 2.54)
 toPixels d MM = d * (96 / 25.4)

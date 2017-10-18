@@ -51,7 +51,7 @@ data Value = Inherit
            | Unset
            | NumberV Number
            | PercentageV Percentage
-           | DistanceV Distance
+           | LengthV Length
            | AngleV Angle
            | DurationV Duration
            | FrequencyV Frequency
@@ -63,7 +63,7 @@ data Value = Inherit
            | TimingFuncV TimingFunction
            | FilterV FilterFunction
            | ShadowV Shadow
-           | ShadowText Distance Distance (Maybe Distance) (Maybe Color) -- <shadow-t> type
+           | ShadowText Length Length (Maybe Length) (Maybe Color) -- <shadow-t> type
            | PositionV Position
            | RepeatStyleV RepeatStyle
            | BgSizeV BgSize
@@ -81,7 +81,7 @@ data Value = Inherit
            | UrlV Url
            | Format [StringType]
            | Local (Either Text StringType)
-           | Rect Distance Distance Distance Distance -- Should be in <shape>, but that accepts only rect()
+           | Rect Length Length Length Length -- Should be in <shape>, but that accepts only rect()
            | Other TextV -- ^ Unrecognized text
   deriving (Eq, Show)
 
@@ -119,7 +119,7 @@ instance ToText Value where
   toBuilder (NumberV n)     = toBuilder n
   toBuilder (PercentageV p) = (fromText . toText) p
   toBuilder (ColorV c)      = toBuilder c
-  toBuilder (DistanceV d)   = toBuilder d
+  toBuilder (LengthV d)     = toBuilder d
   toBuilder (AngleV a)      = toBuilder a
   toBuilder (DurationV d)   = toBuilder d
   toBuilder (FrequencyV f)  = toBuilder f
@@ -178,7 +178,7 @@ instance ToText Value where
 
 instance Minifiable Value where
   minifyWith (ColorV c)       = ColorV <$> minifyWith c
-  minifyWith (DistanceV d)    = DistanceV <$> minifyWith d
+  minifyWith (LengthV d)      = LengthV <$> minifyWith d
   minifyWith (AngleV a)       = AngleV <$> minifyWith a
   minifyWith (DurationV d)    = DurationV <$> minifyWith d
   minifyWith (FrequencyV f)   = FrequencyV <$> minifyWith f

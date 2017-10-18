@@ -24,10 +24,10 @@ import Hasmin.Types.Dimension
 -- | CSS <https://drafts.csswg.org/css-backgrounds-3/#typedef-shadow \<shadow\>>
 -- data type, used by the @box-shadow@ property.
 data Shadow = Shadow { inset        :: Bool
-                     , sOffsetX     :: Distance
-                     , sOffsetY     :: Distance
-                     , blurRadius   :: Maybe Distance
-                     , spreadRadius :: Maybe Distance
+                     , sOffsetX     :: Length
+                     , sOffsetY     :: Length
+                     , blurRadius   :: Maybe Length
+                     , spreadRadius :: Maybe Length
                      , sColor       :: Maybe Color
                      } deriving (Eq, Show)
 
@@ -51,11 +51,11 @@ instance Minifiable Shadow where
                 then let (a, b) = minifyBlurAndSpread nb ns
                      in Shadow i x y a b c2
                 else Shadow i x y nb ns c2
-    where minifyBlurAndSpread :: Maybe Distance -> Maybe Distance -> (Maybe Distance, Maybe Distance)
+    where minifyBlurAndSpread :: Maybe Length -> Maybe Length -> (Maybe Length, Maybe Length)
           minifyBlurAndSpread (Just br') Nothing
-              | br' == Distance 0 Q = (Nothing, Nothing)
+              | br' == Length 0 Q = (Nothing, Nothing)
               | otherwise           = (Just br', Nothing)
           minifyBlurAndSpread (Just br') (Just sr')
-              | sr' == Distance 0 Q = minifyBlurAndSpread (Just br') Nothing
+              | sr' == Length 0 Q = minifyBlurAndSpread (Just br') Nothing
               | otherwise           = (Just br', Just sr')
           minifyBlurAndSpread x y = (x, y)

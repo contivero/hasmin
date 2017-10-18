@@ -46,7 +46,7 @@ import Hasmin.Types.Numeric
 -- data type.
 data TransformFunction = Mat (Matrix Number)
                        | Mat3d (Matrix Number)
-                       | Perspective Distance
+                       | Perspective Length
                        | Rotate Angle
                        | RotateX Angle
                        | RotateY Angle
@@ -63,8 +63,8 @@ data TransformFunction = Mat (Matrix Number)
                        | Translate PercentageLength (Maybe PercentageLength)
                        | TranslateX PercentageLength
                        | TranslateY PercentageLength
-                       | TranslateZ Distance
-                       | Translate3d PercentageLength PercentageLength Distance
+                       | TranslateZ Length
+                       | Translate3d PercentageLength PercentageLength Length
   deriving (Eq, Show)
 
 -- There are a series of equivalences to keep in mind: translate(0),
@@ -100,11 +100,11 @@ instance Minifiable TransformFunction where
 
 {-
 s = SkewX (Angle 45 Deg)
-tx = TranslateX (Right $ Distance (-6) PX)
+tx = TranslateX (Right $ Length (-6) PX)
 ry = RotateY (Angle (-9) Deg)
 ry2 = Rotate3d 0 (-1) 0 (Angle 9 Deg)
-t = TranslateZ (Distance 100 PX)
-t2 = Translate (Right (Distance 100 PX)) Nothing
+t = TranslateZ (Length 100 PX)
+t2 = Translate (Right (Length 100 PX)) Nothing
 tr = Rotate3d 0 0 1 (Angle 90 Deg)
 tr1 = Rotate3d 0 0 1 (Angle 45 Deg)
 g x = runReader x defaultConfig
@@ -166,16 +166,16 @@ toMatrix3d (Translate pl mpl)
         y = maybe 0 (fromPixelsToNum . fromRight') mpl
 toMatrix3d (TranslateX pl)
     | isNonZeroPercentage pl = Nothing
-    | isRight pl && isRelativeDistance (fromRight' pl) = Nothing
+    | isRight pl && isRelativeLength (fromRight' pl) = Nothing
     | otherwise = Just . Mat3d $ mkTranslate3dMatrix x 0 0
   where x = either (const 0) fromPixelsToNum pl
 toMatrix3d (TranslateY pl)
     | isNonZeroPercentage pl = Nothing
-    | isRight pl && isRelativeDistance (fromRight' pl) = Nothing
+    | isRight pl && isRelativeLength (fromRight' pl) = Nothing
     | otherwise = Just . Mat3d $ mkTranslate3dMatrix 0 y 0
   where y = either (const 0) fromPixelsToNum pl
 toMatrix3d (TranslateZ d)
-    | isRelativeDistance d  = Nothing
+    | isRelativeLength d  = Nothing
     | otherwise = Just . Mat3d $ mkTranslate3dMatrix 0 0 z
   where z = fromPixelsToNum d
 toMatrix3d (Scale n mn) = Just . Mat3d $ mkScale3dMatrix n y 1
@@ -190,16 +190,16 @@ toMatrix3d (SkewX a) = Just . Mat3d $ mkSkewMatrix (tangent a) 0
 toMatrix3d (SkewY a) = Just . Mat3d $ mkSkewMatrix 0 (tangent a)
 toMatrix3d (Translate3d pl1 pl2 d)
     | isNonZeroPercentage pl1 || isNonZeroPercentage pl2 = Nothing
-    | isRight pl1 && isRelativeDistance (fromRight' pl1) = Nothing
-    | isRight pl2 && isRelativeDistance (fromRight' pl2) = Nothing
-    | isRelativeDistance d = Nothing
+    | isRight pl1 && isRelativeLength (fromRight' pl1) = Nothing
+    | isRight pl2 && isRelativeLength (fromRight' pl2) = Nothing
+    | isRelativeLength d = Nothing
     | otherwise = let x = either (const 0) fromPixelsToNum pl1
                       y = either (const 0) fromPixelsToNum pl2
                       z = fromPixelsToNum d
                   in Just . Mat3d $ mkTranslate3dMatrix x y z
 toMatrix3d (Scale3d x y z) = Just . Mat3d $ mkScale3dMatrix x y z
 toMatrix3d (Perspective d)
-    | d == Distance 0 Q = Nothing
+    | d == Length 0 Q = Nothing
     | otherwise         = let c = fromPixelsToNum d
                           in Just . Mat3d $ mkPerspectiveMatrix c
 -- Note: The commented code is fine, but until we implement the
@@ -298,11 +298,11 @@ matrixToRotate3d _ = []
                   where result vx vy vz = Rotate3d vx vy vz (Angle 180 Deg)
 -}
 
-isRelativeDistance :: Distance -> Bool
-isRelativeDistance (Distance _ u) = isRelative u
+isRelativeLength :: Length -> Bool
+isRelativeLength (Length _ u) = isRelative u
 
-fromPixelsToNum :: Distance -> Number
-fromPixelsToNum (Distance n u) = toPixels n u
+fromPixelsToNum :: Length -> Number
+fromPixelsToNum (Length n u) = toPixels n u
 
 fromRadiansToNum :: Angle -> Number
 fromRadiansToNum (Angle n u) = toRadians n u
@@ -358,11 +358,11 @@ matrixToTranslateFunctions m
     | mkTranslate3dMatrix x y z == m = Translate3d tx ty tz : others
     | otherwise                      = []
   where x  = M.unsafeGet 1 4 m
-        tx = Right $ Distance x PX
+        tx = Right $ Length x PX
         y  = M.unsafeGet 2 4 m
-        ty = Right $ Distance y PX
+        ty = Right $ Length y PX
         z  = M.unsafeGet 3 4 m
-        tz = Distance z PX
+        tz = Length z PX
         others
             | z == 0 && y == 0 = [TranslateX tx, Translate tx (Just ty)]
             | x == 0 && z == 0 = [TranslateY ty, Translate tx (Just ty)]
@@ -384,7 +384,7 @@ matrixToScaleFunctions m
 
 matrixToPerspective :: Matrix Number -> [TransformFunction]
 matrixToPerspective m
-    | c /= 0 && mkPerspectiveMatrix d == m = [Perspective $ Distance d PX]
+    | c /= 0 && mkPerspectiveMatrix d == m = [Perspective $ Length d PX]
     | otherwise = []
   where c = M.unsafeGet 4 3 m
         d = (-1)/c
@@ -500,17 +500,17 @@ simplify (ScaleZ n)
       | otherwise = pure $ ScaleZ n
 simplify (Perspective d) = fmap Perspective (minifyWith d)
 simplify (TranslateZ d)
-      | d == Distance 0 Q = pure $ Skew (Angle 0 Deg) Nothing
+      | d == Length 0 Q = pure $ Skew (Angle 0 Deg) Nothing
       | otherwise         = fmap TranslateZ (minifyWith d)
 simplify s@(Scale3d x y z)
       | z == 1           = simplify $ Scale x (Just y)
       | x == 1 && y == 1 = simplify $ ScaleZ z
       | otherwise        = pure s
 simplify (Translate3d x y z )
-      | isZero y && z == Distance 0 Q = either (f TranslateX) (g TranslateX) x
+      | isZero y && z == Length 0 Q = either (f TranslateX) (g TranslateX) x
       | isZero x && isZero y          = simplify $ TranslateZ z
-      | isZero x && z == Distance 0 Q = either (f TranslateY) (g TranslateY) y
-    where f con a | a == 0    = simplify . con . Right $ Distance 0 Q
+      | isZero x && z == Length 0 Q = either (f TranslateY) (g TranslateY) y
+    where f con a | a == 0    = simplify . con . Right $ Length 0 Q
                   | otherwise = simplify . con . Left $ a
           g con a = simplify . con $ Right a -- A distance, transform an minify
 simplify x = pure x
@@ -522,7 +522,7 @@ simplify x = pure x
 -- Example:
 --
 -- >>> import Control.Monad.Reader
--- >>> let t10 = Translate (Right (Distance 10 PX)) Nothing
+-- >>> let t10 = Translate (Right (Length 10 PX)) Nothing
 -- >>> let s45 = Skew (Angle 45 Deg) Nothing
 -- >>> let sx5 = ScaleX 5
 -- >>> let f x = runReader (combine x) defaultConfig

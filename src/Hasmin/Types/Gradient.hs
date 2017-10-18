@@ -67,7 +67,7 @@ minifyColorHints [c1,c2] = [newC1, newC2]
         newC2
             | ch2 == Just (Left (Percentage 100)) = c2 {colorHint = Nothing}
             | otherwise = if ch2 `notGreaterThan` ch1
-                             then c2 {colorHint = Just $ Right (Distance 0 PX)}
+                             then c2 {colorHint = Just $ Right (Length 0 PX)}
                              else c2
 minifyColorHints (c@(ColorStop a x):xs) = case x of
                        Nothing -> c : analyzeList (Left $ Percentage 0) 1 (c:xs) xs
@@ -83,9 +83,9 @@ y `notGreaterThan` x
     | isNothing x || isZero (fromJust x) = notPositive y
     | otherwise = case fromJust x of
                     Left p  -> maybe False (either (<= p) (const False)) y
-                    Right d -> maybe False (either (const False) (notGreaterThanDistance d)) y
-  where notPositive = maybe False (either (<= 0) (\(Distance d _) -> d <= 0))
-        notGreaterThanDistance (Distance r1 u1) (Distance r2 u2)
+                    Right d -> maybe False (either (const False) (notGreaterThanLength d)) y
+  where notPositive = maybe False (either (<= 0) (\(Length d _) -> d <= 0))
+        notGreaterThanLength (Length r1 u1) (Length r2 u2)
             | u1 == u2 = r2 <= r1
             | isRelative u1 || isRelative u2 = False
             | otherwise = toInches r2 u2 <= toInches r1 u1
@@ -137,7 +137,7 @@ handlePercentages start end n remainingList =
             if fromLeft' v == y
                then Nothing
                else if fromLeft' v <= start
-                       then Just $ Right (Distance 0 PX)
+                       then Just $ Right (Length 0 PX)
                        else Just v
 
 -- | CSS <https://drafts.csswg.org/css-images-3/#typedef-gradient \<gradient\>>
@@ -173,7 +173,7 @@ data Gradient = OldLinearGradient (Maybe (Either Angle SideOrCorner)) [ColorStop
 -- | CSS <https://drafts.csswg.org/css-images-3/#typedef-size \<size\>> data
 -- type, used by @radial-gradient()@.
 data Size = ClosestCorner | ClosestSide | FarthestCorner | FarthestSide
-          | SL Distance
+          | SL Length
           | PL PercentageLength PercentageLength
   deriving (Eq, Show)
 
