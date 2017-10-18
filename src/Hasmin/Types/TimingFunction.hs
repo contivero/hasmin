@@ -2,14 +2,14 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Hasmin.Types.TimingFunction
--- Copyright   : (c) 2016 Cristian Adrián Ontivero
+-- Copyright   : © 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.TimingFunction (
-      TimingFunction(..)
+module Hasmin.Types.TimingFunction
+    ( TimingFunction(..)
     , StepsSecondParam(..)
     ) where
 
@@ -23,11 +23,7 @@ import Hasmin.Types.Class
 import Hasmin.Utils
 import Hasmin.Types.Numeric
 
--- | CSS \<single-transition-timing-function\> data type. Specifications:
---
--- 1. <https://drafts.csswg.org/css-transitions/#propdef-transition-timing-function CSS Transitions>
--- 2. <https://drafts.csswg.org/css-animations/#animation-timing-function CSS Animations Level 1>
--- 3. <https://developer.mozilla.org/en-US/docs/Web/CSS/timing-function Mozilla summary>
+-- | CSS <https://drafts.csswg.org/css-timing-1/#typedef-single-timing-function \<single-transition-timing-function\>> data type.
 data TimingFunction = CubicBezier Number Number Number Number
                     | Steps Int (Maybe StepsSecondParam)
                     | Ease
@@ -69,6 +65,9 @@ instance Eq TimingFunction where
   EaseInOut == EaseInOut = True
   _ == _                 = False
 
+-- TODO rename to StepPosition
+-- | A step position, as used by the
+-- <https://drafts.csswg.org/css-timing-1/#step-timing-functions step timing function>.
 data StepsSecondParam = Start
                       | End -- End is the default value
   deriving (Eq, Show)

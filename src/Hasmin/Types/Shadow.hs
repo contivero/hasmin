@@ -5,11 +5,11 @@
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
--- Portability : non-portable
+-- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Shadow (
-      Shadow(..)
+module Hasmin.Types.Shadow
+    ( Shadow(..)
     ) where
 
 import Control.Monad.Reader (ask)
@@ -21,6 +21,8 @@ import Hasmin.Types.Class
 import Hasmin.Types.Color
 import Hasmin.Types.Dimension
 
+-- | CSS <https://drafts.csswg.org/css-backgrounds-3/#typedef-shadow \<shadow\>>
+-- data type, used by the @box-shadow@ property.
 data Shadow = Shadow { inset        :: Bool
                      , sOffsetX     :: Distance
                      , sOffsetY     :: Distance

@@ -8,8 +8,8 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Declaration (
-      Declaration(..)
+module Hasmin.Types.Declaration
+    ( Declaration(..)
     , clean
     ) where
 
@@ -39,10 +39,11 @@ import Hasmin.Types.TransformFunction
 import Hasmin.Types.Value
 import Hasmin.Utils
 
-data Declaration = Declaration { propertyName :: Text
-                               , valueList :: Values
-                               , isImportant :: Bool  -- ends with !important
-                               , hasIEhack :: Bool    -- ends with \9
+-- | A CSS <https://www.w3.org/TR/css-syntax-3/#declaration \<declaration\>>.
+data Declaration = Declaration { propertyName :: Text -- ^ Property name of the declaration.
+                               , valueList :: Values  -- ^ Values used in the declaration.
+                               , isImportant :: Bool  -- ^ Whether the declaration is \"!important\" (i.e. ends with it).
+                               , hasIEhack :: Bool    -- ^ Whether the declaration ends with the \"\\9\" IE hack.
                                } deriving (Eq, Show)
 instance ToText Declaration where
   toBuilder (Declaration p vs i h) = fromText p <> singleton ':'

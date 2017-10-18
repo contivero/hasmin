@@ -18,8 +18,25 @@ DEFLATE, i.e. gzip).
 
 For a list of techniques, see [Minification Techniques](https://github.com/contivero/hasmin/wiki/Minification-Techniques).
 
-## Building
-The easiest way is using [stack](https://docs.haskellstack.org/en/stable/README/): just run `stack build`.
+## Building & Installing
+The easiest and prefered way is using
+[stack](https://docs.haskellstack.org/en/stable/README/). Clone the repo, then:
+```sh
+$ cd path/to/hasmin/repo
+$ stack build
+```
+After that, you can install it with `stack install` (installs by default to `~/.local/bin`).
+Or if you'd rather just try it out, use `stack exec hasmin` (keep in mind it has
+a slight additional delay at the beginning running it this way).
+
+Alternatively, you can use [cabal](https://www.haskell.org/cabal/):
+```sh
+$ cd path/to/hasmin/repo
+$ cabal update                      # Make sure to have the latest package list
+$ cabal sandbox init                # Initialise a sandbox
+$ cabal install --only-dependencies # Install dependencies into the sandbox
+$ cabal build                       # Build hasmin inside the sandbox
+```
 
 ## Minifier Usage
 Hasmin expects a path to the CSS file, and outputs the minified result to

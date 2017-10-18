@@ -46,6 +46,7 @@ import Hasmin.Types.Stylesheet
 import Hasmin.Types.Declaration
 import Hasmin.Types.String
 
+-- | Parser for CSS complex selectors (see 'Selector' for more details).
 selector :: Parser Selector
 selector = Selector <$> compoundSelector <*> combinatorsAndSelectors
   where combinatorsAndSelectors = many ((,) <$> combinator <* skipComments  <*> compoundSelector)
@@ -220,6 +221,7 @@ fpcMap = Map.fromList $ fmap (first T.toCaseFold)
 selectors :: Parser [Selector]
 selectors = lexeme selector `sepBy` char ','
 
+-- | Parser for a declaration, starting by the property name.
 declaration :: Parser Declaration
 declaration = do
     p  <- property <* colon
@@ -244,7 +246,7 @@ important = option False (char '!' *> skipComments *> asciiCI "important" $> Tru
 iehack :: Parser Bool
 iehack = option False (string "\\9" $> True)
 
--- | Parses a list of declarations, ignoring spaces, comments, and empty
+-- | Parser for a list of declarations, ignoring spaces, comments, and empty
 -- declarations (e.g. ; ;)
 declarations :: Parser [Declaration]
 declarations = many (declaration <* handleSemicolons)
@@ -338,8 +340,8 @@ atSupports = do
   _ <- char '}'
   pure $ AtSupports sc r
 
--- | Parses a supports condition, needed by the \@supports rules.
--- See <https://drafts.csswg.org/css-conditional-3/#supports_condition __@supports_condition@__>.
+-- | Parser for a <https://drafts.csswg.org/css-conditional-3/#supports_condition supports_condition>,
+-- needed by @\@supports@ rules.
 supportsCondition :: Parser SupportsCondition
 supportsCondition = asciiCI "not" *> skipComments *> (Not <$> supportsCondInParens)
                 <|> supportsConjunction

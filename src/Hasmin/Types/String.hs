@@ -8,8 +8,8 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.String (
-    removeQuotes
+module Hasmin.Types.String
+  ( removeQuotes
   , unquoteUrl
   , unquoteFontFamily
   , mapString
@@ -31,12 +31,9 @@ import Hasmin.Config
 import Hasmin.Parser.Utils
 import Hasmin.Types.Class
 
--- | The \<string\> data type represents a string, formed by Unicode
--- characters, delimited by either double (") or single (') quotes.
--- Specification:
---
--- 1. <https://drafts.csswg.org/css-values-3/#strings CSS Values and Units Module Level 3 (§3.3)
--- 2. <https://www.w3.org/TR/CSS2/syndata.html#strings CSS2.1 (§4.3.7)
+-- | The <https://drafts.csswg.org/css-values-3/#strings \<string\>> data type.
+-- It represents a string, formed by Unicode characters, delimited by either
+-- double (") or single (') quotes.
 data StringType = DoubleQuotes Text
                 | SingleQuotes Text
   deriving (Show, Eq)

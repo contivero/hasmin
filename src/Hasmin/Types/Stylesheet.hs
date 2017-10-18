@@ -109,6 +109,8 @@ instance Minifiable KeyframeBlock where
 
 type VendorPrefix = Text
 
+-- | A CSS rule, either a normal style rule, or one of the many possible
+-- at-rules.
 data Rule = AtCharset StringType
           | AtImport (Either StringType Url) [MediaQuery]
           | AtNamespace Text (Either StringType Url)
@@ -205,6 +207,9 @@ collapseLonghands decs = do
               then collapse decs
               else decs
 
+-- | Given a list of declarations, gathers the longhands, and if every longhand
+-- of a given shorthand is present, \"collapses\" them into the shorthand
+-- (i.e. replaces all the declarations for an equivalent shorthand).
 collapse :: [Declaration] -> [Declaration]
 collapse decs = collapse' $ zipWith collapseTRBL trbls longhands
   where collapse' []     = decs

@@ -21,6 +21,7 @@ module Hasmin.Utils
 
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+
 import Hasmin.Types.Class
 
 textualLength :: ToText a => a -> Int

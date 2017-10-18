@@ -45,6 +45,7 @@ import Hasmin.Types.TimingFunction
 import Hasmin.Types.TransformFunction
 import Hasmin.Utils
 
+-- | A CSS <https://www.w3.org/TR/css-values-3/#value-defs value>.
 data Value = Inherit
            | Initial
            | Unset
@@ -81,7 +82,7 @@ data Value = Inherit
            | Format [StringType]
            | Local (Either Text StringType)
            | Rect Distance Distance Distance Distance -- Should be in <shape>, but that accepts only rect()
-           | Other TextV
+           | Other TextV -- ^ Unrecognized text
   deriving (Eq, Show)
 
 -- | Redefines equality to be case-insensitive, since CSS literal values such as
@@ -97,6 +98,9 @@ instance ToText TextV where
 mkOther :: Text -> Value
 mkOther = Other . TextV
 
+-- A <https://drafts.csswg.org/css-values-3/#urls \<url\>> value, which can
+-- contain either a CSS <https://drafts.csswg.org/css-values-3/#string-value \<string\>>
+-- (i.e. text surrounded by single or double quotes), or an unquoted string.
 newtype Url = Url (Either Text StringType)
   deriving (Eq, Show)
 instance ToText Url where
@@ -349,6 +353,7 @@ handlePosition cannotRemovePos (Just p)
                                  then mp
                                  else p
 
+-- Represents a list of values, an the separators used between them.
 data Values = Values Value [(Separator, Value)]
   deriving (Show, Eq)
 instance ToText Values where
@@ -360,6 +365,7 @@ instance Minifiable Values where
       newVs <- (mapM . mapM) minifyWith vs
       pure $ Values newV newVs
 
+-- | A value separator.
 data Separator = Space | Slash | Comma
   deriving (Show, Eq)
 instance ToText Separator where

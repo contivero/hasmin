@@ -9,8 +9,8 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Selector (
-      Selector(..)
+module Hasmin.Types.Selector
+    ( Selector(..)
     , SimpleSelector(..)
     , CompoundSelector
     , Combinator(..)
@@ -35,13 +35,15 @@ import Hasmin.Types.Class
 import Hasmin.Types.String
 import Hasmin.Utils
 
--- | Combinators are: whitespace, "greater-than sign" (U+003E, >), "plus sign"
--- (U+002B, +) and "tilde" (U+007E, ~). White space may appear between a
--- combinator and the simple selectors around it. Only the characters "space"
--- (U+0020), "tab" (U+0009), "line feed" (U+000A), "carriage return" (U+000D),
--- and "form feed" (U+000C) can occur in whitespace. Other space-like
--- characters, such as "em-space" (U+2003) and "ideographic space" (U+3000), are
--- never part of whitespace.
+-- Note: whitespace may appear between a combinator and the simple selectors
+-- around it. Only the characters "space" (U+0020), "tab" (U+0009), "line feed"
+-- (U+000A), "carriage return" (U+000D), and "form feed" (U+000C) can occur in
+-- whitespace. Other space-like characters, such as "em-space" (U+2003) and
+-- "ideographic space" (U+3000), are never part of whitespace.
+--
+-- | A <https://drafts.csswg.org/selectors-4/#selector-combinator selector combinator>,
+-- which can either: whitespace, "greater-than sign" (U+003E, >), "plus sign"
+-- (U+002B, +) or "tilde" (U+007E, ~).
 data Combinator = Descendant      -- ^ ' '
                 | Child           -- ^ '>'
                 | AdjacentSibling -- ^ '+'
@@ -54,8 +56,13 @@ instance ToText Combinator where
   toBuilder AdjacentSibling = "+"
   toBuilder GeneralSibling  = "~"
 
--- An empty selector, containing no sequence of simple selectors and no
+-- Note: an empty selector, containing no sequence of simple selectors and no
 -- pseudo-element, is an invalid selector.
+--
+-- | Data type representing a CSS selector. Technically, it is a
+-- <https://drafts.csswg.org/selectors-4/#complex complex selector>, which
+-- consists of one or more <https://drafts.csswg.org/selectors-4/#compound compound selectors>,
+-- separated by <https://drafts.csswg.org/selectors-4/#selector-combinator selector combinators>.
 data Selector = Selector CompoundSelector [(Combinator, CompoundSelector)]
   deriving (Eq, Show)
 
@@ -75,6 +82,10 @@ instance Minifiable Selector where
 
 type Specificity = (Int, Int, Int)
 
+-- | Given a selector, calculate it's specificity. Technically, specificity is a
+-- 4-tuple, where the first and most important value is defined by whether the
+-- rule is inline or not, but that doesn't matter when only analyzing a CSS
+-- file.
 specificity :: Selector -> Specificity
 specificity (Selector cs css) =
     foldr (\x ys -> specificity' (snd x) `addSpe` ys) (specificity' cs) css
@@ -100,7 +111,6 @@ specificity (Selector cs css) =
 -- compound-selector> in CSS Syntax Module Level 3.
 type CompoundSelector = NonEmpty SimpleSelector
 
--- instance ToText a => ToText (NonEmpty a) where
 instance ToText CompoundSelector where
   toBuilder ns@(Universal{} :| xs)
       | length ns > 1 = mconcat $ fmap toBuilder xs
@@ -176,8 +186,8 @@ instance ToText SimpleSelector where
           f (y:ys) = " of " <> toBuilder y
             <> mconcat (fmap (\z -> singleton ',' <> toBuilder z) ys)
 
--- Pseudo-elements that support the old pseudo-element syntax of a single
--- semicolon, as well as the new one of two semicolons.
+-- | List of pseudo-elements that support the old syntax of a single semicolon,
+-- as well as the new one of two semicolons.
 specialPseudoElements :: [Text]
 specialPseudoElements = fmap T.toCaseFold
     ["after", "before", "first-line", "first-letter"]
@@ -208,6 +218,7 @@ instance Minifiable SimpleSelector where
   minifyWith (FunctionalPseudoClass3 i n cs) = FunctionalPseudoClass3 i <$> minifyWith n <*> pure cs
   minifyWith x = pure x
 
+-- | Data type representing the @\'+\'@ and @\'-\'@ signs, used by 'AnPlusB'.
 data Sign = Plus | Minus
   deriving (Eq, Show)
 
@@ -215,11 +226,11 @@ instance ToText Sign where
   toBuilder Plus  = singleton '+'
   toBuilder Minus = singleton '-'
 
--- | <an+b> data type
+-- | The <https://drafts.csswg.org/css-syntax-3/#the-anb-type \<an+b\>> microsyntax type.
 data AnPlusB = Even
              | Odd
-             | A (Maybe Sign) (Maybe Int) -- "sign n number", e.g. +3n, -2n, 1n.
-             | B Int                      -- "sign number", e.g. +1, +2, 3.
+             | A (Maybe Sign) (Maybe Int)      -- "sign n number", e.g. +3n, -2n, 1n.
+             | B Int                           -- "sign number", e.g. +1, +2, 3.
              | AB (Maybe Sign) (Maybe Int) Int -- "sign n number sign number", e.g. 2n+1
   deriving (Eq, Show)
 instance ToText AnPlusB where

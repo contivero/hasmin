@@ -140,8 +140,10 @@ handlePercentages start end n remainingList =
                        then Just $ Right (Distance 0 PX)
                        else Just v
 
--- OldLinearGradient is for the old syntax. Eventually it can probably be deleted.
+-- | CSS <https://drafts.csswg.org/css-images-3/#typedef-gradient \<gradient\>>
+-- data type.
 data Gradient = OldLinearGradient (Maybe (Either Angle SideOrCorner)) [ColorStop]
+              -- OldLinearGradient is for the old syntax. It should eventually be deleted.
               | LinearGradient (Maybe (Either Angle SideOrCorner)) [ColorStop]
               | RadialGradient (Maybe Shape) (Maybe Size) (Maybe Position) [ColorStop]
                 -- TODO: replace with Maybe (These Shape Size)
@@ -168,6 +170,8 @@ data Gradient = OldLinearGradient (Maybe (Either Angle SideOrCorner)) [ColorStop
     and <color-stop>     = <color> [ <percentage> | <length> ]?
 -}
 
+-- | CSS <https://drafts.csswg.org/css-images-3/#typedef-size \<size\>> data
+-- type, used by @radial-gradient()@.
 data Size = ClosestCorner | ClosestSide | FarthestCorner | FarthestSide
           | SL Distance
           | PL PercentageLength PercentageLength
@@ -181,6 +185,8 @@ instance ToText Size where
   toBuilder (SL d)         = toBuilder d
   toBuilder (PL pl1 pl2)   = toBuilder pl1 <> singleton ' ' <> toBuilder pl2
 
+-- TODO rename to EndingShape
+-- | CSS <https://drafts.csswg.org/css-images-3/#valdef-radial-gradient-ending-shape \<ending-shape\>> data type, used by @radial-gradient()@.
 data Shape = Circle | Ellipse
   deriving (Eq, Show)
 
