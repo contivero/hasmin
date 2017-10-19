@@ -21,7 +21,7 @@ import Control.Applicative (liftA2)
 import Data.Monoid ((<>))
 import Data.Either (isRight)
 import qualified Data.Text as T
-import Data.Number.FixedFunctions (sin, cos, acos, tan, atan)
+import Data.Number.FixedFunctions (tan, atan)
 import Prelude hiding (sin, cos, acos, tan, atan)
 import qualified Data.Matrix as M
 import Data.Matrix (Matrix)

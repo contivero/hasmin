@@ -6,7 +6,6 @@ import Test.Hspec
 
 import Data.Text (Text)
 import Hasmin.Parser.Value
-import Hasmin.Types.Class
 import Hasmin.Types.TimingFunction
 import Hasmin.TestUtils
 

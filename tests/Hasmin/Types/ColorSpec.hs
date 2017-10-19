@@ -2,8 +2,6 @@
 
 module Hasmin.Types.ColorSpec where
 
-import Control.Applicative (liftA2)
-import Control.Monad
 import Data.Foldable
 import Data.Maybe (fromJust)
 import Data.Text (Text)
@@ -11,9 +9,7 @@ import Test.Hspec.Attoparsec (parseSatisfies, (~>))
 
 import Hasmin.Parser.Value
 import Hasmin.TestUtils
-import Hasmin.Types.Class
 import Hasmin.Types.Color
-import Hasmin.Types.Numeric
 
 colorTests :: Spec
 colorTests =
@@ -35,8 +31,8 @@ colorParserSpacesAndCommentsTests =
 
 -- | Multiple equivalent red color representations
 redColor :: [Text]
-redColor = 
-  [ "red" 
+redColor =
+  [ "red"
   , "#f00", "#F00", "#ff0000", "#fF0000", "#Ff0000", "#FF0000"
   , "rgb(255,0,0)" , "rgb(100%,0%,0%)"
   , "rgba(255,0,0,1)", "rgba(255,0,0,1.0)"
@@ -48,7 +44,7 @@ redColor =
 
 -- Every color is yellow
 commentsAndSpacesInColors :: [Text]
-commentsAndSpacesInColors = 
+commentsAndSpacesInColors =
   [ "rgb(/**/255,255,0)"
   , "rgb(255,/**/255,0)"
   , "rgb(255,255,/**/0)"
@@ -88,7 +84,7 @@ commentsAndSpacesInColors =
   ]
 
 colorMinificationTests :: Spec
-colorMinificationTests = 
+colorMinificationTests =
     describe "color minification" $
       mapM_ (matchSpec f) colorMinificationTestsInfo
   where f = minifyWithTestConfig <$> color
@@ -101,7 +97,7 @@ colorMinificationTestsInfo =
   ]
 
 spec :: Spec
-spec = do colorTests 
+spec = do colorTests
           colorParserTests
           colorMinificationTests
           colorParserSpacesAndCommentsTests

@@ -4,7 +4,6 @@ module Hasmin.Types.BgSizeSpec where
 
 import Data.Text (Text)
 import Hasmin.Parser.Value
-import Hasmin.Types.Class
 import Hasmin.Types.BgSize
 import Hasmin.TestUtils
 

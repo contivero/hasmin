@@ -27,6 +27,7 @@ import Hasmin.Types.FilterFunction
 import Hasmin.Types.Numeric
 import Hasmin.Types.Position
 import Hasmin.Types.TimingFunction
+import Hasmin.Types.RepeatStyle
 import Hasmin.Utils
 
 
@@ -85,9 +86,6 @@ instance Arbitrary Number where
 instance Arbitrary PosKeyword where
   arbitrary = mkGen [PosCenter, PosLeft, PosRight, PosTop, PosBottom]
 
--- instance Arbitrary Position where
-  -- arbitrary = oneof [ fmap (\x -> Position x Nothing Nothing Nothing) arbitrary ]
-
 instance Arbitrary Percentage where
   arbitrary = fmap Percentage (arbitrary :: Gen Rational)
 
@@ -145,6 +143,16 @@ instance Arbitrary Color where
           ratRange   = toPercentage <$> (choose (0, 100) :: Gen Float)
           alphaRange = toAlphavalue <$> (choose (0, 1) :: Gen Float)
           hueRange   = choose (0, 360)
+
+instance Arbitrary RepeatStyle where
+  arbitrary = frequency [(1, pure RepeatX)
+                        ,(1, pure RepeatY)
+                        ,(8, liftA2 RepeatStyle2 arbitrary arbitrary)
+                        ,(8, fmap RepeatStyle1 arbitrary)
+                        ]
+
+instance Arbitrary RSKeyword where
+  arbitrary = mkGen [RsRepeat, RsSpace, RsRound, RsNoRepeat]
 
 -- | Generates color keywords uniformly distributed
 colorKeyword :: Gen Text

@@ -2,15 +2,12 @@
 
 module Hasmin.Types.DeclarationSpec where
 
-import Control.Monad.Reader (runReader)
 import Data.Foldable (traverse_)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 
-import Hasmin.Config
 import Hasmin.Parser.Internal
 import Hasmin.TestUtils
-import Hasmin.Types.Class
 import Hasmin.Types.Declaration
 
 declarationTests :: Spec

@@ -6,7 +6,6 @@ import Data.Text (Text)
 
 import Hasmin.Parser.Value
 import Hasmin.TestUtils
-import Hasmin.Types.Class
 
 quotesNormalizationTests :: Spec
 quotesNormalizationTests =

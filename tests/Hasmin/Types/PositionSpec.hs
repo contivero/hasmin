@@ -3,13 +3,9 @@
 module Hasmin.Types.PositionSpec where
 
 import Data.Text (Text)
-import Control.Monad (liftM4)
 
 import Hasmin.Parser.Value
 import Hasmin.TestUtils
-import Hasmin.Types.Class
-import Hasmin.Types.Position
-import Hasmin.Types.Numeric
 
 positionMinificationTests :: Spec
 positionMinificationTests =

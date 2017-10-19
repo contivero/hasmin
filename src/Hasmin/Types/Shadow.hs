@@ -12,7 +12,6 @@ module Hasmin.Types.Shadow
     ( Shadow(..)
     ) where
 
-import Control.Monad.Reader (ask)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
 import Data.Bool (bool)

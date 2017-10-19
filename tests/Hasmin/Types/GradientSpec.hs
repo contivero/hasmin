@@ -2,12 +2,9 @@
 
 module Hasmin.Types.GradientSpec where
 
-import Control.Monad.Reader (runReader)
 import Data.Text (Text)
 
 import Hasmin.Parser.Value
-import Hasmin.Types.Class
-import Hasmin.Config
 import Hasmin.TestUtils
 
 gradientTests :: Spec

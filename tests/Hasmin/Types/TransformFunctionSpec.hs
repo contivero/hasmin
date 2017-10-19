@@ -9,7 +9,6 @@ import Data.Text (Text)
 import Hasmin.Config
 import Hasmin.Parser.Value
 import Hasmin.TestUtils
-import Hasmin.Types.Class
 import Hasmin.Types.TransformFunction
 import Hasmin.Types.Value
 

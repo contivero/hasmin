@@ -5,7 +5,6 @@ module Hasmin.Types.RepeatStyleSpec where
 import Data.Text (Text)
 import Control.Applicative (liftA2)
 import Hasmin.Parser.Value
-import Hasmin.Types.Class
 import Hasmin.Types.RepeatStyle
 import Hasmin.TestUtils
 
@@ -16,16 +15,6 @@ repeatStyleTests =
         property (prop_minificationEq :: RepeatStyle -> Bool)
       mapM_ (matchSpec f) repeatStyleTestsInfo
   where f = minifyWithTestConfig <$> repeatStyle
-
-instance Arbitrary RepeatStyle where
-  arbitrary = frequency [(1, pure RepeatX)
-                        ,(1, pure RepeatY)
-                        ,(8, liftA2 RepeatStyle2 arbitrary arbitrary)
-                        ,(8, fmap RepeatStyle1 arbitrary)
-                        ]
-
-instance Arbitrary RSKeyword where
-  arbitrary = mkGen [RsRepeat, RsSpace, RsRound, RsNoRepeat]
 
 repeatStyleTestsInfo :: [(Text, Text)]
 repeatStyleTestsInfo =
