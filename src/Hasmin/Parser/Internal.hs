@@ -11,6 +11,7 @@
 module Hasmin.Parser.Internal
     ( stylesheet
     , atRule
+    , styleRule
     , rule
     , rules
     , declaration
@@ -246,10 +247,12 @@ important = option False (char '!' *> skipComments *> asciiCI "important" $> Tru
 iehack :: Parser Bool
 iehack = option False (string "\\9" $> True)
 
+-- Note: The handleSemicolons outside is needed to handle parsing "h1 { ; }".
+--
 -- | Parser for a list of declarations, ignoring spaces, comments, and empty
 -- declarations (e.g. ; ;)
 declarations :: Parser [Declaration]
-declarations = many (declaration <* handleSemicolons)
+declarations = many (declaration <* handleSemicolons) <* handleSemicolons
   where handleSemicolons = many (string ";" *> skipComments)
 
 -- | Parser for CSS at-rules (e.g. \@keyframes, \@media)

@@ -3,7 +3,6 @@
 module Hasmin.Parser.InternalSpec where
 
 import Test.Hspec
--- import Test.QuickCheck
 import Hasmin.Parser.Internal
 import Hasmin.Parser.Value
 
@@ -18,19 +17,19 @@ declarationParserTests =
 
 declarationTestInfo :: [(String, Text, Text)]
 declarationTestInfo =
-  [("parses declaration with unknown property and value, ending in ';'",
+  [("Parses declaration with unknown property and value, ending in ';'",
       "a:b;", "a:b")
-  ,("parses declaration with unknown property and value, ending in '}'",
+  ,("Parses declaration with unknown property and value, ending in '}'",
       "a:b}", "a:b")
-  ,("ignores comments before colon",
+  ,("Ignores comments before colon",
       "a/**/:b;", "a:b")
-  ,("ignores comments after colon",
+  ,("Ignores comments after colon",
       "a:/**/b;", "a:b")
-  ,("parses !important and prints it back without space",
+  ,("Parses !important and prints it back without space",
       "a:b ! important;", "a:b!important")
-  ,("ignores comments before semicolon",
+  ,("Ignores comments before semicolon",
     "a:b/**/;", "a:b")
-  ,("parse declaration starting with '+' (IE <= 7)",
+  ,("Parses declaration starting with '+' (IE <= 7)",
     "+property:a", "+property:a")
   ]
 
@@ -43,17 +42,18 @@ declarationParsersTests =
         fontStyle `shouldSucceedOn` ("oblique" :: Text)
         fontStyle `shouldFailOn` ("anything else" :: Text)
 
-{-
-styleRuleParser :: Spec
-  describe "style rule parser" $ do
-    it "parses rule whose final declaration ends in ';'" $ do
-      "a { margin : 0;}" ~> (styleRule
--}
+
+styleRuleParserTests :: Spec
+styleRuleParserTests =
+  describe "Style rule parser tests" $
+      mapM_ (matchSpecWithDesc styleRule) styleRuleTestInfo
 
 styleRuleTestInfo :: [(String, Text, Text)]
 styleRuleTestInfo =
   [("simple style rule",
     "a { margin : 0 ;}", "a{margin:0}")
+  ,("Parses rule with an empty declaration (semicolon alone)",
+    "h1 { ; }", "h1{}")
   ,("handles unset",
     "h1 {\n    border: unset\n}", "h1{border:unset}")
   ,("handles initial",
@@ -208,9 +208,10 @@ selectorTestInfo =
 
 spec :: Spec
 spec = do declarationParserTests
+          declarationParsersTests
           selectorParserTests
           selectorParserFailures
-          declarationParsersTests
+          styleRuleParserTests
 
 main :: IO ()
 main = hspec spec

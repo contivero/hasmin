@@ -2,14 +2,12 @@
 
 module Hasmin.Types.ValueSpec where
 
-import Data.Monoid ((<>))
 import Data.Text (Text)
 
 import Hasmin.Parser.Internal
 import Hasmin.Parser.Value
 import Hasmin.TestUtils
 import Hasmin.Types.Class
-import Hasmin.Types.Declaration
 
 valueTests :: Spec
 valueTests = do
