@@ -8,8 +8,8 @@
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Config (
-      Config(..)
+module Hasmin.Config
+    ( Config(..)
     , ColorSettings(..)
     , DimensionSettings(..)
     , GradientSettings(..)
@@ -17,17 +17,8 @@ module Hasmin.Config (
     , LetterCase(..)
     , SortingMethod(..)
     , defaultConfig
-    , Instructions
-    , Commands(..)
     , RulesMergeSettings(..)
     ) where
-
-type Instructions = (Commands, Config)
-
-data Commands = Commands { shouldBeautify :: Bool
-                         , shouldCompress :: Bool
-                         , file :: FilePath
-                         } deriving (Show)
 
 data ColorSettings = ColorMinOff | ColorMinOn
   deriving (Show, Eq)

@@ -28,6 +28,13 @@ import qualified Data.Text.IO as TIO
 import Hasmin.Config
 import Hasmin
 
+type Instructions = (Commands, Config)
+
+data Commands = Commands { shouldBeautify :: Bool
+                         , shouldCompress :: Bool
+                         , file :: FilePath
+                         } deriving (Show)
+
 command :: Parser Commands
 command = Commands
     <$> switch (long "beautify" <> short 'b' <> help "Beautify output")
@@ -86,7 +93,7 @@ config = Config
                     <> help "Disable lowercasing everything possible")
   <*> flag Lexicographical NoSorting (long "no-selector-sorting"
                     <> help "Disable sorting selectors lexicographically")
-  <*> flag NoSorting Lexicographical (long "--sort-properties"
+  <*> flag NoSorting Lexicographical (long "sort-properties"
                     <> help "Disable sorting properties lexicographically")
   <*> flag MergeRulesOn MergeRulesOff (long "no-rule-merging"
                     <> help "Disable merging style rules")
