@@ -47,8 +47,8 @@ instance Eq FilterFunction where
   HueRotate a == HueRotate b               = a == b
   DropShadow a b c d == DropShadow e f g h =
       a == e && b == f && d == h && c `thirdValueEq` g
-    where thirdValueEq Nothing (Just (Length 0 _)) = True
-          thirdValueEq (Just (Length 0 _)) Nothing = True
+    where thirdValueEq Nothing (Just n) | isZeroLen n = True
+          thirdValueEq (Just n) Nothing | isZeroLen n = True
           thirdValueEq x y = x == y
   _ == _                                   = False
 instance ToText FilterFunction where
@@ -89,7 +89,7 @@ minifyPseudoShadow constr a b c d = do
               x  <- minifyWith a
               y  <- minifyWith b
               z  <- case c of
-                      Just r -> if r == Length 0 Q
+                      Just r -> if isZeroLen r
                                    then pure Nothing
                                    else mapM minifyWith c
                       Nothing -> pure Nothing

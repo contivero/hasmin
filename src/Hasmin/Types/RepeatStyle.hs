@@ -32,7 +32,7 @@ instance ToText RepeatStyle where
   toBuilder (RepeatStyle2 x y) = toBuilder x <> singleton ' ' <> toBuilder y
 instance Minifiable RepeatStyle where
   minifyWith r = do
-      conf <- ask
+      -- conf <- ask
       pure $ if True {- shouldMinifyRepeatStyle conf -}
                 then minifyRepeatStyle r
                 else r

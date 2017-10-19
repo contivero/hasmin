@@ -218,7 +218,7 @@ instance Eq Position where
             a == e && b == f && c == g && d == h
 
 l0 :: Maybe PercentageLength
-l0 = Just (Right (Length 0 Q))
+l0 = Just $ Right NullLength
 
 p100 :: Maybe PercentageLength
 p100 = Just $ Left 100

@@ -345,7 +345,7 @@ handlePosition _ Nothing = pure Nothing
 handlePosition cannotRemovePos (Just p)
     | cannotRemovePos = Just <$> minifyWith p
     | otherwise    = do
-        conf <- ask
+        -- conf <- ask
         mp   <- minifyWith p
         pure $ if mp == Position Nothing l0 Nothing l0
                   then Nothing

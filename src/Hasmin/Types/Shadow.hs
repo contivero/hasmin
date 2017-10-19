@@ -41,7 +41,7 @@ instance ToText Shadow where
 
 instance Minifiable Shadow where
   minifyWith (Shadow i ox oy br sr c) = do
-      conf <- ask
+      -- conf <- ask
       x  <- minifyWith ox
       y  <- minifyWith oy
       nb <- mapM minifyWith br
@@ -53,9 +53,9 @@ instance Minifiable Shadow where
                 else Shadow i x y nb ns c2
     where minifyBlurAndSpread :: Maybe Length -> Maybe Length -> (Maybe Length, Maybe Length)
           minifyBlurAndSpread (Just br') Nothing
-              | br' == Length 0 Q = (Nothing, Nothing)
-              | otherwise           = (Just br', Nothing)
+              | isZeroLen br' = (Nothing, Nothing)
+              | otherwise     = (Just br', Nothing)
           minifyBlurAndSpread (Just br') (Just sr')
-              | sr' == Length 0 Q = minifyBlurAndSpread (Just br') Nothing
-              | otherwise           = (Just br', Just sr')
+              | isZeroLen sr' = minifyBlurAndSpread (Just br') Nothing
+              | otherwise     = (Just br', Just sr')
           minifyBlurAndSpread x y = (x, y)

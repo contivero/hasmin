@@ -202,7 +202,7 @@ cleanRule ds = do
 
 collapseLonghands :: [Declaration] -> Reader Config [Declaration]
 collapseLonghands decs = do
-    conf <- ask
+    -- conf <- ask
     pure $ if True {- shouldGatherLonghands conf -}
               then collapse decs
               else decs

@@ -199,9 +199,9 @@ toMatrix3d (Translate3d pl1 pl2 d)
                   in Just . Mat3d $ mkTranslate3dMatrix x y z
 toMatrix3d (Scale3d x y z) = Just . Mat3d $ mkScale3dMatrix x y z
 toMatrix3d (Perspective d)
-    | d == Length 0 Q = Nothing
-    | otherwise         = let c = fromPixelsToNum d
-                          in Just . Mat3d $ mkPerspectiveMatrix c
+    | isZeroLen d = Nothing
+    | otherwise   = let c = fromPixelsToNum d
+                    in Just . Mat3d $ mkPerspectiveMatrix c
 -- Note: The commented code is fine, but until we implement the
 -- function that converts a matrix back to a rotate function, uncommenting this
 -- breaks the minification, e.g. it says that:
@@ -298,11 +298,9 @@ matrixToRotate3d _ = []
                   where result vx vy vz = Rotate3d vx vy vz (Angle 180 Deg)
 -}
 
-isRelativeLength :: Length -> Bool
-isRelativeLength (Length _ u) = isRelative u
-
 fromPixelsToNum :: Length -> Number
 fromPixelsToNum (Length n u) = toPixels n u
+fromPixelsToNum NullLength   = 0
 
 fromRadiansToNum :: Angle -> Number
 fromRadiansToNum (Angle n u) = toRadians n u
@@ -500,17 +498,17 @@ simplify (ScaleZ n)
       | otherwise = pure $ ScaleZ n
 simplify (Perspective d) = fmap Perspective (minifyWith d)
 simplify (TranslateZ d)
-      | d == Length 0 Q = pure $ Skew (Angle 0 Deg) Nothing
-      | otherwise         = fmap TranslateZ (minifyWith d)
+      | isZeroLen d = pure $ Skew (Angle 0 Deg) Nothing
+      | otherwise   = fmap TranslateZ (minifyWith d)
 simplify s@(Scale3d x y z)
       | z == 1           = simplify $ Scale x (Just y)
       | x == 1 && y == 1 = simplify $ ScaleZ z
       | otherwise        = pure s
 simplify (Translate3d x y z )
-      | isZero y && z == Length 0 Q = either (f TranslateX) (g TranslateX) x
-      | isZero x && isZero y          = simplify $ TranslateZ z
-      | isZero x && z == Length 0 Q = either (f TranslateY) (g TranslateY) y
-    where f con a | a == 0    = simplify . con . Right $ Length 0 Q
+      | isZero y && isZeroLen z = either (f TranslateX) (g TranslateX) x
+      | isZero x && isZero y    = simplify $ TranslateZ z
+      | isZero x && isZeroLen z = either (f TranslateY) (g TranslateY) y
+    where f con a | a == 0    = simplify . con . Right $ NullLength
                   | otherwise = simplify . con . Left $ a
           g con a = simplify . con $ Right a -- A distance, transform an minify
 simplify x = pure x

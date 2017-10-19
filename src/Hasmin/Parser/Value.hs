@@ -22,7 +22,7 @@ module Hasmin.Parser.Value (
     , stringtype
     , textualvalue
     , stringvalue    -- used in StringSpec
-    , shadowList     -- used in ShadowSpec 
+    , shadowList     -- used in ShadowSpec
     , timingFunction
     , repeatStyle
     , position
@@ -189,7 +189,7 @@ dimensionParser m unitlessValue = do
               Nothing -> mzero -- parsed units aren't angle units, fail
 
 distance :: Parser Length
-distance = dimensionParser distanceConstructorsMap (Length 0 Q)
+distance = dimensionParser distanceConstructorsMap NullLength
   where distanceConstructorsMap = Map.fromList distanceConstructorsList
 
 angle :: Parser Angle
@@ -1017,7 +1017,7 @@ percentageLength = do
     n <- numericalvalue
     case n of
       PercentageV p -> pure $ Left p
-      NumberV 0     -> pure $ Right (Length 0 PX)
+      NumberV 0     -> pure $ Right NullLength
       LengthV d     -> pure $ Right d
       _             -> mzero
 

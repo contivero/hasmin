@@ -67,7 +67,7 @@ minifyColorHints [c1,c2] = [newC1, newC2]
         newC2
             | ch2 == Just (Left (Percentage 100)) = c2 {colorHint = Nothing}
             | otherwise = if ch2 `notGreaterThan` ch1
-                             then c2 {colorHint = Just $ Right (Length 0 PX)}
+                             then c2 {colorHint = Just $ Right NullLength}
                              else c2
 minifyColorHints (c@(ColorStop a x):xs) = case x of
                        Nothing -> c : analyzeList (Left $ Percentage 0) 1 (c:xs) xs
@@ -84,7 +84,14 @@ y `notGreaterThan` x
     | otherwise = case fromJust x of
                     Left p  -> maybe False (either (<= p) (const False)) y
                     Right d -> maybe False (either (const False) (notGreaterThanLength d)) y
-  where notPositive = maybe False (either (<= 0) (\(Length d _) -> d <= 0))
+  where notPositive  = maybe False (either (<= 0) notPositiveLength)
+  
+        notPositiveLength (Length d _) = d <= 0
+        notPositiveLength NullLength   = True
+
+        notGreaterThanLength NullLength NullLength   = True
+        notGreaterThanLength NullLength (Length r _) = r <= 0
+        notGreaterThanLength (Length r _) NullLength = 0 <= r
         notGreaterThanLength (Length r1 u1) (Length r2 u2)
             | u1 == u2 = r2 <= r1
             | isRelative u1 || isRelative u2 = False
@@ -137,7 +144,7 @@ handlePercentages start end n remainingList =
             if fromLeft' v == y
                then Nothing
                else if fromLeft' v <= start
-                       then Just $ Right (Length 0 PX)
+                       then Just $ Right NullLength
                        else Just v
 
 -- | CSS <https://drafts.csswg.org/css-images-3/#typedef-gradient \<gradient\>>

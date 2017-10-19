@@ -2,11 +2,7 @@
 
 module Hasmin.Types.DimensionSpec where
 
-import Control.Applicative (liftA2)
-
 import Hasmin.Types.Dimension
-import Hasmin.Types.Numeric
-import Hasmin.Types.Class
 import Hasmin.TestUtils
 
 dimensionTests :: Spec

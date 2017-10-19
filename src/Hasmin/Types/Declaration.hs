@@ -155,14 +155,14 @@ nullPercentageToLength d = do
             in p { offset1 = stripPercentage a, offset2 = stripPercentage b }
         f (PercentageV p) = pure $ zeroPercentageToLength p
           where zeroPercentageToLength :: Percentage -> Value
-                zeroPercentageToLength 0 = LengthV (Length 0 Q)
+                zeroPercentageToLength 0 = LengthV NullLength
                 zeroPercentageToLength x = PercentageV x
         f (BgSizeV bgsz) = pure . BgSizeV $
             case bgsz of
               BgSize1 x   -> BgSize1 (zeroPerToLength x) 
               BgSize2 x y -> BgSize2 (zeroPerToLength x) (zeroPerToLength y)
               x           -> x
-          where zeroPerToLength (Left (Left 0)) = Left $ Right (Length 0 Q)
+          where zeroPerToLength (Left (Left 0)) = Left $ Right NullLength
                 zeroPerToLength z = z
         f x = pure x
 
@@ -178,7 +178,7 @@ replaceWithZero s d@(Declaration p (Values v vs) _ _)
         case Map.lookup (T.toCaseFold p) propertiesTraits of
           Just (PropertyInfo iv inhs _ _) ->
               if f iv inhs == mkOther s
-                 then pure $ d { valueList = Values (LengthV (Length 0 Q)) [] }
+                 then pure $ d { valueList = Values (LengthV NullLength) [] }
                  else pure d
           Nothing -> pure d
   where f (Just (Values x _)) inh
@@ -222,7 +222,8 @@ optimizeTransformOrigin d@(Declaration _ vals _ _) = do
 -- isZeroVal is needed because we are using a generic parser for
 -- transform-origin, so 0 parses as a number instead of a distance.
 isZeroVal :: Value -> Bool
-isZeroVal (LengthV (Length 0 Q)) = True
+isZeroVal (LengthV (Length 0 _)) = True
+isZeroVal (LengthV NullLength)   = True
 isZeroVal (NumberV (Number 0))   = True
 isZeroVal (PercentageV 0)        = True
 isZeroVal _                      = False
@@ -231,9 +232,9 @@ transformOrigin1 :: Value -> [Value]
 transformOrigin1 (Other "top")    = [Other "top"]
 transformOrigin1 (Other "bottom") = [Other "bottom"]
 transformOrigin1 (Other "right")  = [PercentageV (Percentage 100)]
-transformOrigin1 (Other "left")   = [LengthV (Length 0 Q)]
+transformOrigin1 (Other "left")   = [LengthV NullLength]
 transformOrigin1 (Other "center") = [PercentageV (Percentage 50)]
-transformOrigin1 (PercentageV 0)  = [LengthV (Length 0 Q)]
+transformOrigin1 (PercentageV 0)  = [LengthV NullLength]
 transformOrigin1 x                = [x]
 
 transformOrigin2 :: Value -> Value -> [Value]
@@ -264,7 +265,7 @@ transformOrigin2 x y
         per100 = PercentageV $ Percentage 100
         convertValue (Other t) = fromMaybe (Other t) (Map.lookup (getText t) transformOriginKeywords)
         convertValue n@(PercentageV p)
-            | p == 0    = LengthV (Length 0 Q)
+            | p == 0    = LengthV NullLength
             | otherwise = n
         convertValue i = i
 
@@ -280,10 +281,10 @@ transformOrigin3 x y z
 -- transform-origin keyword meanings.
 transformOriginKeywords :: Map Text Value
 transformOriginKeywords = Map.fromList
-    [("top",    LengthV (Length 0 Q))
+    [("top",    LengthV NullLength)
     ,("right",  PercentageV (Percentage 100))
     ,("bottom", PercentageV (Percentage 100))
-    ,("left",   LengthV (Length 0 Q))
+    ,("left",   LengthV NullLength)
     ,("center", PercentageV (Percentage 50))]
 
 

@@ -12,7 +12,7 @@
 -- dimensions into other equivalent dimensions.
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Dimension 
+module Hasmin.Types.Dimension
     ( Length(..)
     , LengthUnit(..)
     , Angle(..)
@@ -27,6 +27,8 @@ module Hasmin.Types.Dimension
     , toPixels
     , toRadians
     , isRelative
+    , isRelativeLength
+    , isZeroLen
     ) where
 
 import Control.Monad.Reader (asks)
@@ -39,25 +41,43 @@ import Hasmin.Utils
 
 -- | The \<length\> CSS data type
 data Length = Length Number LengthUnit
+            | NullLength
   deriving (Show)
 instance Eq Length where
   (Length r1 u1) == (Length r2 u2)
     | u1 == u2  = r1 == r2
     | otherwise = toInches r1 u1 == toInches r2 u2
+  NullLength == (Length 0 _) = True
+  (Length 0 _) == NullLength = True
+  NullLength == NullLength   = True
+  _ == _                     = False
 instance Minifiable Length where
+  minifyWith NullLength = pure NullLength
   minifyWith d@(Length r u) = do
       shouldMinifyUnits <- asks ((DimMinOn ==) . dimensionSettings)
-      pure $ if (not . isRelative) u && shouldMinifyUnits
-                then minDim Length r u [Q, CM, MM, IN, PC, PT, PX]
-                else d
+      pure $ if d == Length 0 Q
+                then NullLength
+                else if (not . isRelative) u && shouldMinifyUnits
+                        then minDim Length r u [Q, CM, MM, IN, PC, PT, PX]
+                        else d
 
 isRelative :: LengthUnit -> Bool
 isRelative x = x == EM || x == EX || x == CH || x == VH
             || x == VW || x == VMIN || x == VMAX || x == REM
 
+isRelativeLength :: Length -> Bool
+isRelativeLength (Length _ u) = isRelative u
+isRelativeLength NullLength   = False
+
+isZeroLen :: Length -> Bool
+isZeroLen (Length 0 _) = True
+isZeroLen NullLength   = True
+isZeroLen _            = False
+
+
 instance ToText Length where
-  toBuilder (Length 0 _) = singleton '0'
   toBuilder (Length r u) = (fromText . toText) r <> (fromText . toText) u
+  toBuilder NullLength   = singleton '0'
 
 -- | The \<angle\> CSS data type
 data Angle = Angle Number AngleUnit
