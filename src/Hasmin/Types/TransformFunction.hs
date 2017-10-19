@@ -13,6 +13,7 @@ module Hasmin.Types.TransformFunction
     , mkMat
     , mkMat3d
     , combine
+    , simplify
     ) where
 
 import Control.Monad.Reader (mapReader, Reader, ask, local)
@@ -96,7 +97,7 @@ instance Minifiable TransformFunction where
          then case toMatrix3d x of
                 Just mat3d -> minifyWith mat3d
                 Nothing    -> simplify x
-         else pure x
+         else simplify x
 
 {-
 s = SkewX (Angle 45 Deg)
@@ -274,7 +275,7 @@ matrixToRotate3d _ = []
             |    abs (m12 + m21) < ep2
               && abs (m13 + m31) < ep2
               && abs (m23 - m32) < ep2
-              && abs (m11 + m22 + m33 - 3) < ep2 = Rotate3d 1 0 0 (Angle 0 Deg)
+              && abs (m11 + m22 + m33 - 3) < ep2 = Rotate3d 1 0 0 NullAngle
             | otherwise = let xx = (m11+1)/2
                               yy = (m22+1)/2
                               zz = (m33+1)/2
@@ -304,6 +305,7 @@ fromPixelsToNum NullLength   = 0
 
 fromRadiansToNum :: Angle -> Number
 fromRadiansToNum (Angle n u) = toRadians n u
+fromRadiansToNum NullAngle   = 0
 
 tangent :: Angle -> Number
 tangent =  toNumber . tan epsilon . fromNumber . fromRadiansToNum
@@ -464,29 +466,28 @@ simplify s@(Scale n mn)  = pure $ maybe s removeDefaultArgument mn
 simplify s@(ScaleX _)    = pure s
 simplify s@(ScaleY _)    = pure s
 -- In skew(), if the second parameter isn't present, it defaults to the zero.
-simplify (Skew a ma)
-      | defaultSecondArgument = do ang <- minifyWith a
-                                   simplify $ Skew ang Nothing
-      | otherwise             = liftA2 Skew (minifyWith a) (mapM minifyWith ma)
-    where defaultSecondArgument = ma == Just (Angle 0 Deg)
+simplify (Skew a Nothing) = liftA2 Skew (minifyWith a) (pure Nothing)
+simplify (Skew a (Just x))
+    | isZeroAngle x = liftA2 Skew (minifyWith a) (pure Nothing)
+    | otherwise     = liftA2 Skew (minifyWith a) (Just <$> minifyWith x)
 simplify (SkewY a)
-      | a == Angle 0 Deg = pure $ Skew (Angle 0 Deg) Nothing
-      | otherwise        = fmap SkewY (minifyWith a)
+      | isZeroAngle a = pure $ Skew NullAngle Nothing
+      | otherwise     = fmap SkewY (minifyWith a)
 simplify (SkewX a)
-      | a == Angle 0 Deg = pure $ Skew (Angle 0 Deg) Nothing
-      | otherwise        = fmap SkewX (minifyWith a)
+      | isZeroAngle a = pure $ Skew NullAngle Nothing
+      | otherwise     = fmap SkewX (minifyWith a)
 simplify (Rotate a)
-      | a == Angle 0 Deg = pure $ Skew (Angle 0 Deg) Nothing
-      | otherwise        = fmap Rotate (minifyWith a)
+      | isZeroAngle a = pure $ Skew NullAngle Nothing
+      | otherwise     = fmap Rotate (minifyWith a)
 simplify (RotateX a)
-      | a == Angle 0 Deg = pure $ Skew (Angle 0 Deg) Nothing
-      | otherwise        = fmap RotateX (minifyWith a)
+      | isZeroAngle a = pure $ Skew NullAngle Nothing
+      | otherwise     = fmap RotateX (minifyWith a)
 simplify (RotateY a)
-      | a == Angle 0 Deg = pure $ Skew (Angle 0 Deg) Nothing
-      | otherwise        = fmap RotateY (minifyWith a)
+      | isZeroAngle a = pure $ Skew NullAngle Nothing
+      | otherwise     = fmap RotateY (minifyWith a)
 -- rotateZ(a) is the same as rotate3d(0,0,1,a), which also equals rotate(a)
 simplify (RotateZ a)
-      | a == Angle 0 Deg = pure $ Skew (Angle 0 Deg) Nothing
+      | isZeroAngle a = pure $ Skew NullAngle Nothing
       | otherwise        = fmap Rotate (minifyWith a)
 simplify (Rotate3d x y z a)
       | abs (x - 1) < ep && abs y < ep && abs z < ep = simplify $ RotateX a
@@ -494,11 +495,11 @@ simplify (Rotate3d x y z a)
       | abs x < ep && abs y < ep && abs (z - 1) < ep = fmap Rotate (minifyWith a)
   where ep = toNumber epsilon
 simplify (ScaleZ n)
-      | n == 1    = pure $ Skew (Angle 0 Deg) Nothing
+      | n == 1    = pure $ Skew NullAngle Nothing
       | otherwise = pure $ ScaleZ n
 simplify (Perspective d) = fmap Perspective (minifyWith d)
 simplify (TranslateZ d)
-      | isZeroLen d = pure $ Skew (Angle 0 Deg) Nothing
+      | isZeroLen d = pure $ Skew NullAngle Nothing
       | otherwise   = fmap TranslateZ (minifyWith d)
 simplify s@(Scale3d x y z)
       | z == 1           = simplify $ Scale x (Just y)

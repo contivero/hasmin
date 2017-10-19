@@ -29,6 +29,7 @@ module Hasmin.Types.Dimension
     , isRelative
     , isRelativeLength
     , isZeroLen
+    , isZeroAngle
     ) where
 
 import Control.Monad.Reader (asks)
@@ -47,10 +48,7 @@ instance Eq Length where
   (Length r1 u1) == (Length r2 u2)
     | u1 == u2  = r1 == r2
     | otherwise = toInches r1 u1 == toInches r2 u2
-  NullLength == (Length 0 _) = True
-  (Length 0 _) == NullLength = True
-  NullLength == NullLength   = True
-  _ == _                     = False
+  x == y = isZeroLen x && isZeroLen y
 instance Minifiable Length where
   minifyWith NullLength = pure NullLength
   minifyWith d@(Length r u) = do
@@ -74,29 +72,37 @@ isZeroLen (Length 0 _) = True
 isZeroLen NullLength   = True
 isZeroLen _            = False
 
-
 instance ToText Length where
   toBuilder (Length r u) = (fromText . toText) r <> (fromText . toText) u
   toBuilder NullLength   = singleton '0'
 
 -- | The \<angle\> CSS data type
 data Angle = Angle Number AngleUnit
+          | NullAngle
   deriving (Show)
 instance Eq Angle where
   (Angle r1 u1) == (Angle r2 u2)
     | u1 == u2  = r1 == r2
     | otherwise = toDegrees r1 u1 == toDegrees r2 u2
+  x == y = isZeroAngle x && isZeroAngle y
+
+isZeroAngle :: Angle -> Bool
+isZeroAngle NullAngle   = True
+isZeroAngle (Angle 0 _) = True
+isZeroAngle _           = False
+
 instance Minifiable Angle where
+  minifyWith (Angle 0 _)   = pure NullAngle
   minifyWith a@(Angle r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
                DimMinOn  -> minDim Angle r u [Turn, Grad, Rad, Deg]
                DimMinOff -> a
+  minifyWith NullAngle = pure NullAngle
 
 instance ToText Angle where
-  toBuilder (Angle r u)
-      | abs r < toNumber eps = singleton '0'
-      | otherwise            = toBuilder r <> toBuilder u
+  toBuilder NullAngle   = singleton '0'
+  toBuilder (Angle r u) = toBuilder r <> toBuilder u
 
 -- | The \<duration\> CSS data type
 data Duration = Duration Number DurationUnit

@@ -94,11 +94,10 @@ gradientTestsInfo =
 
 transformFunctionParserTestsInfo :: [(Text, Text)]
 transformFunctionParserTestsInfo =
-  [("skew( 0deg )",               "skew(0)")
-  ,("skew(23GRAD /**/,/**/0deg)", "skew(23grad,0)")
+  [("skew( 0deg )",               "skew(0deg)")
+  ,("skew(23GRAD /**/,/**/0deg)", "skew(23grad,0deg)")
   ,("sKeWY(/**/1rad)",            "skewy(1rad)")
   ,("SkeWx(0.2turn/**/)",         "skewx(.2turn)")
-  ,("SkeWx(0.2turn)",             "skewx(.2turn)")
   ,("SkeWx(0.2turn)",             "skewx(.2turn)")
   ,("translate(0% )",             "translate(0%)")
   ,("translate( 0 )",             "translate(0)")
@@ -107,7 +106,7 @@ transformFunctionParserTestsInfo =
   ,("translate(0, 0%)",           "translate(0,0%)")
   ,("translate(0%, 0)",           "translate(0%,0)")
   ,("translate(0, 0)",            "translate(0,0)")
-  ,("translate(10px, 3em)",       "translate(10px,3em)")
+  ,("translate(12px, 3em)",       "translate(12px,3em)")
   ,("translateX(0%)",             "translatex(0%)")
   ,("translateX(/* 3q */ 4q)",    "translatex(4q)")
   ]

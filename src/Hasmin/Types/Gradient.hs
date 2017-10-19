@@ -264,7 +264,7 @@ minifyAngleOrSide mas =
                   Right b -> if b == defaultGradientSideOrCorner
                                 then pure Nothing
                                 else pure $ Just (minifySide b)
-  where minifySide (TopSide, Nothing)    = Left (Angle 0 Deg)
+  where minifySide (TopSide, Nothing)    = Left NullAngle
         minifySide (RightSide, Nothing)  = Left (Angle 90 Deg)
         minifySide (BottomSide, Nothing) = Left (Angle 180 Deg)
         minifySide (LeftSide, Nothing)   = Left (Angle 270 Deg)
@@ -308,8 +308,10 @@ instance Eq Gradient where
   _ == _ = False -- TODO implement other comparisons
 
 angleSideEq :: Angle -> SideOrCorner -> Bool
-angleSideEq (Angle 0 Deg) (TopSide, Nothing)      = True
 angleSideEq (Angle 90 Deg) (RightSide, Nothing)   = True
 angleSideEq (Angle 180 Deg) (BottomSide, Nothing) = True
 angleSideEq (Angle 270 Deg) (LeftSide, Nothing)   = True
+angleSideEq a (TopSide, Nothing)
+    | isZeroAngle a = True
+    | otherwise     = False
 angleSideEq _ _                                   = False

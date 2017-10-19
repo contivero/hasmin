@@ -193,7 +193,7 @@ distance = dimensionParser distanceConstructorsMap NullLength
   where distanceConstructorsMap = Map.fromList distanceConstructorsList
 
 angle :: Parser Angle
-angle = dimensionParser angleConstructorsMap (Angle 0 Deg)
+angle = dimensionParser angleConstructorsMap NullAngle
   where angleConstructorsMap = Map.fromList angleConstructorsList
 
 duration :: Parser Duration

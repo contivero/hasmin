@@ -14,7 +14,7 @@ import Codec.Compression.Hopfli
 import Control.Applicative (liftA2)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Options.Applicative hiding (command)
+import Options.Applicative (Parser, ParserInfo, long, infoOption, fullDesc, helper, execParser, help, header, flag, short, str, switch, info, argument, metavar)
 import Data.Version (showVersion)
 import Development.GitRev (gitHash)
 import Paths_hasmin (version)
