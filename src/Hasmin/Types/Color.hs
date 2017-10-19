@@ -38,7 +38,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 
 import Hasmin.Config
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.Numeric
 import Hasmin.Utils
 

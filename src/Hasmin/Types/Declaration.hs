@@ -30,7 +30,7 @@ import qualified Data.Text as T
 import Hasmin.Config
 import Hasmin.Properties
 import Hasmin.Types.BgSize
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.Dimension
 import Hasmin.Types.Numeric
 import Hasmin.Types.PercentageLength

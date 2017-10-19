@@ -53,7 +53,7 @@ library
   ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints
   exposed-modules:     Hasmin
                      , Hasmin.Config
-                     , Hasmin.Types.Class
+                     , Hasmin.Class
                      , Hasmin.Types.Stylesheet
                      -- exposed because it is needed by tests:
                      , Hasmin.Parser.Internal

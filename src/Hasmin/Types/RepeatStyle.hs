@@ -15,7 +15,7 @@ module Hasmin.Types.RepeatStyle
 
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
-import Hasmin.Types.Class
+import Hasmin.Class
 
 -- | CSS <https://drafts.csswg.org/css-backgrounds-3/#typedef-repeat-style \<repeat-style\>>
 -- data type, used in the properties @background-repeat@ and @background@.

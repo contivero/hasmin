@@ -18,7 +18,7 @@ import Data.Text (Text, unpack, singleton)
 import Data.Attoparsec.Text (Parser)
 
 import Hasmin.Types.BgSize
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Config
 import Hasmin.Types.Color
 import Hasmin.Types.Declaration

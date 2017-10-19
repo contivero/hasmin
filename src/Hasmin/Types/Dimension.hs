@@ -35,7 +35,7 @@ module Hasmin.Types.Dimension
 import Control.Monad.Reader (asks)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton, fromText)
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.Numeric
 import Hasmin.Config
 import Hasmin.Utils

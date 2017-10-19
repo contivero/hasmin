@@ -17,7 +17,7 @@ import Control.Monad.Reader (Reader, ask)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton, Builder)
 import Hasmin.Config
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.Dimension
 import Hasmin.Types.Color
 import Hasmin.Types.Numeric

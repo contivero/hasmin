@@ -31,7 +31,7 @@ import Data.String (IsString)
 
 import Hasmin.Config
 import Hasmin.Types.BgSize
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.Color
 import Hasmin.Types.Dimension
 import Hasmin.Types.FilterFunction

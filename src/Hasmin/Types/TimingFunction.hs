@@ -19,7 +19,7 @@ import Prelude hiding (sin, cos, acos, tan, atan)
 import Data.Maybe (isNothing, fromJust)
 import Data.Text.Lazy.Builder (singleton)
 import Hasmin.Config
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Utils
 import Hasmin.Types.Numeric
 

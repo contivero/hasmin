@@ -6,7 +6,7 @@ import Data.Text (Text, unpack)
 
 import Hasmin.Parser.Internal
 import Hasmin.TestUtils
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.Stylesheet
 import Hasmin
 

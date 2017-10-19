@@ -29,7 +29,7 @@ import qualified Data.Text.Lazy as TL
 
 import Hasmin.Config
 import Hasmin.Parser.Utils
-import Hasmin.Types.Class
+import Hasmin.Class
 
 -- | The <https://drafts.csswg.org/css-values-3/#strings \<string\>> data type.
 -- It represents a string, formed by Unicode characters, delimited by either

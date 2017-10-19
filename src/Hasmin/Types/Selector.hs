@@ -31,7 +31,7 @@ import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as N
 
 import Hasmin.Config
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.String
 import Hasmin.Utils
 

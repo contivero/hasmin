@@ -39,7 +39,7 @@ import qualified Data.Text as T
 
 import Hasmin.Config
 import Hasmin.Types.Selector
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.Value
 import Hasmin.Types.Declaration
 import Hasmin.Types.String

@@ -31,7 +31,7 @@ import Data.Text.Lazy.Builder (toLazyText, singleton, Builder)
 import Data.Text.Lazy (toStrict)
 
 import Hasmin.Config
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Utils
 import Hasmin.Types.Dimension
 import Hasmin.Types.PercentageLength

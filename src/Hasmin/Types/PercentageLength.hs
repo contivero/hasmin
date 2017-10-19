@@ -16,7 +16,7 @@ module Hasmin.Types.PercentageLength
 
 import Hasmin.Types.Dimension
 import Hasmin.Types.Numeric
-import Hasmin.Types.Class
+import Hasmin.Class
 
 -- | CSS <length-percentage> data type, i.e.: [length | percentage]
 -- Though because of the name it would be more intuitive to define:

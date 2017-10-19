@@ -23,7 +23,7 @@ module Hasmin.Types.Numeric
     ) where
 
 import Data.Text (pack)
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Utils
 import Text.Printf (printf)
 

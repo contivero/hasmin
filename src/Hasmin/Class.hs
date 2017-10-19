@@ -1,14 +1,14 @@
 {-# LANGUAGE Safe #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      : Hasmin.Types.Class
+-- Module      : Hasmin.Class
 -- Copyright   : (c) 2017 Cristian Adrián Ontivero
 -- License     : BSD3
 -- Stability   : experimental
 -- Portability : non-portable
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Class
+module Hasmin.Class
     ( ToText(..)
     , Minifiable(..)
     ) where

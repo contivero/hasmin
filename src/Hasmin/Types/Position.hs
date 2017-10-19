@@ -20,7 +20,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Lazy.Builder (singleton, fromText)
 import Data.Maybe (isJust)
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.Dimension
 import Hasmin.Types.PercentageLength
 import Hasmin.Utils

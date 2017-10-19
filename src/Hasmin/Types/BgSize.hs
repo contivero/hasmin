@@ -17,7 +17,7 @@ import Control.Monad.Reader (Reader)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
 
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Config
 import Hasmin.Types.PercentageLength
 

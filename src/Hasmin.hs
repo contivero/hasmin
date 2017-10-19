@@ -24,7 +24,7 @@ import Data.Text (Text)
 import qualified Data.Text.Lazy as TL
 
 import Hasmin.Parser.Internal
-import Hasmin.Types.Class
+import Hasmin.Class
 import Hasmin.Types.Stylesheet
 import Hasmin.Config
 
@@ -69,6 +69,6 @@ minifyCSS = minifyCSSWith defaultConfig
 -- > Right "body{color:#ff0000}div{margin:0}"
 --
 -- The output is once more minified, but this time leaving colors as they were
--- originally. 
+-- originally.
 --
 -- For the complete list of possible options, refer to 'Config'.
