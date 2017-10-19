@@ -75,4 +75,4 @@ produces files 3~8% smaller than zlib, at the cost of being around 80 times
 slower, so it is only a good idea if you don't need compression on the fly.
 
 
-Zopfli is released under the Apache License, Version 2.0.
+Zopfli is [released under the Apache License, Version 2.0](https://github.com/google/zopfli/blob/master/COPYING).
