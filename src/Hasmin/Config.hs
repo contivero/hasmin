@@ -77,7 +77,7 @@ data Config = Config { colorSettings                  :: ColorSettings
 -- mainly for testing purposes.
 defaultConfig :: Config
 defaultConfig = Config { colorSettings                  = ColorMinOn
-                       , dimensionSettings              = DimMinOn
+                       , dimensionSettings              = DimMinOff
                        , gradientSettings               = GradientMinOn
                        , shouldUsePropertyTraits        = True
                        , shouldCleanRules               = True
