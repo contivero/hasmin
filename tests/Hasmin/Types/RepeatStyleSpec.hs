@@ -15,7 +15,7 @@ repeatStyleTests =
       it "Minified <repeat-style> maintains semantic equivalence" $ 
         property (prop_minificationEq :: RepeatStyle -> Bool)
       mapM_ (matchSpec f) repeatStyleTestsInfo
-  where f = minify <$> repeatStyle
+  where f = minifyWithTestConfig <$> repeatStyle
 
 instance Arbitrary RepeatStyle where
   arbitrary = frequency [(1, pure RepeatX)

@@ -13,22 +13,18 @@ module Hasmin.Types.Class
     , Minifiable(..)
     ) where
 
-import Control.Monad.Reader (Reader, runReader)
+import Control.Monad.Reader (Reader)
 import Data.Word (Word8)
 import Data.Text (pack, Text)
 import Data.Text.Lazy (toStrict)
 import Data.Text.Lazy.Builder (Builder, fromText, toLazyText)
+
 import Hasmin.Config
 
 -- | Class for types that can be minified
 class Minifiable a where
-  {-# MINIMAL minifyWith #-}
-  minifyWith :: a -> Reader Config a
-
-  -- Returns smallest equivalent representation for an element, using a default
-  -- configuration. Mostly used for testing.
-  minify :: a -> a
-  minify x = runReader (minifyWith x) defaultConfig
+  {-# MINIMAL minify #-}
+  minify :: a -> Reader Config a
 
 -- | Class for types that can be converted to Text. Used for printing the
 -- minified results.

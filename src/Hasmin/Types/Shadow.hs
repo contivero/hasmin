@@ -40,13 +40,13 @@ instance ToText Shadow where
     where prependSpace x = maybe mempty (\y -> singleton ' ' <> toBuilder y) x -- don't eta reduce this!
 
 instance Minifiable Shadow where
-  minifyWith (Shadow i ox oy br sr c) = do
+  minify (Shadow i ox oy br sr c) = do
       -- conf <- ask
-      x  <- minifyWith ox
-      y  <- minifyWith oy
-      nb <- mapM minifyWith br
-      ns <- mapM minifyWith sr
-      c2 <- mapM minifyWith c
+      x  <- minify ox
+      y  <- minify oy
+      nb <- mapM minify br
+      ns <- mapM minify sr
+      c2 <- mapM minify c
       pure $ if True {- shouldMinifyShadows conf -}
                 then let (a, b) = minifyBlurAndSpread nb ns
                      in Shadow i x y a b c2

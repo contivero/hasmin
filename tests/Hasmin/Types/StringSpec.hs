@@ -17,8 +17,8 @@ quotesNormalizationTests =
         mapM_ (matchSpec g) unquotingFormatTestsInfo
       describe "unquotes url() <string>s" $
         mapM_ (matchSpec g) unquotingUrlsTestsInfo
-  where f = minify <$> stringvalue
-        g = minify <$> textualvalue
+  where f = minifyWithTestConfig <$> stringvalue
+        g = minifyWithTestConfig <$> textualvalue
 
 quotesNormalizationTestsInfo :: [(String, Text, Text)]
 quotesNormalizationTestsInfo =

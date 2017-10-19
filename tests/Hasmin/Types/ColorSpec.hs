@@ -91,7 +91,7 @@ colorMinificationTests :: Spec
 colorMinificationTests = 
     describe "color minification" $
       mapM_ (matchSpec f) colorMinificationTestsInfo
-  where f = minify <$> color
+  where f = minifyWithTestConfig <$> color
 
 colorMinificationTestsInfo :: [(Text, Text)]
 colorMinificationTestsInfo =

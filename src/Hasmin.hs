@@ -48,6 +48,8 @@ minifyCSS = minifyCSSWith defaultConfig
 --
 -- Given a style sheet, say:
 --
+-- > -- Note: We are using the OverloadedStrings extension here
+-- >
 -- > sampleSheet :: Text
 -- > sampleSheet = "body { color: #ff0000 } div { margin: 0 0 0 0 }"
 --
@@ -67,6 +69,6 @@ minifyCSS = minifyCSSWith defaultConfig
 -- > Right "body{color:#ff0000}div{margin:0}"
 --
 -- The output is once more minified, but this time leaving colors as they were
--- originally.
+-- originally. 
 --
 -- For the complete list of possible options, refer to 'Config'.

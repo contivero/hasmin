@@ -2,10 +2,12 @@
 
 module Hasmin.Types.DeclarationSpec where
 
+import Control.Monad.Reader (runReader)
 import Data.Foldable (traverse_)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 
+import Hasmin.Config
 import Hasmin.Parser.Internal
 import Hasmin.TestUtils
 import Hasmin.Types.Class
@@ -20,7 +22,7 @@ propertySpecificTests :: Spec
 propertySpecificTests =
     describe "property specific changes" $
       mapM_ (matchSpec f) propertySpecificTestsInfo
-  where f = minify <$> declaration
+  where f = minifyWithTestConfig <$> declaration
 
 propertySpecificTestsInfo :: [(Text, Text)]
 propertySpecificTestsInfo =
@@ -256,8 +258,7 @@ cleaningTestsInfo =
 minifyDecTests :: Spec
 minifyDecTests =
     describe "minifyDec function" $
-      mapM_ (matchSpec f) minifyDecTestsInfo
-  where f = minify <$> declaration
+      mapM_ (matchSpec (minifyWithTestConfig <$> declaration)) minifyDecTestsInfo
 
 shorthandInitialValuesTests :: Spec
 shorthandInitialValuesTests = do
@@ -267,7 +268,9 @@ shorthandInitialValuesTests = do
     testMatches "font minification" fontTestsInfo
     testMatches "outline minification" outlineTestsInfo
     anyOrderShorthandTests
-  where testMatches a i = describe a $ mapM_ (matchSpecWithDesc (minify <$> declaration)) i
+  where testMatches :: String -> [(String, Text, Text)] -> SpecWith ()
+        testMatches desc i = describe desc $
+                          mapM_ (matchSpecWithDesc (minifyWithTestConfig <$> declaration)) i
 
 backgroundTestsInfo :: [(String, Text, Text)]
 backgroundTestsInfo =
@@ -372,7 +375,7 @@ outlineTestsInfo =
 anyOrderShorthandTests :: Spec
 anyOrderShorthandTests =
     describe "Shorthands that accept values in any order (mostly: medium none currentColor)" $
-      traverse_ (mapM_ (matchSpec (minify <$> declaration))) d
+      traverse_ (mapM_ (matchSpec (minifyWithTestConfig <$> declaration))) d
   where d = fmap f shorthandsToTest
         f z = fmap (\(x,y) -> (z <> ":" <> x, z <> ":" <> y)) shorthandEquivalences
         shorthandsToTest = ["border"

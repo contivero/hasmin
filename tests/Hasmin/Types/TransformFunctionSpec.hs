@@ -16,7 +16,7 @@ import Hasmin.Types.Value
 transformTests :: Spec
 transformTests =
     describe "transform function conversion" $
-      mapM_ (matchSpec (minify <$> textualvalue)) transformTestsInfo
+      mapM_ (matchSpec (minifyWithTestConfig <$> textualvalue)) transformTestsInfo
 
 combinationTests :: Spec
 combinationTests =

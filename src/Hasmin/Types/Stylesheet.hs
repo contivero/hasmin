@@ -53,8 +53,8 @@ data MediaQuery = MediaQuery1 Text Text [Expression]  -- ^ First possibility in 
                 | MediaQuery2 [Expression] -- ^ Second possibility in the grammar
   deriving (Show, Eq)
 instance Minifiable MediaQuery where
-  minifyWith (MediaQuery1 t1 t2 es) = MediaQuery1 t1 t2 <$> mapM minifyWith es
-  minifyWith (MediaQuery2 es)       = MediaQuery2 <$> mapM minifyWith es
+  minify (MediaQuery1 t1 t2 es) = MediaQuery1 t1 t2 <$> mapM minify es
+  minify (MediaQuery2 es)       = MediaQuery2 <$> mapM minify es
 
 instance ToText MediaQuery where
   toBuilder (MediaQuery1 t1 t2 es) = notOrOnly <> fromText t2 <> expressions
@@ -67,8 +67,8 @@ data Expression = Expression Text (Maybe Value)
                 | InvalidExpression Text
   deriving (Show, Eq)
 instance Minifiable Expression where
-  minifyWith (Expression t mv) = Expression t <$> mapM minifyWith mv
-  minifyWith x = pure x
+  minify (Expression t mv) = Expression t <$> mapM minify mv
+  minify x = pure x
 instance ToText Expression where
   toBuilder (Expression t mv) =
       singleton '(' <> fromText t <> v <> singleton ')'
@@ -83,7 +83,7 @@ instance ToText KeyframeSelector where
   toText To               = "to"
   toText (KFPercentage p) = toText p
 instance Minifiable KeyframeSelector where
-  minifyWith kfs = do
+  minify kfs = do
       conf <- ask
       pure $ if shouldMinifyKeyframeSelectors conf
                 then minifyKFS kfs
@@ -102,9 +102,9 @@ instance ToText KeyframeBlock where
       <> mconcatIntersperse toBuilder (singleton ';') ds
       <> singleton '}'
 instance Minifiable KeyframeBlock where
-  minifyWith (KeyframeBlock ss ds) = do
-      decs <- mapM minifyWith ds
-      sels <- mapM minifyWith ss
+  minify (KeyframeBlock ss ds) = do
+      decs <- mapM minify ds
+      sels <- mapM minify ss
       pure $ KeyframeBlock sels decs
 
 type VendorPrefix = Text
@@ -154,16 +154,16 @@ instance ToText Rule where
             <> singleton ' ' <> fromText n <> singleton '{'
             <> mconcat (fmap toBuilder bs) <> singleton '}'
 instance Minifiable Rule where
-  minifyWith (AtMedia mqs rs) = liftA2 AtMedia (mapM minifyWith mqs) (mapM minifyWith rs)
-  minifyWith (AtSupports sc rs) = liftA2 AtSupports (minifyWith sc) (mapM minifyWith rs)
-  minifyWith (AtKeyframes vp n bs) = AtKeyframes vp n <$> mapM minifyWith bs
-  minifyWith (AtBlockWithRules t rs) = AtBlockWithRules t <$> mapM minifyWith rs
-  minifyWith (AtBlockWithDec t ds) = do
-      decs <- cleanRule ds >>= collapseLonghands >>= mapM minifyWith
+  minify (AtMedia mqs rs) = liftA2 AtMedia (mapM minify mqs) (mapM minify rs)
+  minify (AtSupports sc rs) = liftA2 AtSupports (minify sc) (mapM minify rs)
+  minify (AtKeyframes vp n bs) = AtKeyframes vp n <$> mapM minify bs
+  minify (AtBlockWithRules t rs) = AtBlockWithRules t <$> mapM minify rs
+  minify (AtBlockWithDec t ds) = do
+      decs <- cleanRule ds >>= collapseLonghands >>= mapM minify
       pure $ AtBlockWithDec t decs
-  minifyWith (StyleRule ss ds) = do
-      decs <- cleanRule ds >>= collapseLonghands >>= mapM minifyWith >>= sortDeclarations
-      sels <- mapM minifyWith ss >>= removeDuplicateSelectors >>= sortSelectors
+  minify (StyleRule ss ds) = do
+      decs <- cleanRule ds >>= collapseLonghands >>= mapM minify >>= sortDeclarations
+      sels <- mapM minify ss >>= removeDuplicateSelectors >>= sortSelectors
       pure $ StyleRule sels decs
     where sortSelectors :: [Selector] -> Reader Config [Selector]
           sortSelectors sls = do
@@ -180,9 +180,9 @@ instance Minifiable Rule where
                         then nub' sls
                         else sls
 
-  minifyWith (AtImport esu mqs) = AtImport esu <$> mapM minifyWith mqs
-  minifyWith (AtCharset s) = AtCharset <$> mapString lowercaseText s
-  minifyWith x = pure x
+  minify (AtImport esu mqs) = AtImport esu <$> mapM minify mqs
+  minify (AtCharset s) = AtCharset <$> mapString lowercaseText s
+  minify x = pure x
 
 sortDeclarations :: [Declaration] -> Reader Config [Declaration]
 sortDeclarations ds = do
@@ -265,10 +265,10 @@ instance ToText SupportsCondition where
   toBuilder (Or x y)   = appendWith " or " x y
   toBuilder (Parens x) = toBuilder x
 instance Minifiable SupportsCondition where
-  minifyWith x@And{}    = pure x
-  minifyWith x@Or{}     = pure x
-  minifyWith x@Parens{} = pure x
-  minifyWith (Not x) =
+  minify x@And{}    = pure x
+  minify x@Or{}     = pure x
+  minify x@Parens{} = pure x
+  minify (Not x) =
     case x of
       ParensCond (Not y) -> case y of
                               ParensCond a@And{}    -> pure a
@@ -297,17 +297,17 @@ instance ToText SupportsCondInParens where
   toBuilder (ParensDec x)  = "(" <> toBuilder x <> ")"
   toBuilder (ParensCond x) = "(" <> toBuilder x <> ")"
 instance Minifiable SupportsCondInParens where
-  minifyWith (ParensDec x) = ParensDec <$> minifyWith x
-  minifyWith  (ParensCond x)  = ParensCond <$> minifyWith x
+  minify (ParensDec x) = ParensDec <$> minify x
+  minify  (ParensCond x)  = ParensCond <$> minify x
 
 instance Minifiable [Rule] where
-  minifyWith = minifyRules
+  minify = minifyRules
 
 minifyRules :: [Rule] -> Reader Config [Rule]
 minifyRules = handleAdjacentMediaQueries
           >=> handleEmptyBlocks
           >=> mergeStyleRules
-          >=> traverse minifyWith -- minify rules individually
+          >=> traverse minify -- minify rules individually
   where handleEmptyBlocks :: [Rule] -> Reader Config [Rule]
         handleEmptyBlocks rs = do
           conf <- ask

@@ -12,9 +12,9 @@ import Hasmin.Types.Class
 valueTests :: Spec
 valueTests = do
     describe "value" $
-      mapM_ (matchSpec (minify <$> value)) valueTestsInfo
+      mapM_ (matchSpec (minifyWithTestConfig <$> value)) valueTestsInfo
     describe "<bg-layer> value" $
-      mapM_ (matchSpec (minify <$> declaration)) bgTests
+      mapM_ (matchSpec (minifyWithTestConfig <$> declaration)) bgTests
 
 valueTestsInfo :: [(Text, Text)]
 valueTestsInfo =

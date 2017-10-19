@@ -59,8 +59,8 @@ instance ToText BgSize where
 -- individual values, removing any @auto@ value in the second position (if
 -- present).
 instance Minifiable BgSize where
-  minifyWith (BgSize1 x)   = BgSize1 <$> minifyBgSizeArg x
-  minifyWith (BgSize2 x y) = do
+  minify (BgSize1 x)   = BgSize1 <$> minifyBgSizeArg x
+  minify (BgSize2 x y) = do
       nx   <- minifyBgSizeArg x
       ny   <- minifyBgSizeArg y
       let b = BgSize2 nx ny
@@ -69,9 +69,9 @@ instance Minifiable BgSize where
                 else b
     where minifyBgSize (BgSize2 l (Right Auto)) = BgSize1 l
           minifyBgSize z = z
-  minifyWith x = pure x
+  minify x = pure x
 
 minifyBgSizeArg :: Either PercentageLength Auto
                 -> Reader Config (Either PercentageLength Auto)
-minifyBgSizeArg (Left a)     = Left <$> minifyWith a
+minifyBgSizeArg (Left a)     = Left <$> minify a
 minifyBgSizeArg (Right Auto) = pure $ Right Auto

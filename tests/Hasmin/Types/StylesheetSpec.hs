@@ -27,12 +27,12 @@ atRuleTests = do
     describe "at rules parsing and printing" $
       mapM_ (matchSpec atRule) atRuleTestsInfo
     describe "@supports minification" $
-      mapM_ (matchSpec (minify <$> atRule)) atSupportsTestInfo
+      mapM_ (matchSpec (minifyWithTestConfig <$> atRule)) atSupportsTestInfo
 
 mergeRulesTest :: Spec
 mergeRulesTest =
     describe "Rules merging" $
-      mapM_ (matchSpecWithDesc ((f . minify) <$> rules)) mergeRulesTestsInfo
+      mapM_ (matchSpecWithDesc ((f . minifyWithTestConfig) <$> rules)) mergeRulesTestsInfo
   where f = mconcat . map toText
 
 mergeRulesTestsInfo :: [(String, Text, Text)]

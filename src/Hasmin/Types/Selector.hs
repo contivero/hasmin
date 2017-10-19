@@ -75,9 +75,9 @@ instance ToText Selector where
                               <> mconcat (fmap build ccss)
     where build (comb, compSel) = toBuilder comb <> toBuilder compSel
 instance Minifiable Selector where
-  minifyWith (Selector c xs) = do
-      newC  <- minifyWith c
-      newCs <- (mapM . mapM) minifyWith xs
+  minify (Selector c xs) = do
+      newC  <- minify c
+      newCs <- (mapM . mapM) minify xs
       pure $ Selector newC newCs
 
 type Specificity = (Int, Int, Int)
@@ -117,7 +117,7 @@ instance ToText CompoundSelector where
   toBuilder ns = mconcat $ N.toList (fmap toBuilder ns)
 
 instance Minifiable CompoundSelector where
-  minifyWith (a :| xs) = liftA2 (:|) (minifyWith a) (mapM minifyWith xs)
+  minify (a :| xs) = liftA2 (:|) (minify a) (mapM minify xs)
 
 -- | Certain selectors support namespace prefixes. Namespace prefixes are
 -- declared with the @namespace rule. A type selector containing a namespace
@@ -193,7 +193,7 @@ specialPseudoElements = fmap T.toCaseFold
     ["after", "before", "first-line", "first-letter"]
 
 instance Minifiable SimpleSelector where
-  minifyWith a@(AttributeSel att) = do
+  minify a@(AttributeSel att) = do
       conf <- ask
       pure $ if shouldRemoveQuotes conf
                 then AttributeSel (removeAttributeQuotes att)
@@ -206,17 +206,17 @@ instance Minifiable SimpleSelector where
           removeAttributeQuotes (attId :$=: val) = attId :$=: either Left removeQuotes val
           removeAttributeQuotes (attId :*=: val) = attId :*=: either Left removeQuotes val
           removeAttributeQuotes x@Attribute{}    = x
-  minifyWith a@(Lang x) = do
+  minify a@(Lang x) = do
       conf <- ask
       pure $ if shouldRemoveQuotes conf
                 then case x of
                        Left _  -> a
                        Right s -> Lang (removeQuotes s)
                 else a
-  minifyWith (FunctionalPseudoClass1 i cs)   = FunctionalPseudoClass1 i <$> mapM minifyWith cs
-  minifyWith (FunctionalPseudoClass2 i n)    = FunctionalPseudoClass2 i <$> minifyWith n
-  minifyWith (FunctionalPseudoClass3 i n cs) = FunctionalPseudoClass3 i <$> minifyWith n <*> pure cs
-  minifyWith x = pure x
+  minify (FunctionalPseudoClass1 i cs)   = FunctionalPseudoClass1 i <$> mapM minify cs
+  minify (FunctionalPseudoClass2 i n)    = FunctionalPseudoClass2 i <$> minify n
+  minify (FunctionalPseudoClass3 i n cs) = FunctionalPseudoClass3 i <$> minify n <*> pure cs
+  minify x = pure x
 
 -- | Data type representing the @\'+\'@ and @\'-\'@ signs, used by 'AnPlusB'.
 data Sign = Plus | Minus
@@ -250,7 +250,7 @@ an2Builder ms mi = maybeToBuilder ms <> maybeToBuilder mi <> singleton 'n'
         maybeToBuilder = maybe mempty toBuilder
 
 instance Minifiable AnPlusB where
-  minifyWith x = do
+  minify x = do
       conf <- ask
       pure $ if shouldMinifyMicrosyntax conf
                 then minifyAnPlusB x

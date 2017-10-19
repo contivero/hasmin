@@ -18,7 +18,7 @@ positionMinificationTests =
       -- it "Minifies <position> properly" $
       -- it "Minified <position> maintains semantical equivalence" $ do
         -- property (prop_minificationEq :: Position -> Bool)
-  where f = minify <$> position
+  where f = minifyWithTestConfig <$> position
 
 positionMinificationTestsInfo :: [(Text, Text)]
 positionMinificationTestsInfo =

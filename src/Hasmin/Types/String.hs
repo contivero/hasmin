@@ -41,7 +41,7 @@ instance ToText StringType where
   toBuilder (DoubleQuotes t) = singleton '\"' <> fromText t <> singleton '\"'
   toBuilder (SingleQuotes t) = singleton '\'' <> fromText t <> singleton '\''
 instance Minifiable StringType where
-  minifyWith (DoubleQuotes t) = do
+  minify (DoubleQuotes t) = do
     conf <- ask
     convertedText <- convertEscapedText t
     pure $ if T.any ('\"' ==) convertedText
@@ -50,7 +50,7 @@ instance Minifiable StringType where
               -- TODO make it so that the best quotes are used for the file
                       then DoubleQuotes convertedText
                       else DoubleQuotes convertedText
-  minifyWith (SingleQuotes t) = do
+  minify (SingleQuotes t) = do
     conf <- ask
     convertedText <- convertEscapedText t
     pure $ if T.any ('\'' ==) convertedText

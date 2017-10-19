@@ -89,7 +89,7 @@ instance ToText TimingFunction where
   toBuilder StepEnd   = "step-end"
 
 instance Minifiable TimingFunction where
-  minifyWith tf = do
+  minify tf = do
       conf <- ask
       pure $ if shouldMinifyTimingFunctions conf
                 then minifyTimingFunction tf

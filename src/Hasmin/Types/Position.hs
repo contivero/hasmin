@@ -46,7 +46,7 @@ data Position = Position { origin1 :: Maybe PosKeyword
                          , offset2 :: Maybe PercentageLength
                          } deriving (Show)
 instance Minifiable Position where
-  minifyWith p = pure $ minifyPosition p
+  minify p = pure $ minifyPosition p
 
 instance ToText Position where
   toBuilder (Position a b c d) = mconcatIntersperse fromText (singleton ' ') $ filter (not . T.null) [f a, f b, f c, f d]
@@ -213,9 +213,9 @@ minAxis PosBottom x
 minAxis PosCenter x = (Just PosCenter, Just x)
 
 instance Eq Position where
-  x == y = minify x `equals` minify y
-    where equals (Position a b c d) (Position e f g h) =
-            a == e && b == f && c == g && d == h
+  x == y = let (Position a b c d) = minifyPosition x 
+               (Position e f g h) = minifyPosition y
+           in a == e && b == f && c == g && d == h
 
 l0 :: Maybe PercentageLength
 l0 = Just $ Right NullLength

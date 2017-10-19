@@ -67,16 +67,16 @@ instance ToText FilterFunction where
       in "drop-shadow(" <> toBuilder l1 <> singleton ' ' <> toBuilder l2
        <> maybeToBuilder ml <> maybeToBuilder mc <> singleton ')'
 instance Minifiable FilterFunction where
-  minifyWith (Blur a)       = Blur <$> minifyWith a
-  minifyWith (HueRotate a)  = HueRotate <$> minifyWith a
-  minifyWith (Contrast x)   = Contrast <$> minifyNumberPercentage x
-  minifyWith (Brightness x) = Brightness <$> minifyNumberPercentage x
-  minifyWith (Grayscale x)  = Grayscale <$> minifyNumberPercentage x
-  minifyWith (Invert x)     = Invert <$> minifyNumberPercentage x
-  minifyWith (Opacity x)    = Opacity <$> minifyNumberPercentage x
-  minifyWith (Saturate x)   = Saturate <$> minifyNumberPercentage x
-  minifyWith (Sepia x)      = Sepia <$> minifyNumberPercentage x
-  minifyWith s@(DropShadow a b c d) = do
+  minify (Blur a)       = Blur <$> minify a
+  minify (HueRotate a)  = HueRotate <$> minify a
+  minify (Contrast x)   = Contrast <$> minifyNumberPercentage x
+  minify (Brightness x) = Brightness <$> minifyNumberPercentage x
+  minify (Grayscale x)  = Grayscale <$> minifyNumberPercentage x
+  minify (Invert x)     = Invert <$> minifyNumberPercentage x
+  minify (Opacity x)    = Opacity <$> minifyNumberPercentage x
+  minify (Saturate x)   = Saturate <$> minifyNumberPercentage x
+  minify (Sepia x)      = Sepia <$> minifyNumberPercentage x
+  minify s@(DropShadow a b c d) = do
       conf <- ask
       if shouldMinifyFilterFunctions conf
          then minifyPseudoShadow DropShadow a b c d
@@ -86,14 +86,14 @@ minifyPseudoShadow :: (Minifiable b, Minifiable t1, Minifiable t2, Traversable t
                    => (t2 -> t1 -> Maybe Length -> t b -> b1)
                    -> t2 -> t1 -> Maybe Length -> t b -> Reader Config b1
 minifyPseudoShadow constr a b c d = do
-              x  <- minifyWith a
-              y  <- minifyWith b
+              x  <- minify a
+              y  <- minify b
               z  <- case c of
                       Just r -> if isZeroLen r
                                    then pure Nothing
-                                   else mapM minifyWith c
+                                   else mapM minify c
                       Nothing -> pure Nothing
-              c2 <- mapM minifyWith d
+              c2 <- mapM minify d
               pure $ constr x y z c2
 
 minifyNumberPercentage :: Either Number Percentage

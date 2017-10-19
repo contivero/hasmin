@@ -106,7 +106,7 @@ newtype Url = Url (Either Text StringType)
 instance ToText Url where
   toBuilder (Url x) = "url(" <> toBuilder x <> singleton ')'
 instance Minifiable Url where
-  minifyWith u@(Url x) = do
+  minify u@(Url x) = do
       conf <- ask
       pure $ if shouldRemoveQuotes conf
                 then Url $ either Left unquoteUrl x
@@ -177,25 +177,25 @@ instance ToText Value where
        <> maybeToBuilder ml <> maybeToBuilder mc
 
 instance Minifiable Value where
-  minifyWith (ColorV c)       = ColorV <$> minifyWith c
-  minifyWith (LengthV d)      = LengthV <$> minifyWith d
-  minifyWith (AngleV a)       = AngleV <$> minifyWith a
-  minifyWith (DurationV d)    = DurationV <$> minifyWith d
-  minifyWith (FrequencyV f)   = FrequencyV <$> minifyWith f
-  minifyWith (ResolutionV r)  = ResolutionV <$> minifyWith r
-  minifyWith (GradientV t g)  = GradientV t <$> minifyWith g
-  minifyWith (FilterV f)      = FilterV <$> minifyWith f
-  minifyWith (TransformV tf)  = TransformV <$> minifyWith tf
-  minifyWith (TimingFuncV tf) = TimingFuncV <$> minifyWith tf
-  minifyWith (StringV s)      = StringV <$> minifyWith s
-  minifyWith (UrlV u)         = UrlV <$> minifyWith u
-  minifyWith (Format x)       = Format <$> mapM minifyWith x
-  minifyWith (PositionV p)    = PositionV <$> minifyWith p
-  minifyWith (RepeatStyleV r) = RepeatStyleV <$> minifyWith r
-  minifyWith (BgSizeV b)      = BgSizeV <$> minifyWith b
-  minifyWith (ShadowV s)      = ShadowV <$> minifyWith s
-  minifyWith (ShadowText l1 l2 ml mc) = minifyPseudoShadow ShadowText l1 l2 ml mc
-  minifyWith (BgLayer img pos sz rst att b1 b2) = do
+  minify (ColorV c)       = ColorV <$> minify c
+  minify (LengthV d)      = LengthV <$> minify d
+  minify (AngleV a)       = AngleV <$> minify a
+  minify (DurationV d)    = DurationV <$> minify d
+  minify (FrequencyV f)   = FrequencyV <$> minify f
+  minify (ResolutionV r)  = ResolutionV <$> minify r
+  minify (GradientV t g)  = GradientV t <$> minify g
+  minify (FilterV f)      = FilterV <$> minify f
+  minify (TransformV tf)  = TransformV <$> minify tf
+  minify (TimingFuncV tf) = TimingFuncV <$> minify tf
+  minify (StringV s)      = StringV <$> minify s
+  minify (UrlV u)         = UrlV <$> minify u
+  minify (Format x)       = Format <$> mapM minify x
+  minify (PositionV p)    = PositionV <$> minify p
+  minify (RepeatStyleV r) = RepeatStyleV <$> minify r
+  minify (BgSizeV b)      = BgSizeV <$> minify b
+  minify (ShadowV s)      = ShadowV <$> minify s
+  minify (ShadowText l1 l2 ml mc) = minifyPseudoShadow ShadowText l1 l2 ml mc
+  minify (BgLayer img pos sz rst att b1 b2) = do
       -- conf <- ask
       (i,s,p,r,a) <- minifyBgLayer img pos sz rst att
       (bgOrigin, bgClip) <- handleBoxes b1 b2
@@ -205,7 +205,7 @@ instance Minifiable Value where
                 -- better because it is more frequent.
                 then BgLayer (Just $ mkOther "none") p s r a bgOrigin bgClip
                 else BgLayer i p s r a bgOrigin bgClip
-  minifyWith (FinalBgLayer img pos sz rst att b1 b2 col) = do
+  minify (FinalBgLayer img pos sz rst att b1 b2 col) = do
       -- conf <- ask
       (i,s,p,r,a) <- minifyBgLayer img pos sz rst att
       c <- handleColor col
@@ -216,7 +216,7 @@ instance Minifiable Value where
                 -- better because it is more frequent.
                 then FinalBgLayer (Just $ mkOther "none") p s r a bgOrigin bgClip c
                 else FinalBgLayer i p s r a bgOrigin bgClip c
-  minifyWith (SingleTransition prop tdur tf tdel) = do
+  minify (SingleTransition prop tdur tf tdel) = do
       let p = if prop == Just (TextV "all")
                  then Nothing
                  else prop -- TODO lowercase here
@@ -225,7 +225,7 @@ instance Minifiable Value where
       pure $ if isNothing p && isNothing tDuration && isNothing tDelay && isNothing tfunc
                 then SingleTransition p (Just $ Duration 0 S) tfunc tDelay
                 else SingleTransition p tDuration tfunc tDelay
-  minifyWith (SingleAnimation t1 tf t2 ic ad af ap kf) = do
+  minify (SingleAnimation t1 tf t2 ic ad af ap kf) = do
       (tdur, tdel) <- handleTime t1 t2
       tfunc        <- handleTimingFunction tf
       icount       <- handleIterationCount ic
@@ -254,12 +254,12 @@ instance Minifiable Value where
           simplifyDirection  = removeIfEqualTo "normal"
           simplifyPauseState = removeIfEqualTo "running"
           simplifyFillMode   = removeIfEqualTo "none"
-  minifyWith (FontV fsty fvar fwgt fstr fsz lh ff) = do
+  minify (FontV fsty fvar fwgt fstr fsz lh ff) = do
       let sty = removeIfEqualTo "normal" fsty
           var = removeIfEqualTo "normal" fvar
           str = removeIfEqualTo "normal" fstr
       wgt <- optimizeFontWeight fwgt
-      sz  <- minifyWith fsz
+      sz  <- minify fsz
       l   <- optimizeLineHeight lh
       fam <- traverse optimizeFontFamily ff
       pure $ FontV sty var wgt str sz l fam
@@ -279,11 +279,11 @@ instance Minifiable Value where
               case x of
                 Other t -> if t == TextV "normal"
                               then pure Nothing
-                              else Just <$> minifyWith x
-                y       -> Just <$> minifyWith y
+                              else Just <$> minify x
+                y       -> Just <$> minify y
 
-  minifyWith (GenericFunc n vs) = GenericFunc n <$> minifyWith vs
-  minifyWith (Local x)        = do
+  minify (GenericFunc n vs) = GenericFunc n <$> minify vs
+  minify (Local x)        = do
       conf <- ask
       v <- lowercaseParameters x
       pure . Local $ if shouldRemoveQuotes conf
@@ -297,20 +297,20 @@ instance Minifiable Value where
             case letterCase conf of
               Lowercase -> case y of
                              Left  a -> mapReader Left $ lowercaseText a
-                             Right b -> mapReader Right $ mapString lowercaseText b >>= minifyWith
+                             Right b -> mapReader Right $ mapString lowercaseText b >>= minify
               Original  -> pure y
-  minifyWith x = pure x
+  minify x = pure x
 
 handleRepeatStyle :: Maybe RepeatStyle -> Reader Config (Maybe RepeatStyle)
 handleRepeatStyle (Just x)
     | x == RepeatStyle1 RsRepeat = pure Nothing
-    | otherwise                  = Just <$> minifyWith x
+    | otherwise                  = Just <$> minify x
 handleRepeatStyle Nothing = pure Nothing
 
 handleImage :: Maybe Value -> Reader Config (Maybe Value)
 handleImage (Just x)
     | x == Other "none" = pure Nothing
-    | otherwise         = Just <$> minifyWith x
+    | otherwise         = Just <$> minify x
 handleImage Nothing = pure Nothing
 
 handleBoxes :: Maybe TextV -> Maybe TextV -> Reader Config (Maybe TextV, Maybe TextV)
@@ -330,11 +330,11 @@ handleColor :: Maybe Color -> Reader Config (Maybe Color)
 handleColor = maybe (pure Nothing) f
   where f x = if x == Named "transparent"
                  then pure Nothing
-                 else Just <$> minifyWith x
+                 else Just <$> minify x
 
 handleBgSize :: Maybe BgSize -> Reader Config (Maybe BgSize)
 handleBgSize (Just b) = do 
-    minb <- minifyWith b
+    minb <- minify b
     pure $ if minb == BgSize1 (Right Auto)
               then Nothing
               else Just minb
@@ -343,10 +343,10 @@ handleBgSize x = pure x
 handlePosition :: Bool -> Maybe Position -> Reader Config (Maybe Position)
 handlePosition _ Nothing = pure Nothing
 handlePosition cannotRemovePos (Just p)
-    | cannotRemovePos = Just <$> minifyWith p
+    | cannotRemovePos = Just <$> minify p
     | otherwise    = do
         -- conf <- ask
-        mp   <- minifyWith p
+        mp   <- minify p
         pure $ if mp == Position Nothing l0 Nothing l0
                   then Nothing
                   else Just $ if True {- shouldMinifyPosition conf -}
@@ -360,9 +360,9 @@ instance ToText Values where
   toBuilder (Values v vs) = toBuilder v <> foldr f mempty vs
     where f (sep, val) z = toBuilder sep <> toBuilder val <> z
 instance Minifiable Values where
-  minifyWith (Values v vs) = do
-      newV  <- minifyWith v
-      newVs <- (mapM . mapM) minifyWith vs
+  minify (Values v vs) = do
+      newV  <- minify v
+      newVs <- (mapM . mapM) minify vs
       pure $ Values newV newVs
 
 -- | A value separator.
@@ -397,24 +397,24 @@ handleTimingFunction :: Maybe TimingFunction -> Reader Config (Maybe TimingFunct
 handleTimingFunction Nothing = pure Nothing
 handleTimingFunction (Just tfunc)
     | tfunc == Ease = pure Nothing
-    | otherwise = Just <$> minifyWith tfunc
+    | otherwise = Just <$> minify tfunc
 
 -- Used for SingleAnimation and SingleTransition minification.
 handleTime :: Maybe Duration -> Maybe Duration -> Reader Config (Maybe Duration, Maybe Duration)
 handleTime (Just t) Nothing = if t == Duration 0 S
                                  then pure (Nothing, Nothing)
-                                 else do newT <- minifyWith t
+                                 else do newT <- minify t
                                          pure (Just newT, Nothing)
 handleTime (Just t1) (Just t2)
     | t1 == Duration 0 S = if t2 == t1
                               then pure (Nothing, Nothing)
-                              else do newT2 <- minifyWith t2
-                                      newT1 <- minifyWith t1
+                              else do newT2 <- minify t2
+                                      newT1 <- minify t1
                                       pure (Just newT1, Just newT2)
-    | otherwise = do newT1 <- minifyWith t1
+    | otherwise = do newT1 <- minify t1
                      if t2 == Duration 0 S
                         then pure (Just t1, Nothing)
-                        else do newT2 <- minifyWith t2
+                        else do newT2 <- minify t2
                                 pure (Just newT1, Just newT2)
 handleTime _ _ = pure (Nothing, Nothing)
 

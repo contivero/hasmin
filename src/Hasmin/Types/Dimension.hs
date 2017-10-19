@@ -50,8 +50,8 @@ instance Eq Length where
     | otherwise = toInches r1 u1 == toInches r2 u2
   x == y = isZeroLen x && isZeroLen y
 instance Minifiable Length where
-  minifyWith NullLength = pure NullLength
-  minifyWith d@(Length r u) = do
+  minify NullLength = pure NullLength
+  minify d@(Length r u) = do
       shouldMinifyUnits <- asks ((DimMinOn ==) . dimensionSettings)
       pure $ if d == Length 0 Q
                 then NullLength
@@ -92,13 +92,13 @@ isZeroAngle (Angle 0 _) = True
 isZeroAngle _           = False
 
 instance Minifiable Angle where
-  minifyWith (Angle 0 _)   = pure NullAngle
-  minifyWith a@(Angle r u) = do
+  minify (Angle 0 _)   = pure NullAngle
+  minify a@(Angle r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
                DimMinOn  -> minDim Angle r u [Turn, Grad, Rad, Deg]
                DimMinOff -> a
-  minifyWith NullAngle = pure NullAngle
+  minify NullAngle = pure NullAngle
 
 instance ToText Angle where
   toBuilder NullAngle   = singleton '0'
@@ -112,7 +112,7 @@ instance Eq Duration where
     | u1 == u2  = r1 == r2
     | otherwise = toSeconds r1 u1 == toSeconds r2 u2
 instance Minifiable Duration where
-  minifyWith d@(Duration r u) = do
+  minify d@(Duration r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
                 DimMinOn  -> minDim Duration r u [S, Ms]
@@ -128,7 +128,7 @@ instance Eq Frequency where
     | u1 == u2  = r1 == r2
     | otherwise = toHertz r1 u1 == toHertz r2 u2
 instance Minifiable Frequency where
-  minifyWith f@(Frequency r u) = do
+  minify f@(Frequency r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
                 DimMinOn  -> minDim Frequency r u [Khz, Hz]
@@ -144,7 +144,7 @@ instance Eq Resolution where
     | u1 == u2  = r1 == r2
     | otherwise = toDpi r1 u1 == toDpi r2 u2
 instance Minifiable Resolution where
-  minifyWith x@(Resolution r u) = do
+  minify x@(Resolution r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
                DimMinOn  -> minDim Resolution r u [Dpcm, Dppx, Dpi]

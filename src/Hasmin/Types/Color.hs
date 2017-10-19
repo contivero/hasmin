@@ -91,7 +91,7 @@ instance Ord Color where
     | otherwise  = False
   c1 <= c2 = toLongHex c1 <= toLongHex c2
 instance Minifiable Color where
-  minifyWith c = do
+  minify c = do
       colSettings <- asks colorSettings
       pure $ case colSettings of
                 ColorMinOn  -> minifyColor c

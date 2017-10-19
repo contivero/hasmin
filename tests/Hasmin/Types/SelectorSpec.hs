@@ -14,12 +14,12 @@ import Hasmin.Types.Class
 anplusbMinificationTests :: Spec
 anplusbMinificationTests =
     describe "<an+b> minification tests" $
-      mapM_ (matchSpec (minify <$> selector)) anplusbMinificationTestsInfo
+      mapM_ (matchSpec (minifyWithTestConfig <$> selector)) anplusbMinificationTestsInfo
 
 selectorMinificationTests :: Spec
 selectorMinificationTests =
     describe "Selectors minification test" $
-      mapM_ (matchSpec (minify <$> selector)) selectorTestsInfo
+      mapM_ (matchSpec (minifyWithTestConfig <$> selector)) selectorTestsInfo
 
 selectorTestsInfo :: [(Text, Text)]
 selectorTestsInfo =
@@ -59,8 +59,7 @@ anplusbMinificationTestsInfo =
 attributeQuoteRemovalTest :: Spec
 attributeQuoteRemovalTest =
     describe "attribute quote removal tests" $
-      mapM_ (matchSpec (f <$> selector)) attributeQuoteRemovalTestInfo
-  where f x = runReader (minifyWith x) defaultConfig
+      mapM_ (matchSpec (minifyWithTestConfig <$> selector)) attributeQuoteRemovalTestInfo
 
 attributeQuoteRemovalTestInfo :: [(Text, Text)]
 attributeQuoteRemovalTestInfo =

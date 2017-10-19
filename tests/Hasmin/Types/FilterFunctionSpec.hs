@@ -12,7 +12,7 @@ filterTests :: Spec
 filterTests =
     describe "<filter-function> minification tests" $
       mapM_ (matchSpecWithDesc f) filterTestsInfo
-  where f = minify <$> value
+  where f = minifyWithTestConfig <$> value
 
 quickcheckFilter :: Spec
 quickcheckFilter =

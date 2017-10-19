@@ -13,7 +13,6 @@ module Hasmin.Types.RepeatStyle
     , RSKeyword(..)
     ) where
 
-import Control.Monad.Reader (ask)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
 import Hasmin.Types.Class
@@ -31,11 +30,7 @@ instance ToText RepeatStyle where
   toBuilder (RepeatStyle1 x)   = toBuilder x
   toBuilder (RepeatStyle2 x y) = toBuilder x <> singleton ' ' <> toBuilder y
 instance Minifiable RepeatStyle where
-  minifyWith r = do
-      -- conf <- ask
-      pure $ if True {- shouldMinifyRepeatStyle conf -}
-                then minifyRepeatStyle r
-                else r
+  minify r = pure $ minifyRepeatStyle r
     where minifyRepeatStyle :: RepeatStyle -> RepeatStyle
           minifyRepeatStyle (RepeatStyle2 RsRepeat RsNoRepeat) = RepeatX
           minifyRepeatStyle (RepeatStyle2 RsNoRepeat RsRepeat) = RepeatY

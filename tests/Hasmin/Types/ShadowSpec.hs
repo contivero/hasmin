@@ -3,6 +3,7 @@
 module Hasmin.Types.ShadowSpec where
 
 import Data.Text (Text)
+
 import Hasmin.Parser.Value
 import Hasmin.Types.Class
 import Hasmin.TestUtils
@@ -11,7 +12,7 @@ shadowTests :: Spec
 shadowTests = 
     describe "<shadow> minification tests" $
       mapM_ (matchSpecWithDesc f) shadowTestsInfo
-  where f = minify <$> shadowList
+  where f = minifyWithTestConfig <$> shadowList
       
 shadowTestsInfo :: [(String, Text, Text)]
 shadowTestsInfo =

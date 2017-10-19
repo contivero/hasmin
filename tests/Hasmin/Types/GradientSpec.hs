@@ -13,8 +13,7 @@ import Hasmin.TestUtils
 gradientTests :: Spec
 gradientTests = 
     describe "<gradient> minification tests" $
-      mapM_ (matchSpecWithDesc f) gradientTestsInfo
-  where f = (\x -> runReader (minifyWith x) defaultConfig) <$> value
+      mapM_ (matchSpecWithDesc (minifyWithTestConfig <$> value)) gradientTestsInfo
       
 gradientTestsInfo :: [(String, Text, Text)]
 gradientTestsInfo =

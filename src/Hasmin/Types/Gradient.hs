@@ -51,9 +51,9 @@ instance ToText ColorStop where
     where f (Left p)  = singleton ' ' <> toBuilder p
           f (Right l) = singleton ' ' <> toBuilder l
 instance Minifiable ColorStop where
-  minifyWith (ColorStop c mlp) = do
-    newC   <- minifyWith c
-    newMlp <- (mapM . mapM) minifyWith mlp
+  minify (ColorStop c mlp) = do
+    newC   <- minify c
+    newMlp <- (mapM . mapM) minify mlp
     pure $ ColorStop newC newMlp
 
 -- minifies color hints in a \<color-stops\> list
@@ -204,23 +204,23 @@ instance ToText Shape where
 -- If the argument is to top, to right, to bottom, or to left, the angle of
 -- the gradient line is 0deg, 90deg, 180deg, or 270deg, respectively.
 instance Minifiable Gradient where
-  minifyWith g@(OldLinearGradient x cs) = do
+  minify g@(OldLinearGradient x cs) = do
       conf <- ask
       case gradientSettings conf of
-        GradientMinOn  -> do css  <- mapM minifyWith cs
+        GradientMinOn  -> do css  <- mapM minify cs
                              pure $ OldLinearGradient x (minifyColorHints css)
         GradientMinOff -> pure g
-  minifyWith g@(LinearGradient x cs) = do
+  minify g@(LinearGradient x cs) = do
       conf <- ask
       case gradientSettings conf of
-        GradientMinOn  -> do css  <- mapM minifyWith cs
+        GradientMinOn  -> do css  <- mapM minify cs
                              newX <- minifyAngleOrSide x
                              pure $ LinearGradient newX (minifyColorHints css)
         GradientMinOff -> pure g
-  minifyWith g@(RadialGradient sh sz p cs) = do
+  minify g@(RadialGradient sh sz p cs) = do
       conf <- ask
       case gradientSettings conf of
-        GradientMinOn  -> do css  <- mapM minifyWith cs
+        GradientMinOn  -> do css  <- mapM minify cs
                              let np = minifyRadialPosition True {-shouldMinifyPosition conf-} p
                              pure $ minShapeAndSize sh sz np (minifyColorHints css)
         GradientMinOff -> pure g
@@ -260,7 +260,7 @@ minifyAngleOrSide mas =
       Just y -> case y of
                   Left a  -> if a == defaultGradientAngle
                                 then pure Nothing
-                                else minifyWith a >>= pure . Just . Left
+                                else minify a >>= pure . Just . Left
                   Right b -> if b == defaultGradientSideOrCorner
                                 then pure Nothing
                                 else pure $ Just (minifySide b)

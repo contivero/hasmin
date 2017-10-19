@@ -18,7 +18,7 @@ bgSizeTests :: Spec
 bgSizeTests =
     describe "<bg-size> minification tests" $
       mapM_ (matchSpec f) bgSizeTestsInfo
-  where f = minify <$> value
+  where f = minifyWithTestConfig <$> value
 
 bgSizeTestsInfo :: [(Text, Text)]
 bgSizeTestsInfo =
@@ -29,7 +29,7 @@ bgSizeTestsInfo =
 spec :: Spec
 spec = do
     quickcheckBgSize
-    bgSizeTests 
+    bgSizeTests
 
 main :: IO ()
 main = hspec spec

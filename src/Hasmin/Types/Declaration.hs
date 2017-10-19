@@ -56,8 +56,8 @@ instance Ord Declaration where
   d1 <= d2 = toText d1 <= toText d2
 
 instance Minifiable Declaration where
-  minifyWith d@(Declaration p vs _ _) = do
-      minifiedValues <- minifyWith vs
+  minify d@(Declaration p vs _ _) = do
+      minifiedValues <- minify vs
       conf <- ask
       let name   = case letterCase conf of
                      Lowercase -> T.toLower p

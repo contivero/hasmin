@@ -27,8 +27,8 @@ type PercentageLength = Either Percentage Length
 
 -- TODO see if this instance can be deleted altogether.
 instance Minifiable PercentageLength where
-  minifyWith x@(Right _) = mapM minifyWith x
-  minifyWith x@(Left p)
+  minify x@(Right _) = mapM minify x
+  minify x@(Left p)
       | p == 0    = pure $ Right NullLength -- minifies 0% to 0
       | otherwise = pure x
 

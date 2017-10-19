@@ -14,7 +14,7 @@ timingFunctionTests :: Spec
 timingFunctionTests =
     describe "<timing-function> minification tests" $
       mapM_ (matchSpec f) timingFunctionTestsInfo
-  where f = minify <$> timingFunction
+  where f = minifyWithTestConfig <$> timingFunction
 
 quickcheckTimingFunction :: Spec
 quickcheckTimingFunction =

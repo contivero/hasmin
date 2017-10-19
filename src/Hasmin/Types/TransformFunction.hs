@@ -76,7 +76,7 @@ data TransformFunction = Mat (Matrix Number)
 -- shortest of them all: skew(0)
 -- All of these translate to the 4x4 identity matrix.
 instance Minifiable TransformFunction where
-  minifyWith (Mat3d m) = do
+  minify (Mat3d m) = do
       conf <- ask
       if shouldMinifyTransformFunction conf
          then case possibleRepresentations m of
@@ -91,11 +91,11 @@ instance Minifiable TransformFunction where
               if currentLength < newLength
                  then go f y zs
                  else go f z zs
-  minifyWith x = do
+  minify x = do
       conf <- ask
       if shouldMinifyTransformFunction conf
          then case toMatrix3d x of
-                Just mat3d -> minifyWith mat3d
+                Just mat3d -> minify mat3d
                 Nothing    -> simplify x
          else simplify x
 
@@ -440,20 +440,20 @@ mk4x4Matrix = M.fromList 4 4
 simplify :: TransformFunction -> Reader Config TransformFunction
 simplify (Translate pl mpl)
     | isNothing mpl || isZero (fromJust mpl) = do
-        x <- mapM minifyWith pl
+        x <- mapM minify pl
         pure $ Translate x Nothing
-    | otherwise = do x <- mapM minifyWith pl
-                     y <- (mapM . mapM) minifyWith mpl
+    | otherwise = do x <- mapM minify pl
+                     y <- (mapM . mapM) minify mpl
                      pure $ Translate x y
 simplify (TranslateX pl) = do
-    x <- mapM minifyWith pl
+    x <- mapM minify pl
     simplify $ Translate x Nothing
 -- Note: It always makes sense to convert from translateX to translate
 -- Not sure about translateY. Converting to translate(0,a) might aid
 -- compression, even when we are adding one character, because we might be
 -- reducing entropy.
 simplify (TranslateY pl) = do
-    y <- mapM minifyWith pl
+    y <- mapM minify pl
     pure $ TranslateY y
 -- In scale(), if the second parameter isn't present, it defaults to the first.
 -- Therefore:  scale(a,a) == scale(a)
@@ -466,41 +466,41 @@ simplify s@(Scale n mn)  = pure $ maybe s removeDefaultArgument mn
 simplify s@(ScaleX _)    = pure s
 simplify s@(ScaleY _)    = pure s
 -- In skew(), if the second parameter isn't present, it defaults to the zero.
-simplify (Skew a Nothing) = liftA2 Skew (minifyWith a) (pure Nothing)
+simplify (Skew a Nothing) = liftA2 Skew (minify a) (pure Nothing)
 simplify (Skew a (Just x))
-    | isZeroAngle x = liftA2 Skew (minifyWith a) (pure Nothing)
-    | otherwise     = liftA2 Skew (minifyWith a) (Just <$> minifyWith x)
+    | isZeroAngle x = liftA2 Skew (minify a) (pure Nothing)
+    | otherwise     = liftA2 Skew (minify a) (Just <$> minify x)
 simplify (SkewY a)
       | isZeroAngle a = pure $ Skew NullAngle Nothing
-      | otherwise     = fmap SkewY (minifyWith a)
+      | otherwise     = fmap SkewY (minify a)
 simplify (SkewX a)
       | isZeroAngle a = pure $ Skew NullAngle Nothing
-      | otherwise     = fmap SkewX (minifyWith a)
+      | otherwise     = fmap SkewX (minify a)
 simplify (Rotate a)
       | isZeroAngle a = pure $ Skew NullAngle Nothing
-      | otherwise     = fmap Rotate (minifyWith a)
+      | otherwise     = fmap Rotate (minify a)
 simplify (RotateX a)
       | isZeroAngle a = pure $ Skew NullAngle Nothing
-      | otherwise     = fmap RotateX (minifyWith a)
+      | otherwise     = fmap RotateX (minify a)
 simplify (RotateY a)
       | isZeroAngle a = pure $ Skew NullAngle Nothing
-      | otherwise     = fmap RotateY (minifyWith a)
+      | otherwise     = fmap RotateY (minify a)
 -- rotateZ(a) is the same as rotate3d(0,0,1,a), which also equals rotate(a)
 simplify (RotateZ a)
       | isZeroAngle a = pure $ Skew NullAngle Nothing
-      | otherwise        = fmap Rotate (minifyWith a)
+      | otherwise        = fmap Rotate (minify a)
 simplify (Rotate3d x y z a)
       | abs (x - 1) < ep && abs y < ep && abs z < ep = simplify $ RotateX a
       | abs x < ep && abs (y - 1) < ep && abs z < ep = simplify $ RotateY a
-      | abs x < ep && abs y < ep && abs (z - 1) < ep = fmap Rotate (minifyWith a)
+      | abs x < ep && abs y < ep && abs (z - 1) < ep = fmap Rotate (minify a)
   where ep = toNumber epsilon
 simplify (ScaleZ n)
       | n == 1    = pure $ Skew NullAngle Nothing
       | otherwise = pure $ ScaleZ n
-simplify (Perspective d) = fmap Perspective (minifyWith d)
+simplify (Perspective d) = fmap Perspective (minify d)
 simplify (TranslateZ d)
       | isZeroLen d = pure $ Skew NullAngle Nothing
-      | otherwise   = fmap TranslateZ (minifyWith d)
+      | otherwise   = fmap TranslateZ (minify d)
 simplify s@(Scale3d x y z)
       | z == 1           = simplify $ Scale x (Just y)
       | x == 1 && y == 1 = simplify $ ScaleZ z
@@ -542,9 +542,9 @@ combine xs = do
   where getLength = T.length . toStrict . toLazyText
         asBuilder = mconcatIntersperse toBuilder (singleton ' ')
         combinedFunctions = mapM handleMatrices . groupByMatrices $ zip (fmap toMatrix3d xs) xs
-        minifiedOriginal = mapM minifyWith xs
+        minifiedOriginal = mapM minify xs
         groupByMatrices   = groupBy (\(a,_) (b,_) -> isJust a && isJust b)
         handleMatrices l@((x,a):_)
-            | isJust x  = minifyWith . Mat3d . foldr (*) (M.identity 4 :: Matrix Number) $ fmap (getMat . fromJust . fst) l
+            | isJust x  = minify . Mat3d . foldr (*) (M.identity 4 :: Matrix Number) $ fmap (getMat . fromJust . fst) l
             | otherwise = simplify a
         handleMatrices [] = error "empty list as argument to handleMatrices"
