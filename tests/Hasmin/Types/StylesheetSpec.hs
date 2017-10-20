@@ -94,6 +94,12 @@ atSupportsTestInfo =
       "@supports (a:a){s{b:b}}")
   ]
 
+-- TODO test for 
+{-
+.gallery-loading .gallery-loading-container {
+  background: #fff url("//corporate-website-test.s3.amazonaws.com/wp-content/themes/ggs-rcw/img/spinner_white_125px.gif") no-repeat center center;
+}
+-}
 atRuleTestsInfo :: [(Text, Text)]
 atRuleTestsInfo =
   [("@charset \"UTF-8\";",

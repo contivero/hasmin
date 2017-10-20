@@ -298,64 +298,78 @@ where <font-variant-css21> = [normal | small-caps]
 
 -}
 
--- TODO clean parsers pos1, pos2, and pos4
 positionvalue :: Parser Value
 positionvalue = PositionV <$> position
 
 -- | Parser for <https://drafts.csswg.org/css-values-3/#position \<position\>>.
 position :: Parser Position
-position = pos4 <|> pos2 <|> pos1
+position = perLen <|> kword
+  where
+    perLen = percentageLength >>= startsWithPL
+    kword = do
+        i <- ident
+        case Map.lookup (T.toCaseFold i) keywords of
+          Just x  -> skipComments *> x
+          Nothing -> mzero
+    keywords = Map.fromList
+        [("left",   startsWith (Just PosLeft)   tb)
+        ,("right",  startsWith (Just PosRight)  tb)
+        ,("top",    startsWith (Just PosTop)    lr)
+        ,("bottom", startsWith (Just PosBottom) lr)
+        ,("center", startsWithCenter)]
+    tb = (asciiCI "top"  $> Just PosTop,  asciiCI "bottom" $> Just PosBottom)
+    lr = (asciiCI "left" $> Just PosLeft, asciiCI "right"  $> Just PosRight)
 
-pos1 :: Parser Position
-pos1 =  (asciiCI "left" $> f (Just PosLeft))
-    <|> (asciiCI "center" $> f (Just PosCenter))
-    <|> (asciiCI "right" $> f (Just PosRight))
-    <|> (asciiCI "top" $> f (Just PosTop))
-    <|> (asciiCI "bottom" $> f (Just PosBottom))
-    <|> ((\a -> Position Nothing a Nothing Nothing) <$> (Just <$> percentageLength))
-  where f x = Position x Nothing Nothing Nothing
+    startsWithPL :: PercentageLength -> Parser Position
+    startsWithPL x = skipComments *>
+        (followsWithPL <|> someKeyword <|> wasASinglePL)
+      where
+        pl = Just x
+        followsWithPL = Position Nothing pl Nothing <$> (Just <$> percentageLength)
+        wasASinglePL  = pure $ Position Nothing pl Nothing Nothing
+        someKeyword   = do
+            i <- ident
+            case T.toCaseFold i of
+              "center" -> pure $ Position Nothing pl (Just PosCenter) Nothing
+              "top"    -> pure $ Position Nothing pl (Just PosTop) Nothing
+              "bottom" -> pure $ Position Nothing pl (Just PosBottom) Nothing
+              _        -> mzero
 
-pos2 :: Parser Position
-pos2 = firstx <|> firsty
-  where firstx = do
-            a <- (asciiCI "left" $> Position (Just PosLeft) Nothing)
-                 <|> (asciiCI "center" $> Position (Just PosCenter) Nothing)
-                 <|> (asciiCI "right" $> Position (Just PosRight) Nothing)
-                 <|> ((Position Nothing . Just) <$> percentageLength)
-            skipComments *> ((asciiCI "top" $> a (Just PosTop) Nothing)
-                 <|> (asciiCI "center" $> a (Just PosCenter) Nothing)
-                 <|> (asciiCI "bottom" $> a (Just PosBottom) Nothing)
-                 <|> ((a Nothing . Just) <$> percentageLength))
-        firsty = do
-            a <- (asciiCI "top" $> Position (Just PosTop) Nothing)
-                 <|> (asciiCI "center" $> Position (Just PosCenter) Nothing)
-                 <|> (asciiCI "bottom" $> Position (Just PosBottom) Nothing)
-                 <|> ((Position Nothing . Just) <$> percentageLength)
-            skipComments *> ((asciiCI "left" $> a (Just PosLeft) Nothing)
-                 <|> (asciiCI "center" $> a (Just PosCenter) Nothing)
-                 <|> (asciiCI "right" $> a (Just PosRight) Nothing)
-                 <|> ((a Nothing . Just) <$> percentageLength))
+    maybePL :: Parser (Maybe PercentageLength)
+    maybePL = option Nothing (Just <$> percentageLength)
 
-pos4 :: Parser Position
-pos4 = firstx <|> firsty
-  where posTop    = asciiCI "top" $> Position (Just PosTop)
-        posRight  = asciiCI "right" $> Position (Just PosRight)
-        posBottom = asciiCI "bottom" $> Position (Just PosBottom)
-        posLeft   = asciiCI "left" $> Position (Just PosLeft)
-        firstx    = do
-            x <- (asciiCI "center" $> Position (Just PosCenter) Nothing)
-                 <|> ((posLeft <|> posRight) <*> (skipComments *> option Nothing (Just <$> percentageLength)))
-            _ <- skipComments
-            (asciiCI "center" $> x (Just PosCenter) Nothing)
-                <|> (((asciiCI "top" $> x (Just PosTop)) <|> (asciiCI "bottom" $> x (Just PosBottom)))
-                    <*> (skipComments *> option Nothing (Just <$> percentageLength)))
-        firsty = do
-            x <- (asciiCI "center" $> Position (Just PosCenter) Nothing)
-                 <|> ((posTop <|> posBottom) <*> (skipComments *> option Nothing (Just <$> percentageLength)))
-            _ <- skipComments
-            (asciiCI "center" $> x (Just PosCenter) Nothing)
-                <|> (((asciiCI "left" $> x (Just PosLeft)) <|> (asciiCI "right" $> x (Just PosRight)))
-                    <*> (skipComments *> option Nothing (Just <$> percentageLength)))
+    startsWithCenter :: Parser Position
+    startsWithCenter =  followsWithPL
+                    <|> followsWithAKeyword
+                    <|> pure (posTillNow Nothing Nothing)
+      where
+        followsWithPL = (posTillNow Nothing . Just) <$> percentageLength
+        followsWithAKeyword = do
+            i <- ident <* skipComments
+            let f x = posTillNow (Just x) <$> maybePL
+            case T.toCaseFold i of
+              "left"   -> f PosLeft
+              "right"  -> f PosRight
+              "top"    -> f PosTop
+              "bottom" -> f PosBottom
+              "center" -> pure $ posTillNow (Just PosCenter) Nothing
+              _        -> mzero
+        posTillNow = Position (Just PosCenter) Nothing
+
+    -- Used for the cases when a position starts with the X axis (left and right
+    -- keywords) or Y axis (top and bottom)
+    startsWith :: Maybe PosKeyword
+               -> (Parser (Maybe PosKeyword), Parser (Maybe PosKeyword))
+               -> Parser Position
+    startsWith x (p1, p2) = do
+        pl <- option Nothing (Just <$> percentageLength <* skipComments)
+        let endsWithCenter = Position x pl <$> center <*> pure Nothing
+            endsWithKeywordAndMaybePL = Position x pl <$> posKeyword <*> maybePL
+            endsWithPL = pure $ Position x Nothing Nothing pl
+        endsWithCenter <|> endsWithKeywordAndMaybePL <|> endsWithPL
+      where
+        posKeyword = (p1 <|> p2)  <* skipComments
+        center = asciiCI "center" $> Just PosCenter
 
 {-
 transformOrigin :: Parser Values

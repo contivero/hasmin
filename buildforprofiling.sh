@@ -1,1 +1,2 @@
-stack build --executable-profiling --library-profiling --ghc-options="-fprof-auto -rtsopts"
+stack clean
+stack install --profile --ghc-options="-fprof-auto -rtsopts"
