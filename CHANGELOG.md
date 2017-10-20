@@ -1,6 +1,41 @@
 # Changelog
+This project adheres to [PVP](https://pvp.haskell.org).
 
-## 0.3.3
+## 1.0
+
+### Added
+* `border-color-*`, `border-width-*` and `border-style-*` longhands are now
+   replaced by their shorthand, when the four corresponding longhands are
+   present in a rule.
+* Style rules merging: merges pairs of rules that either have all the
+  same selectors, or all the same declarations. For it to be safe, it only does
+  so whenever two conditions don't meet:
+    1. There is a rule in between with the same specificity
+    2. This rule has a declaration that "clashes" (interferes) with one of the
+       declarations of the rules to be merged.
+
+  By default it is enabled, but it can be disabled with `--no-rule-merging` (or
+  using a `Config` with `MergeRulesOn`).
+
+### Changed
+* Replaced `--no-property-sorting` for `--sort-properties`. Now Hasmin doesn't
+  sort properties by default; sorting declarations became opt-in rather than
+  opt-out. This is because:
+    1. Whether lexicographical sorting of properties aids compression varies a
+       lot from stylesheet to stylesheet, for some files it helps, for others it
+       hurts.
+    2. The current implementation doesn't take into account all the possible
+       interactions between properties, making it unsafe.
+
+### Fixed
+* Fixed non-exhaustive pattern bug introduced in 0.3.3
+* Fixed parser choking with rules that contained a semicolon but no
+  declarations, e.g. `div { ; }`.
+
+## 0.3.3 [YANKED]
+This version introduced a non-exhaustive pattern bug. Don't use it.
+
+### Added
 Added a simple merging of adjacent media queries (`@media` rules), e.g.:
 ```css
 @media all and (min-width: 24rem) {

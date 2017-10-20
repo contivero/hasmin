@@ -101,7 +101,7 @@ config = Config
 instructions :: ParserInfo Instructions
 instructions = info (helper <*> versionOption <*> liftA2 (,) command config)
     (fullDesc <> header "Hasmin - A Haskell CSS Minifier")
-  where versionOption = infoOption (showVersion version <> " " <> $(gitHash))
+  where versionOption = infoOption ("Hasmin " <> showVersion version <> " " <> take 8 $(gitHash))
                                    (long "version" <> help "Show version and commit hash")
 
 main :: IO ()
