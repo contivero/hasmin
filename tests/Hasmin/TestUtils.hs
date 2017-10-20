@@ -111,7 +111,7 @@ instance Arbitrary BgSize where
 instance Arbitrary Auto where
   arbitrary = pure Auto
 
-instance Arbitrary StepsSecondParam where
+instance Arbitrary StepPosition where
   arbitrary = oneof [pure Start, pure End]
 
 instance Arbitrary TimingFunction where

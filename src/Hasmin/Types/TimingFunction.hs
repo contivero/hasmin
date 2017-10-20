@@ -10,7 +10,7 @@
 -----------------------------------------------------------------------------
 module Hasmin.Types.TimingFunction
     ( TimingFunction(..)
-    , StepsSecondParam(..)
+    , StepPosition(..)
     ) where
 
 import Control.Monad.Reader (ask)
@@ -25,7 +25,7 @@ import Hasmin.Types.Numeric
 
 -- | CSS <https://drafts.csswg.org/css-timing-1/#typedef-single-timing-function \<single-transition-timing-function\>> data type.
 data TimingFunction = CubicBezier Number Number Number Number
-                    | Steps Int (Maybe StepsSecondParam)
+                    | Steps Int (Maybe StepPosition)
                     | Ease
                     | EaseIn
                     | EaseInOut
@@ -65,13 +65,12 @@ instance Eq TimingFunction where
   EaseInOut == EaseInOut = True
   _ == _                 = False
 
--- TODO rename to StepPosition
 -- | A step position, as used by the
 -- <https://drafts.csswg.org/css-timing-1/#step-timing-functions step timing function>.
-data StepsSecondParam = Start
-                      | End -- End is the default value
+data StepPosition = Start
+                  | End -- End is the default value
   deriving (Eq, Show)
-instance ToText StepsSecondParam where
+instance ToText StepPosition where
   toBuilder Start = "start"
   toBuilder End   = "end"
 instance ToText TimingFunction where
