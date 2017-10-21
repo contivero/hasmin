@@ -1,0 +1,16 @@
+# Custom HLint hints for this project
+
+- warn: {lhs: x *> pure y,    rhs: x $> y}
+- warn: {lhs: pure x <* y,    rhs: x <$ y}
+- warn: {lhs: x >> return y,  rhs: x $> y}
+- warn: {lhs: return x << y,  rhs: x <$ y}
+- warn: {lhs: return x,       rhs: pure x}  # Every monad is an applicative functor
+- warn: {lhs: m >>= pure . f, rhs: f <$> m}
+- warn: {lhs: pure . f =<< m, rhs: f <$> m}
+
+# Replace a $ b $ c with a . b $ c
+- group: {name: dollar, enabled: true}
+
+# Hasmin specific
+- warn: {lhs: skipComments *> x <* skipComments, rhs: lexeme x}
+
