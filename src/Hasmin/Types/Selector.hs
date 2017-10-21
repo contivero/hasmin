@@ -210,6 +210,15 @@ specialPseudoElements = fmap T.toCaseFold
     ["after", "before", "first-line", "first-letter"]
 
 instance Minifiable SimpleSelector where
+  -- [class~="a"] == .a
+  minify a@(AttributeSel (attid :~=: attval))
+    -- In HTML attribute names are matched case-insensitively
+      | T.toLower attid == "class" =
+          pure $ case attval of
+            Left z  -> ClassSel z
+            Right x -> case removeQuotes x of
+                         Left  y -> ClassSel y
+                         Right _ ->  a
   minify a@(AttributeSel att) = do
       conf <- ask
       pure $ if shouldRemoveQuotes conf

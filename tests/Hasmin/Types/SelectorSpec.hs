@@ -19,10 +19,18 @@ selectorMinificationTests =
 
 selectorTestsInfo :: [(Text, Text)]
 selectorTestsInfo =
-  [("div > p", "div>p")
-  ,("div p",   "div p")
-  ,("div + p", "div+p")
-  ,("div ~ p", "div~p")
+  [("div > p",  "div>p")
+  ,("div   p",  "div p")
+  ,("div\tp",   "div p")
+  ,("div + p",  "div+p")
+  ,("div ~ p",  "div~p")
+  ,("div >> p", "div p")
+
+  -- https://drafts.csswg.org/selectors-4/#class-html
+  ,("h1[class~=\"x\"]",   "h1.x")
+  ,("h1[class~=x]",       "h1.x")
+  ,("h1[class~=\"x\'\"]", "h1[class~=\"x\'\"]")
+
   ,("p::selection", "p::selection")
   ,("html:lang( 'de' )", "html:lang(de)")
   ]
