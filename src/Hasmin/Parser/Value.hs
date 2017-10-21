@@ -136,7 +136,6 @@ hex = do
                                       Just g  -> do h <- hexadecimal
                                                     pure $ mkHex8 [a,b] [c,d] [e,f] [g,h]
   where optional w  = option Nothing (Just <$> w)
-        hexadecimal = satisfy C.isHexDigit
 
 -- ---------------------------------------------------------------------------
 -- Dimensions Parsers

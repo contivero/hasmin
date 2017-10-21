@@ -20,6 +20,7 @@ module Hasmin.Parser.Utils
     , colon
     , opt
     , nmchar
+    , hexadecimal
     ) where
 
 import Control.Applicative ((<|>), many)
@@ -133,3 +134,6 @@ functionParser p = lexeme p <* char ')'
 -- | Parser one or more digits.
 digits :: Parser String
 digits = many1 digit
+
+hexadecimal :: Parser Char
+hexadecimal = satisfy C.isHexDigit

@@ -12,16 +12,20 @@ module Hasmin.Types.String
   ( removeQuotes
   , unquoteUrl
   , unquoteFontFamily
+  , convertEscaped
   , mapString
   , StringType(..)
   ) where
 
-import Control.Applicative (liftA2)
+import Control.Applicative (liftA2, (<|>))
 import Control.Monad.Reader (ask, Reader)
 import Data.Attoparsec.Text (Parser, parse, IResult(Done, Partial, Fail), maybeResult, feed)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Text.Lazy.Builder (singleton, fromText, toLazyText)
+import Data.Foldable (foldl')
+import Data.Bits ((.|.), shiftL)
+import Data.Text.Lazy.Builder (Builder)
+import qualified Data.Text.Lazy.Builder as B
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Text as T
@@ -33,13 +37,13 @@ import Hasmin.Class
 
 -- | The <https://drafts.csswg.org/css-values-3/#strings \<string\>> data type.
 -- It represents a string, formed by Unicode characters, delimited by either
--- double (") or single (') quotes.
+-- double (\") or single (\') quotes.
 data StringType = DoubleQuotes Text
                 | SingleQuotes Text
   deriving (Show, Eq)
 instance ToText StringType where
-  toBuilder (DoubleQuotes t) = singleton '\"' <> fromText t <> singleton '\"'
-  toBuilder (SingleQuotes t) = singleton '\'' <> fromText t <> singleton '\''
+  toBuilder (DoubleQuotes t) = B.singleton '\"' <> B.fromText t <> B.singleton '\"'
+  toBuilder (SingleQuotes t) = B.singleton '\'' <> B.fromText t <> B.singleton '\''
 instance Minifiable StringType where
   minify (DoubleQuotes t) = do
     conf <- ask
@@ -67,8 +71,8 @@ convertEscapedText t = do
               else t
 
 mapString :: (Text -> Reader Config Text) -> StringType -> Reader Config StringType
-mapString f (DoubleQuotes t) = f t >>= pure . DoubleQuotes
-mapString f (SingleQuotes t) = f t >>= pure . SingleQuotes
+mapString f (DoubleQuotes t) = DoubleQuotes <$> f t
+mapString f (SingleQuotes t) = SingleQuotes <$> f t
 
 unquoteStringType :: (Text -> Maybe Text) -> StringType -> Either Text StringType
 unquoteStringType g x@(DoubleQuotes s) = maybe (Right x) Left (g s)
@@ -100,12 +104,40 @@ toUnquotedURL = unquote unquotedURL
 toUnquotedFontFamily :: Text -> Maybe Text
 toUnquotedFontFamily = unquote fontfamilyname
 
+-- TODO can the Parser be avoided by a fold, or one of the provided library
+-- functions? Apart from being cleaner, doing so would simplify other functions.
+-- | Parse and convert any escaped unicode to its underlying Char.
 convertEscaped :: Parser Text
-convertEscaped = (TL.toStrict . toLazyText) <$> go
-  where go = do
-            t <- fromText <$> A.takeWhile (/= '\\')
-            c <- A.peekChar
-            case c of
-              Just '\\' -> A.char '\\' *> liftA2 (mappend . mappend t . singleton) utf8 go
-              _         -> pure t
-        utf8 = C.chr <$> A.hexadecimal
+convertEscaped = (TL.toStrict . B.toLazyText) <$> go
+  where
+    go = do
+        nonescapedText <- B.fromText <$> A.takeWhile (/= '\\')
+        cont nonescapedText <|> pure nonescapedText
+    cont b = do
+        _ <- A.char '\\'
+        c <- A.peekChar
+        case c of
+          Just _  -> parseEscapedAndContinue b
+          Nothing -> pure (b <> B.singleton '\\')
+
+    parseEscapedAndContinue :: Builder -> Parser Builder
+    parseEscapedAndContinue b = do
+        ch <- B.singleton <$> utf8
+        (b `mappend` ch `mappend`) <$>  go
+
+    utf8 :: Parser Char
+    utf8 = hexToChar <$> atMost 6 hexadecimal
+
+    -- Interpret a hexadecimal string as a decimal Int, and convert it into the
+    -- corresponding Char.
+    hexToChar :: [Char] -> Char
+    hexToChar = C.chr . foldl' step 0
+      where step a c
+                | w - 48 < 10 = (a `shiftL` 4) .|. fromIntegral (w - 48)
+                | w >= 97     = (a `shiftL` 4) .|. fromIntegral (w - 87)
+                | otherwise   = (a `shiftL` 4) .|. fromIntegral (w - 55)
+              where w = C.ord c
+
+    atMost :: Int -> Parser a -> Parser [a]
+    atMost 0 _ = pure []
+    atMost n p = A.option [] $ liftA2 (:) p (atMost (n-1) p)

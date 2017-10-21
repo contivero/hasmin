@@ -5,6 +5,7 @@ module Hasmin.Types.StringSpec where
 import Data.Text (Text)
 
 import Hasmin.Parser.Value
+import Hasmin.Types.String
 import Hasmin.TestUtils
 
 quotesNormalizationTests :: Spec
@@ -16,6 +17,8 @@ quotesNormalizationTests =
         mapM_ (matchSpec g) unquotingFormatTestsInfo
       describe "unquotes url() <string>s" $
         mapM_ (matchSpec g) unquotingUrlsTestsInfo
+      describe "Converts escaped characters properly" $
+        mapM_ (matchSpec convertEscaped) escapedCharConversionTestsInfo
   where f = minifyWithTestConfig <$> stringvalue
         g = minifyWithTestConfig <$> textualvalue
 
@@ -29,6 +32,21 @@ quotesNormalizationTestsInfo =
      "'\\22'", "'\"'")
   ,("Don't convert escaped double quotes when enclosed in double quotes",
      "\"\\22\"", "\"\\22\"")
+  ]
+
+escapedCharConversionTestsInfo :: [(Text, Text)]
+escapedCharConversionTestsInfo =
+  [("",           "")
+  ,("\\",         "\\")
+  ,("\\0",        "\NUL")
+  ,("\\2a",       "*")
+  ,("\\02a",      "*")
+  ,("\\002a",     "*")
+  ,("\\0002a",    "*")
+  ,("\\00002a",   "*")
+  ,("\\00002aa",  "*a")
+  ,("*\\00002aa", "**a")
+  ,("*\\2az",     "**z")
   ]
 
 unquotingUrlsTestsInfo :: [(Text, Text)]
