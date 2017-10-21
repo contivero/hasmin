@@ -50,7 +50,17 @@ data Combinator = DescendantSpace    -- ^ ' '
                 | Child              -- ^ '>'
                 | AdjacentSibling    -- ^ '+'
                 | GeneralSibling     -- ^ '~'
-  deriving (Eq, Show)
+  deriving (Show)
+
+instance Eq Combinator where
+  DescendantSpace    == DescendantSpace    = True
+  DescendantSpace    == DescendantBrackets = True
+  DescendantBrackets == DescendantSpace    = True
+  DescendantBrackets == DescendantBrackets = True
+  Child              == Child              = True
+  AdjacentSibling    == AdjacentSibling    = True
+  GeneralSibling     == GeneralSibling     = True
+  _                  == _                  = False
 
 instance ToText Combinator where
   toBuilder DescendantSpace    = " "
@@ -58,6 +68,7 @@ instance ToText Combinator where
   toBuilder Child              = ">"
   toBuilder AdjacentSibling    = "+"
   toBuilder GeneralSibling     = "~"
+
 instance Minifiable Combinator where
   minify DescendantBrackets = pure DescendantSpace
   minify x                  = pure x
