@@ -59,11 +59,11 @@ selector = Selector <$> compoundSelector <*> combinatorsAndSelectors
 -- | Parser for selector combinators, i.e. ">>" (descendant), '>' (child), '+'
 -- (adjacent sibling), '~' (general sibling), and ' ' (descendant) combinators.
 combinator :: Parser Combinator
-combinator = (skipComments *> ((string ">>" $> Descendant)
+combinator =  (skipComments *> ((string ">>" $> DescendantBrackets)
           <|> (char '>' $> Child)
           <|> (char '+' $> AdjacentSibling)
           <|> (char '~' $> GeneralSibling)))
-          <|> (satisfy ws $> Descendant)
+          <|> (satisfy ws $> DescendantSpace)
   where ws c = c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
 
 compoundSelector :: Parser CompoundSelector

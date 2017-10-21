@@ -24,6 +24,7 @@ module Hasmin.Types.Selector
 import Control.Applicative (liftA2)
 import Control.Monad.Reader (ask)
 import Data.Text (Text)
+import Data.Bitraversable (bitraverse)
 import qualified Data.Text as T
 import Data.Text.Lazy.Builder (fromText, singleton, Builder)
 import Data.Monoid ((<>))
@@ -44,17 +45,22 @@ import Hasmin.Utils
 -- | A <https://drafts.csswg.org/selectors-4/#selector-combinator selector combinator>,
 -- which can either: whitespace, "greater-than sign" (U+003E, >), "plus sign"
 -- (U+002B, +) or "tilde" (U+007E, ~).
-data Combinator = Descendant      -- ^ ' '
-                | Child           -- ^ '>'
-                | AdjacentSibling -- ^ '+'
-                | GeneralSibling  -- ^ '~'
+data Combinator = DescendantSpace    -- ^ ' '
+                | DescendantBrackets -- ^ '>>'
+                | Child              -- ^ '>'
+                | AdjacentSibling    -- ^ '+'
+                | GeneralSibling     -- ^ '~'
   deriving (Eq, Show)
 
 instance ToText Combinator where
-  toBuilder Descendant      = " "
-  toBuilder Child           = ">"
-  toBuilder AdjacentSibling = "+"
-  toBuilder GeneralSibling  = "~"
+  toBuilder DescendantSpace    = " "
+  toBuilder DescendantBrackets = " "
+  toBuilder Child              = ">"
+  toBuilder AdjacentSibling    = "+"
+  toBuilder GeneralSibling     = "~"
+instance Minifiable Combinator where
+  minify DescendantBrackets = pure DescendantSpace
+  minify x                  = pure x
 
 -- Note: an empty selector, containing no sequence of simple selectors and no
 -- pseudo-element, is an invalid selector.
@@ -77,7 +83,7 @@ instance ToText Selector where
 instance Minifiable Selector where
   minify (Selector c xs) = do
       newC  <- minify c
-      newCs <- (mapM . mapM) minify xs
+      newCs <- mapM (bitraverse minify minify) xs
       pure $ Selector newC newCs
 
 type Specificity = (Int, Int, Int)
