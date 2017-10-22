@@ -33,6 +33,9 @@ selectorTestsInfo =
 
   ,("p::selection", "p::selection")
   ,("html:lang( 'de' )", "html:lang(de)")
+
+  -- https://drafts.csswg.org/selectors-4/#the-first-of-type-pseudo
+  ,(":nth-of-type(1)", ":first-of-type")
   ]
 
 anplusbMinificationTestsInfo :: [(Text, Text)]

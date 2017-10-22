@@ -239,8 +239,10 @@ instance Minifiable SimpleSelector where
                        Left _  -> a
                        Right s -> Lang (removeQuotes s)
                 else a
-  minify (FunctionalPseudoClass1 i cs)   = FunctionalPseudoClass1 i <$> mapM minify cs
-  minify (FunctionalPseudoClass2 i n)    = FunctionalPseudoClass2 i <$> minify n
+  minify (FunctionalPseudoClass1 i cs) = FunctionalPseudoClass1 i <$> mapM minify cs
+  minify (FunctionalPseudoClass2 i n)
+      | i == "nth-of-type" && n == B 1 = pure $ PseudoClass "first-of-type"
+      | otherwise                      = FunctionalPseudoClass2 i <$> minify n
   minify (FunctionalPseudoClass3 i n cs) = FunctionalPseudoClass3 i <$> minify n <*> pure cs
   minify x = pure x
 
@@ -255,6 +257,7 @@ instance ToText Sign where
 -- | The <https://drafts.csswg.org/css-syntax-3/#the-anb-type \<an+b\>> microsyntax type.
 data AnPlusB = Even
              | Odd
+             -- A Nothing Nothing is "n" alone.
              | A (Maybe Sign) (Maybe Int)      -- "sign n number", e.g. +3n, -2n, 1n.
              | B Int                           -- "sign number", e.g. +1, +2, 3.
              | AB (Maybe Sign) (Maybe Int) Int -- "sign n number sign number", e.g. 2n+1
