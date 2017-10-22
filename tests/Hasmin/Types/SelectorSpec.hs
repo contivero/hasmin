@@ -31,11 +31,14 @@ selectorTestsInfo =
   ,("h1[class~=x]",       "h1.x")
   ,("h1[class~=\"x\'\"]", "h1[class~=\"x\'\"]")
 
-  ,("p::selection", "p::selection")
+  ,("p::selection",      "p::selection")
   ,("html:lang( 'de' )", "html:lang(de)")
 
   -- https://drafts.csswg.org/selectors-4/#the-first-of-type-pseudo
-  ,(":nth-of-type(1)", ":first-of-type")
+  ,(":nth-of-type(1)",      ":first-of-type")
+  ,(":nth-last-of-type(1)", ":last-of-type")
+  ,(":nth-child(1)",        ":first-child")
+  ,(":nth-last-child(1)",   ":last-child")
   ]
 
 anplusbMinificationTestsInfo :: [(Text, Text)]

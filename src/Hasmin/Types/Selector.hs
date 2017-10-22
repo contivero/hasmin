@@ -209,6 +209,8 @@ specialPseudoElements :: [Text]
 specialPseudoElements = fmap T.toCaseFold
     ["after", "before", "first-line", "first-letter"]
 
+-- Pseudo element names are ASCII case-insensitive
+-- https://drafts.csswg.org/selectors-4/#pseudo-element%20syntax
 instance Minifiable SimpleSelector where
   -- [class~="a"] == .a
   minify a@(AttributeSel (attid :~=: attval))
@@ -239,10 +241,18 @@ instance Minifiable SimpleSelector where
                        Left _  -> a
                        Right s -> Lang (removeQuotes s)
                 else a
+  -- Pseudoclasses are ASCII case-insensitive
+  -- https://drafts.csswg.org/selectors-4/#pseudo-classes
   minify (FunctionalPseudoClass1 i cs) = FunctionalPseudoClass1 i <$> mapM minify cs
-  minify (FunctionalPseudoClass2 i n)
-      | i == "nth-of-type" && n == B 1 = pure $ PseudoClass "first-of-type"
-      | otherwise                      = FunctionalPseudoClass2 i <$> minify n
+  minify (FunctionalPseudoClass2 i (B 1))
+      | iden == "nth-of-type"      = pure $ PseudoClass "first-of-type"
+      | iden == "nth-last-of-type" = pure $ PseudoClass "last-of-type"
+    where iden = T.toLower i
+  minify (FunctionalPseudoClass2 i n) = FunctionalPseudoClass2 i <$> minify n
+  minify (FunctionalPseudoClass3 i (B 1) [])
+      | iden == "nth-last-child" = pure $ PseudoClass "last-child"
+      | iden == "nth-child"      = pure $ PseudoClass "first-child"
+    where iden = T.toLower i
   minify (FunctionalPseudoClass3 i n cs) = FunctionalPseudoClass3 i <$> minify n <*> pure cs
   minify x = pure x
 

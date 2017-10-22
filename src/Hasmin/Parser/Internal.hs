@@ -187,7 +187,7 @@ anplusb = (asciiCI "even" $> Even)
 
 -- Functional pseudo classes parsers map
 fpcMap :: Map Text (Parser SimpleSelector)
-fpcMap = Map.fromList $ fmap (first T.toCaseFold)
+fpcMap = Map.fromList
     [buildTuple "nth-of-type"      (\x -> FunctionalPseudoClass2 x <$> anplusb)
     ,buildTuple "nth-last-of-type" (\x -> FunctionalPseudoClass2 x <$> anplusb)
     ,buildTuple "nth-column"       (\x -> FunctionalPseudoClass2 x <$> anplusb)
