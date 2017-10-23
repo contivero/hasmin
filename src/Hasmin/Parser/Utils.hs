@@ -18,6 +18,7 @@ module Hasmin.Parser.Utils
     , digits
     , comma
     , colon
+    , slash
     , opt
     , nmchar
     , hexadecimal
@@ -50,6 +51,9 @@ comma = lexeme $ char ','
 
 colon :: Parser Char
 colon = lexeme $ char ':'
+
+slash :: Parser Char
+slash = lexeme $ char '/'
 
 lexeme :: Parser a -> Parser a
 lexeme p = skipComments *> p <* skipComments

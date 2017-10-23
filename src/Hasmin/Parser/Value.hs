@@ -466,8 +466,8 @@ bgLayer = do
 -- <position> [ / <bg-size> ]?
 positionAndBgSize :: Parser (Position, Maybe BgSize)
 positionAndBgSize = do
-    x <- position <* skipComments
-    y <- optional (char '/' *> skipComments *> bgSize)
+    x <- position
+    y <- optional (slash *> bgSize)
     pure (x,y)
 
 matchKeywords :: [Text] -> Parser TextV
@@ -974,17 +974,13 @@ radialgradient = functionParser $ do
 -- : [<angle>|to <side-or-corner> ,]? <color-stop> [, <color-stop>]+
 lineargradient :: Parser Gradient
 lineargradient = functionParser (lg <|> oldLg)
-  where lg = do
-            x <- optional angleOrSide
-            c <- colorStopList
-            pure $ LinearGradient x c
-        oldLg = do
-            x <- optional ((ga <|> (Right <$> sideOrCorner)) <* comma)
-            c <- colorStopList
-            pure $ OldLinearGradient x c
+  where lg = LinearGradient <$> optional angleOrSide <*> colorStopList
+        oldLg = OldLinearGradient <$> optional ((ga <|> sc) <* comma)
+                                  <*> colorStopList
         angleOrSide = (ga <|> gs) <* comma
         ga = Left <$> angle
-        gs = asciiCI "to" *> skipComments *> (Right <$> sideOrCorner)
+        gs = asciiCI "to" *> skipComments *> sc
+        sc = Right <$> sideOrCorner
 
 -- <side-or-corner> = [left | right] || [top | bottom]
 sideOrCorner :: Parser (Side, Maybe Side)
@@ -1053,15 +1049,15 @@ rect = functionParser $ do
 -- | Assumes "translate(" has been already parsed
 translate :: Parser TransformFunction
 translate = functionParser $ do
-    pl  <- percentageLength <* skipComments
-    mpl <- optional (char ',' *> skipComments *> percentageLength)
+    pl  <- percentageLength
+    mpl <- optional (comma *> percentageLength)
     pure $ Translate pl mpl
 
 -- | Parser of scale() function. Assumes "scale(" has been already parsed
 scale :: Parser TransformFunction
 scale = functionParser $ do
-    n  <- number <* skipComments
-    mn <- optional (char ',' *> skipComments *> number)
+    n  <- number
+    mn <- optional (comma *> number)
     pure $ Scale n mn
 
 scale3d :: Parser TransformFunction
@@ -1070,16 +1066,15 @@ scale3d = functionParser $ liftA3 Scale3d n n number
 
 skew :: Parser TransformFunction
 skew = functionParser $ do
-    a  <- angle <* skipComments
-    ma <- optional (char ',' *> skipComments *> angle)
+    a  <- angle
+    ma <- optional (comma *> angle)
     pure $ Skew a ma
 
 translate3d :: Parser TransformFunction
-translate3d = functionParser $ do
-    x <- percentageLength <* comma
-    y <- percentageLength <* comma
-    z <- distance
-    pure $ Translate3d x y z
+translate3d = functionParser $
+    Translate3d <$> percentageLength <* comma
+                <*> percentageLength <* comma
+                <*> distance
 
 matrix :: Parser TransformFunction
 matrix = functionParser $ do

@@ -149,15 +149,14 @@ pseudo = char ':' *> (pseudoElementSelector <|> pseudoClassSelector)
                             Just p  -> functionParser p
                             Nothing -> functionParser (FunctionalPseudoClass i <$> A.takeWhile (/= ')'))
               _        -> pure $ PseudoClass i
-        pseudoElementSelector = do
-            parsedColon <- option False (char ':' $> True)
-            if parsedColon
-               then PseudoElem <$> ident
-               else ident >>= handleSpecialCase
-          where handleSpecialCase :: Text -> Parser SimpleSelector
-                handleSpecialCase t = if T.toCaseFold t `elem` specialPseudoElements
-                                         then pure $ PseudoElem t
-                                         else empty
+        pseudoElementSelector = 
+            (char ':' *> (PseudoElem <$> ident)) <|> (ident >>= handleSpecialCase)
+          where
+            handleSpecialCase :: Text -> Parser SimpleSelector
+            handleSpecialCase t
+                | isSpecialPseudoElement = pure $ PseudoElem t
+                | otherwise              = empty
+              where isSpecialPseudoElement = T.toCaseFold t `elem` specialPseudoElements
 
 -- \<An+B> microsyntax parser.
 anplusb :: Parser AnPlusB
