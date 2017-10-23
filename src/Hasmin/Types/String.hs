@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 -----------------------------------------------------------------------------
 -- |
@@ -122,17 +123,23 @@ convertEscaped = (TL.toStrict . B.toLazyText) <$> go
 
     parseEscapedAndContinue :: Builder -> Parser Builder
     parseEscapedAndContinue b = do
-        ch <- B.singleton <$> utf8
-        (b `mappend` ch `mappend`) <$>  go
+        u8 <- utf8
+        (b `mappend` u8 `mappend`) <$>  go
 
-    utf8 :: Parser Char
-    utf8 = hexToChar <$> atMost 6 hexadecimal
+    utf8 :: Parser Builder
+    utf8 = do
+        mch <- atMost 6 hexadecimal
+        pure $ maybe ("\\" <> B.fromString mch) B.singleton (hexToChar mch)
 
     -- Interpret a hexadecimal string as a decimal Int, and convert it into the
     -- corresponding Char.
-    hexToChar :: [Char] -> Char
-    hexToChar = C.chr . foldl' step 0
-      where step a c
+    hexToChar :: [Char] -> Maybe Char
+    hexToChar xs
+        | i > maxChar = Nothing
+        | otherwise   = Just (C.chr i)
+      where i = foldl' step 0 xs
+            maxChar = fromEnum (maxBound :: Char)
+            step a c
                 | w - 48 < 10 = (a `shiftL` 4) .|. fromIntegral (w - 48)
                 | w >= 97     = (a `shiftL` 4) .|. fromIntegral (w - 87)
                 | otherwise   = (a `shiftL` 4) .|. fromIntegral (w - 55)

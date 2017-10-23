@@ -47,6 +47,10 @@ escapedCharConversionTestsInfo =
   ,("\\00002aa",  "*a")
   ,("*\\00002aa", "**a")
   ,("*\\2az",     "**z")
+
+  -- This is one more than than Char's maxBound, i.e. out of Unicode's range,
+  -- and thus cannot be converted.
+  ,("\\110000",   "\\110000")
   ]
 
 unquotingUrlsTestsInfo :: [(Text, Text)]
