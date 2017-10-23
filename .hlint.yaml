@@ -2,9 +2,18 @@
 - warn: {lhs: return x << y,  rhs: x <$ y}
 - warn: {lhs: return x,       rhs: pure x}
 
+# Rearrange inequalities so the style is closer to math.
+- warn: {lhs: x >= y && x <= z, rhs: y <= x && x <= z}
+- warn: {lhs: y <= x && z >= x, rhs: y <= x && x <= z}
+- warn: {lhs: x >= y && x < z, rhs: y <= x && x < z}
+- warn: {lhs: y <= x && z > x, rhs: y <= x && x < z}
+- warn: {lhs: x > y && x <= z, rhs: y < x && x <= z}
+- warn: {lhs: y < x && z >= x, rhs: y < x && x <= z}
+- warn: {lhs: x > y && x < z, rhs: y < x && x < z}
+- warn: {lhs: y < x && z > x, rhs: y < x && x < z}
+
 # Replace a $ b $ c with a . b $ c
 - group: {name: dollar, enabled: true}
 
 # Hasmin specific
 - warn: {lhs: skipComments *> x <* skipComments, rhs: lexeme x}
-
