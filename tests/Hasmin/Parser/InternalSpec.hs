@@ -10,6 +10,18 @@ import Test.Hspec.Attoparsec (shouldSucceedOn, shouldFailOn)
 import Data.Text (Text)
 import Hasmin.TestUtils
 
+ruleParserTest :: Spec
+ruleParserTest =
+  describe "At-rule parser tests" $
+      mapM_ (matchSpecWithDesc atRule) atMediaParserTestInfo
+
+atMediaParserTestInfo :: [(String, Text, Text)]
+atMediaParserTestInfo =
+  [("Doesn't choke on invalid @media expression",
+      "@media screen and (min-resolution: 144 dpi){}",
+      "@media screen and (min-resolution: 144 dpi){}")
+  ]
+
 declarationParserTests :: Spec
 declarationParserTests =
   describe "declaration parser tests" $
@@ -212,6 +224,7 @@ spec = do declarationParserTests
           selectorParserTests
           selectorParserFailures
           styleRuleParserTests
+          ruleParserTest
 
 main :: IO ()
 main = hspec spec
