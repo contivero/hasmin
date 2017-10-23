@@ -226,7 +226,7 @@ percentage = Percentage <$> rational <* char '%'
 -- parsers to use (e.g.: see the parsers int, or rational)
 int' :: Parser String
 int' = do
-  sign <- option '+' (char '-' <|> char '+')
+  sign <- char '-' <|> pure '+'
   d    <- digits
   case sign of
     '+' -> pure d
@@ -258,12 +258,7 @@ rational = do
 -- | Parser for <https://drafts.csswg.org/css-fonts-3/#propdef-font-style \<font-style\>>,
 -- used in the @font-style@ and @font@ properties.
 fontStyle :: Parser Value
-fontStyle = do
-    k <- ident
-    if Set.member k keywords
-       then pure $ mkOther k
-       else mzero
-  where keywords = Set.fromList ["normal", "italic", "oblique"]
+fontStyle = Other <$> matchKeywords ["normal", "italic", "oblique"]
 
 {-
 fontWeight :: Parser Value
@@ -280,14 +275,9 @@ fontSize :: Parser Value
 fontSize = fontSizeKeyword
         <|> (LengthV <$> distance)
         <|> (PercentageV <$> percentage)
-  where fontSizeKeyword = do
-            v1 <- ident
-            if Set.member v1 keywords
-               then pure $ mkOther v1
-               else mzero
-        keywords = Set.fromList ["medium", "xx-small", "x-small", "small"
-                                ,"large", "x-large", "xx-large", "smaller"
-                                ,"larger"]
+  where fontSizeKeyword = Other <$>  matchKeywords
+                            ["large", "xx-small", "x-small", "small", "medium",
+                            "x-large", "xx-large", "smaller" , "larger"]
 
 {- [ [ <‘font-style’> || <font-variant-css21> || <‘font-weight’> ||
  - <‘font-stretch’> ]? <‘font-size’> [ / <‘line-height’> ]? <‘font-family’> ] |
@@ -511,7 +501,7 @@ singleTransition = do
         singleTransitionProperty = do
             i <- ident
             let lowercased = T.toLower i
-            if Set.member lowercased excludedKeywords
+            if lowercased `Set.member` excludedKeywords
                then mzero
                else pure $ TextV i
         excludedKeywords = Set.fromList ["initial", "inherit", "unset", "default", "none"]
@@ -520,21 +510,17 @@ singleTransition = do
 timingFunction :: Parser TimingFunction
 timingFunction = do
     i <- ident
-    let lowercased = T.toLower i
-    case Map.lookup lowercased timingFunctionKeywords of
-      Just x -> x
-      Nothing -> char '(' *> (if lowercased == "steps"
-                                 then steps
-                                 else if lowercased == "cubic-bezier"
-                                         then cubicbezier
-                                         else mzero)
-  where timingFunctionKeywords = Map.fromList [("ease",        pure Ease)
-                                              ,("ease-in",     pure EaseIn)
-                                              ,("ease-in-out", pure EaseInOut)
-                                              ,("ease-out",    pure EaseOut)
-                                              ,("linear",      pure Linear)
-                                              ,("step-end",    pure StepEnd)
-                                              ,("step-start",  pure StepStart)]
+    fromMaybe mzero $ Map.lookup (T.toLower i) timingFunctionKeywords
+  where timingFunctionKeywords = Map.fromList
+          [("ease",         pure Ease)
+          ,("ease-in",      pure EaseIn)
+          ,("ease-in-out",  pure EaseInOut)
+          ,("ease-out",     pure EaseOut)
+          ,("linear",       pure Linear)
+          ,("step-end",     pure StepEnd)
+          ,("step-start",   pure StepStart)
+          ,("steps",        char '(' *> steps)
+          ,("cubic-bezier", char '(' *> cubicbezier)]
 
 backgroundSize :: Parser Values
 backgroundSize = parseCommaSeparated (BgSizeV <$> bgSize)

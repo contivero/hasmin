@@ -11,6 +11,7 @@
 module Hasmin.Parser.Internal
     ( stylesheet
     , atRule
+    , atMedia
     , styleRule
     , rule
     , rules
@@ -149,7 +150,7 @@ pseudo = char ':' *> (pseudoElementSelector <|> pseudoClassSelector)
                             Just p  -> functionParser p
                             Nothing -> functionParser (FunctionalPseudoClass i <$> A.takeWhile (/= ')'))
               _        -> pure $ PseudoClass i
-        pseudoElementSelector = 
+        pseudoElementSelector =
             (char ':' *> (PseudoElem <$> ident)) <|> (ident >>= handleSpecialCase)
           where
             handleSpecialCase :: Text -> Parser SimpleSelector
@@ -163,15 +164,13 @@ anplusb :: Parser AnPlusB
 anplusb = (asciiCI "even" $> Even)
       <|> (asciiCI "odd" $> Odd)
       <|> do
-    s <- optional parseSign
-    x <- option mempty digits
-    case x of
-      [] -> ciN *> skipComments *> option (A s Nothing) (AB s Nothing <$> bValue)
-      _  -> do n <- option False (ciN $> True)
-               let a = read x :: Int
-               if n
-                  then skipComments *> option (A s (Just a)) (AB s (Just a) <$> bValue)
-                  else pure $ B (getSign s * a)
+        s    <- optional parseSign
+        dgts <- option mempty digits
+        case dgts of
+          [] -> ciN *> skipComments *> option (A s Nothing) (AB s Nothing <$> bValue)
+          _  -> let n = read dgts :: Int
+                in (ciN *> skipComments *> option (A s $ Just n) (AB s (Just n) <$> bValue))
+                    <|> (pure . B $ getSign s * n)
   where ciN       = satisfy (\c -> c == 'N' || c == 'n')
         parseSign = (char '-' $> Minus) <|> (char '+' $> Plus)
         getSign (Just Minus) = -1
@@ -284,9 +283,7 @@ atImport = do
     pure $ AtImport esu mql
 
 atCharset :: Parser Rule
-atCharset = do
-    st <- lexeme stringtype <* char ';'
-    pure $ AtCharset st
+atCharset = AtCharset <$> (lexeme stringtype <* char ';')
 
 -- @namespace <namespace-prefix>? [ <string> | <uri> ];
 -- where
@@ -299,14 +296,13 @@ atNamespace = do
               else decideBasedOn i
     _ <- skipComments <* char ';'
     pure ret
-  where decideBasedOn x =
-            let urltext = T.toCaseFold "url"
-            in if T.toCaseFold x == urltext
-                  then do c <- A.peekChar
-                          case c of
-                            Just '(' -> AtNamespace mempty <$> (char '(' *> (Right <$> url))
-                            _        -> AtNamespace x <$> (skipComments *> stringOrUrl)
-                  else AtNamespace x <$> (skipComments *> stringOrUrl)
+  where decideBasedOn x
+            | T.toCaseFold x == "url" =
+                do c <- A.peekChar
+                   case c of
+                     Just '(' -> AtNamespace mempty <$> (char '(' *> (Right <$> url))
+                     _        -> AtNamespace x <$> (skipComments *> stringOrUrl)
+            | otherwise = AtNamespace x <$> (skipComments *> stringOrUrl)
 
 atKeyframe :: Text -> Parser Rule
 atKeyframe t = do
@@ -358,7 +354,7 @@ supportsCondition = asciiCI "not" *> skipComments *> (Not <$> supportsCondInPare
 supportsCondInParens :: Parser SupportsCondInParens
 supportsCondInParens = do
     _ <- char '('
-    x <- lexeme ((ParensCond <$> supportsCondition) <|> (ParensDec <$> atSupportsDeclaration))
+    x <- lexeme $ (ParensCond <$> supportsCondition) <|> (ParensDec <$> atSupportsDeclaration)
     _ <- char ')'
     pure x
 
@@ -455,7 +451,7 @@ expression = char '(' *> skipComments *> (expr <|> expFallback)
   where expr = do
              e <- ident <* skipComments
              v <- optional (char ':' *> lexeme value)
-             _ <- char ')'
+             _ <- char ')' -- Needed here for expFallback to trigger
              pure $ Expression e v
         expFallback = InvalidExpression <$> A.takeWhile (/= ')') <* char ')'
 
