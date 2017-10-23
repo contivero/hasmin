@@ -31,7 +31,7 @@ module Hasmin.Parser.Value (
     , fontStyle
     ) where
 
-import Control.Applicative ((<|>), many, liftA3)
+import Control.Applicative ((<|>), many, liftA3, optional)
 import Control.Arrow (first, (&&&))
 import Control.Monad (mzero)
 import Data.Functor (($>))
@@ -135,7 +135,6 @@ hex = do
                                       Nothing -> pure $ mkHex6 [a,b] [c,d] [e,f]
                                       Just g  -> do h <- hexadecimal
                                                     pure $ mkHex8 [a,b] [c,d] [e,f] [g,h]
-  where optional w  = option Nothing (Just <$> w)
 
 -- ---------------------------------------------------------------------------
 -- Dimensions Parsers
@@ -335,7 +334,7 @@ position = perLen <|> kword
               _        -> mzero
 
     maybePL :: Parser (Maybe PercentageLength)
-    maybePL = option Nothing (Just <$> percentageLength)
+    maybePL = optional percentageLength
 
     startsWithCenter :: Parser Position
     startsWithCenter =  followsWithPL
@@ -361,7 +360,7 @@ position = perLen <|> kword
                -> (Parser (Maybe PosKeyword), Parser (Maybe PosKeyword))
                -> Parser Position
     startsWith x (p1, p2) = do
-        pl <- option Nothing (Just <$> percentageLength <* skipComments)
+        pl <- optional (percentageLength <* skipComments)
         let endsWithCenter = Position x pl <$> center <*> pure Nothing
             endsWithKeywordAndMaybePL = Position x pl <$> posKeyword <*> maybePL
             endsWithPL = pure $ Position x Nothing Nothing pl
@@ -460,7 +459,7 @@ bgLayer = do
         box2 :: Parser (TextV, Maybe TextV)
         box2 = do
             x <- box <* skipComments
-            y <- option Nothing (Just <$> box)
+            y <- optional box
             pure (x,y)
 
 -- used for the background property, which takes among other things:
@@ -468,7 +467,7 @@ bgLayer = do
 positionAndBgSize :: Parser (Position, Maybe BgSize)
 positionAndBgSize = do
     x <- position <* skipComments
-    y <- option Nothing (Just <$> (char '/' *> skipComments *> bgSize))
+    y <- optional (char '/' *> skipComments *> bgSize)
     pure (x,y)
 
 matchKeywords :: [Text] -> Parser TextV
@@ -622,7 +621,7 @@ font = systemFonts <|> do
   where systemFonts = Other <$> parseIdents ["caption", "icon", "menu", "message-box", "small-caption", "status-bar"]
         fontSizeAndLineHeight = do
             fsz <- fontSize <* skipComments
-            lh  <- option Nothing (Just <$> (char '/' *> lexeme lineHeight))
+            lh  <- optional (char '/' *> lexeme lineHeight)
             pure (fsz, lh)
         lineHeight = let validNum = do n <- numericalvalue
                                        case n of
@@ -894,8 +893,8 @@ dropShadow :: Parser FilterFunction
 dropShadow = functionParser $ do
     l1 <- distance
     l2 <- lexeme distance
-    l3 <- option Nothing ((Just <$> distance) <* skipComments)
-    c  <- option Nothing (Just <$> color)
+    l3 <- optional (distance <* skipComments)
+    c  <- optional color
     pure $ DropShadow l1 l2 l3 c
 
 textShadow :: Parser Values
@@ -908,7 +907,7 @@ shadowText = permute (mkShadowText <$$> (lns <* skipComments)
         lns = do
             l1 <- distance
             l2 <- lexeme distance
-            l3 <- option Nothing ((Just <$> distance) <* skipComments)
+            l3 <- optional (distance <* skipComments)
             pure (l1,l2,l3)
 
 -- | Parser for <https://drafts.csswg.org/css-backgrounds-3/#typedef-shadow \<shadow>>
@@ -939,14 +938,14 @@ shadow = permute (mkShadow <$?> (False, asciiCI "inset" $> True <* skipComments)
         fourLengths = do
             l1 <- distance
             l2 <- lexeme distance
-            l3 <- option Nothing ((Just <$> distance) <* skipComments)
-            l4 <- option Nothing ((Just <$> distance) <* skipComments)
+            l3 <- optional (distance <* skipComments)
+            l4 <- optional (distance <* skipComments)
             pure (l1,l2,l3,l4)
 
 radialgradient :: Parser Gradient
 radialgradient = functionParser $ do
     (def, c) <- option (True, RadialGradient Nothing Nothing) ((False,) <$> endingShapeAndSize <* skipComments)
-    p  <- option Nothing (asciiCI "at" *> skipComments *> (Just <$> position))
+    p  <- optional (asciiCI "at" *> skipComments *> position)
     _  <- if def && isNothing p
              then pure '*' -- do nothing
              else comma
@@ -976,24 +975,24 @@ radialgradient = functionParser $ do
 lineargradient :: Parser Gradient
 lineargradient = functionParser (lg <|> oldLg)
   where lg = do
-            x <- option Nothing angleOrSide
+            x <- optional angleOrSide
             c <- colorStopList
             pure $ LinearGradient x c
         oldLg = do
-            x <- option Nothing ((ga <|> ((Just . Right) <$> sideOrCorner)) <* comma)
+            x <- optional ((ga <|> (Right <$> sideOrCorner)) <* comma)
             c <- colorStopList
             pure $ OldLinearGradient x c
         angleOrSide = (ga <|> gs) <* comma
-        ga = (Just . Left) <$> angle
-        gs = asciiCI "to" *> skipComments *> ((Just . Right) <$> sideOrCorner)
+        ga = Left <$> angle
+        gs = asciiCI "to" *> skipComments *> (Right <$> sideOrCorner)
 
 -- <side-or-corner> = [left | right] || [top | bottom]
 sideOrCorner :: Parser (Side, Maybe Side)
 sideOrCorner = orderOne <|> orderTwo
   where orderOne = (,) <$> leftright <* skipComments
-                       <*> option Nothing (Just <$> topbottom)
+                       <*> optional topbottom
         orderTwo = (,) <$> topbottom <* skipComments
-                       <*> option Nothing (Just <$> leftright)
+                       <*> optional leftright
 
 leftright :: Parser Side
 leftright =  (asciiCI "left" $> LeftSide)
@@ -1013,7 +1012,7 @@ colorStopList = do
 
 colorStop :: Parser ColorStop
 colorStop = ColorStop <$> color <* skipComments
-        <*> option Nothing (Just <$> percentageLength <* skipComments)
+        <*> optional (percentageLength <* skipComments)
 
 -- | Parser for <https://drafts.csswg.org/css-color-3/#colorunits \<color\>>.
 color :: Parser Color
@@ -1055,14 +1054,14 @@ rect = functionParser $ do
 translate :: Parser TransformFunction
 translate = functionParser $ do
     pl  <- percentageLength <* skipComments
-    mpl <- option Nothing (char ',' *> skipComments *> (Just <$> percentageLength))
+    mpl <- optional (char ',' *> skipComments *> percentageLength)
     pure $ Translate pl mpl
 
 -- | Parser of scale() function. Assumes "scale(" has been already parsed
 scale :: Parser TransformFunction
 scale = functionParser $ do
     n  <- number <* skipComments
-    mn <- option Nothing (char ',' *> skipComments *> (Just <$> number))
+    mn <- optional (char ',' *> skipComments *> number)
     pure $ Scale n mn
 
 scale3d :: Parser TransformFunction
@@ -1072,7 +1071,7 @@ scale3d = functionParser $ liftA3 Scale3d n n number
 skew :: Parser TransformFunction
 skew = functionParser $ do
     a  <- angle <* skipComments
-    ma <- option Nothing (char ',' *> skipComments *> (Just <$> angle))
+    ma <- optional (char ',' *> skipComments *> angle)
     pure $ Skew a ma
 
 translate3d :: Parser TransformFunction
@@ -1113,7 +1112,7 @@ cubicbezier = functionParser $ do
 steps :: Parser TimingFunction
 steps = functionParser $ do
     i <- int
-    s <- option Nothing (comma *> (Just <$> startOrEnd))
+    s <- optional (comma *> startOrEnd)
     pure $ Steps i s
   where startOrEnd = (asciiCI "end" $> End)
                  <|> (asciiCI "start" $> Start)

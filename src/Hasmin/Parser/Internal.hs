@@ -20,9 +20,7 @@ module Hasmin.Parser.Internal
     , supportsCondition
     ) where
 
-import Control.Arrow (first)
-import Control.Applicative ((<|>), many, some, empty)
-import qualified Data.List.NonEmpty as NE
+import Control.Applicative ((<|>), many, some, empty, optional)
 import Data.Functor (($>))
 import Data.Attoparsec.Combinator (lookAhead, sepBy, endOfInput)
 import Data.Attoparsec.Text (asciiCI, char, many1, manyTill,
@@ -33,6 +31,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Lazy.Builder as LB
 import Data.Map.Strict (Map)
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Attoparsec.Text as A
@@ -165,7 +164,7 @@ anplusb :: Parser AnPlusB
 anplusb = (asciiCI "even" $> Even)
       <|> (asciiCI "odd" $> Odd)
       <|> do
-    s <- option Nothing (Just <$> parseSign)
+    s <- optional parseSign
     x <- option mempty digits
     case x of
       [] -> ciN *> skipComments *> option (A s Nothing) (AB s Nothing <$> bValue)
@@ -456,7 +455,7 @@ expression :: Parser Expression
 expression = char '(' *> skipComments *> (expr <|> expFallback)
   where expr = do
              e <- ident <* skipComments
-             v <- option Nothing (char ':' *> lexeme (Just <$> value))
+             v <- optional (char ':' *> lexeme value)
              _ <- char ')'
              pure $ Expression e v
         expFallback = InvalidExpression <$> A.takeWhile (/= ')') <* char ')'
