@@ -179,8 +179,14 @@ instance Minifiable Rule where
               pure $ if shouldRemoveDuplicateSelectors conf
                         then nub' sls
                         else sls
-
-  minify (AtImport esu mqs) = AtImport esu <$> mapM minify mqs
+  -- convert url() to " "
+  minify (AtImport esu mqs) =
+      case esu of
+        Left _          -> AtImport esu <$> mapM minify mqs
+        Right (Url ets) -> do a <- mapM minify ets
+                              let na = either DoubleQuotes id a
+                              b <- mapM minify mqs
+                              pure $ AtImport (Left na) b
   minify (AtCharset s) = AtCharset <$> mapString lowercaseText s
   minify x = pure x
 
@@ -401,7 +407,7 @@ mergeRules zs = Map.elems $ mergeRules' 0 1 rulesInMap
           where thereIsAPairOfSelectorsWithTheSameSpecificity = any (\x -> any (\y -> specificity x == specificity y) ss) ss2
                 twoDeclarationsClash = any (\x -> any (`overlaps` x) ds) ds2
         shouldSkip StyleRule{} AtKeyframes{} = False
-        shouldSkip StyleRule{} (AtBlockWithDec t _) 
+        shouldSkip StyleRule{} (AtBlockWithDec t _)
             | t == "font-face" = False
             | otherwise        = True
          -- TODO see better what needs to be skipped and what doesn't need to

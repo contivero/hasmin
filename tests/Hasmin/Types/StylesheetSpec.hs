@@ -28,6 +28,16 @@ atRuleTests = do
       mapM_ (matchSpec atRule) atRuleTestsInfo
     describe "@supports minification" $
       mapM_ (matchSpec (minifyWithTestConfig <$> atRule)) atSupportsTestInfo
+    describe "@import minification" $
+      mapM_ (matchSpec (minifyWithTestConfig <$> atRule)) atImportTestInfo
+
+atImportTestInfo :: [(Text, Text)]
+atImportTestInfo = 
+  [("@import  url(\'landscape.css\');",
+      "@import \"landscape.css\";")
+  ,("@import url(landscape.css);",
+      "@import \"landscape.css\";")
+  ]
 
 mergeRulesTest :: Spec
 mergeRulesTest =
