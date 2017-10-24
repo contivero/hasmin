@@ -34,7 +34,7 @@ minifyCSSWith :: Config -> Text -> Either String Text
 minifyCSSWith cfg t = do
     sheet <- parseOnly stylesheet t
     let rs = runReader (minifyRules sheet) cfg
-    pure . TL.toStrict . toLazyText . mconcat $ map toBuilder rs
+    pure . TL.toStrict . toLazyText $ foldMap toBuilder rs
 
 -- | Minify 'Text' CSS, using a default set of configurations (with most
 -- minification techniques enabled). 'minifyCSS' is equivalent to

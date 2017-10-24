@@ -40,16 +40,17 @@ import Hasmin.Types.Value
 import Hasmin.Utils
 
 -- | A CSS <https://www.w3.org/TR/css-syntax-3/#declaration \<declaration\>>.
-data Declaration = Declaration { propertyName :: Text -- ^ Property name of the declaration.
-                               , valueList :: Values  -- ^ Values used in the declaration.
-                               , isImportant :: Bool  -- ^ Whether the declaration is \"!important\" (i.e. ends with it).
-                               , hasIEhack :: Bool    -- ^ Whether the declaration ends with the \"\\9\" IE hack.
-                               } deriving (Eq, Show)
+data Declaration = Declaration
+    { propertyName :: Text -- ^ Property name of the declaration.
+    , valueList    :: Values  -- ^ Values used in the declaration.
+    , isImportant  :: Bool  -- ^ Whether the declaration is \"!important\" (i.e. ends with it).
+    , hasIEhack    :: Bool    -- ^ Whether the declaration ends with the \"\\9\" IE hack.
+    } deriving (Eq, Show)
 instance ToText Declaration where
   toBuilder (Declaration p vs i h) = fromText p <> singleton ':'
-      <> toBuilder vs <> imp <> (if h then " \\9" else mempty)
-    where imp | i         = "!important"
-              | otherwise = mempty
+      <> toBuilder vs <> imp <> iehack
+    where imp    = if i then "!important" else mempty
+          iehack = if h then "\\9" else mempty
 
 instance Ord Declaration where
   -- Just use a lexicographical ordering, since the instance is required by Set
@@ -159,7 +160,7 @@ nullPercentageToLength d = do
                 zeroPercentageToLength x = PercentageV x
         f (BgSizeV bgsz) = pure . BgSizeV $
             case bgsz of
-              BgSize1 x   -> BgSize1 (zeroPerToLength x) 
+              BgSize1 x   -> BgSize1 (zeroPerToLength x)
               BgSize2 x y -> BgSize2 (zeroPerToLength x) (zeroPerToLength y)
               x           -> x
           where zeroPerToLength (Left (Left 0)) = Left $ Right NullLength
@@ -174,13 +175,13 @@ nullPercentageToLength d = do
 replaceWithZero :: Text -> Declaration -> Reader Config Declaration
 replaceWithZero s d@(Declaration p (Values v vs) _ _)
     | not (null vs) = pure d -- Some error occured, since there should be only one value
-    | otherwise     =
+    | otherwise     = pure $
         case Map.lookup (T.toCaseFold p) propertiesTraits of
           Just (PropertyInfo iv inhs _ _) ->
               if f iv inhs == mkOther s
-                 then pure $ d { valueList = Values (LengthV NullLength) [] }
-                 else pure d
-          Nothing -> pure d
+                 then d { valueList = Values (LengthV NullLength) [] }
+                 else d
+          Nothing -> d
   where f (Just (Values x _)) inh
           | v == Initial || v == Unset && inh == NonInherited = x
           | otherwise                             = v
@@ -535,10 +536,7 @@ mergeIntoTRBL d1@(Declaration _ (Values v1 vs) i1 h1) d2@(Declaration p2 (Values
                     _         -> Nothing -- E.g.: an iehack read as a value.
   where originalLength = textualLength d1 + textualLength d2 + 1 -- The (+1) is because of the ;
         trblValues     = v1 : map snd vs
-        indexTable     = fmap (first T.toCaseFold) [("top",    0)
-                                                   ,("right",  1)
-                                                   ,("bottom", 2)
-                                                   ,("left",   3)]
+        indexTable     = zip ["top", "right", "bottom", "left"] [0..]
 
 -- E.g.: margin: 6px 6px 6px 6px;  --> margin: 6px;
 --       margin: 1px 0 2px 0;      --> margin: 1px 0 2px;

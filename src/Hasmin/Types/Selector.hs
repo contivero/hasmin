@@ -88,8 +88,7 @@ instance Ord Selector where
   s1 <= s2 = toText s1 <= toText s2
 
 instance ToText Selector where
-  toBuilder (Selector cs ccss) = toBuilder cs
-                              <> mconcat (fmap build ccss)
+  toBuilder (Selector cs ccss) = toBuilder cs <> foldMap build ccss
     where build (comb, compSel) = toBuilder comb <> toBuilder compSel
 instance Minifiable Selector where
   minify (Selector c xs) = do
@@ -130,8 +129,8 @@ type CompoundSelector = NonEmpty SimpleSelector
 
 instance ToText CompoundSelector where
   toBuilder ns@(Universal{} :| xs)
-      | length ns > 1 = mconcat $ fmap toBuilder xs
-  toBuilder ns = mconcat $ N.toList (fmap toBuilder ns)
+      | length ns > 1 = foldMap toBuilder xs
+  toBuilder ns = foldMap toBuilder (N.toList ns)
 
 instance Minifiable CompoundSelector where
   minify (a :| xs) = liftA2 (:|) (minify a) (mapM minify xs)
@@ -201,7 +200,7 @@ instance ToText SimpleSelector where
       <> singleton '(' <> toBuilder a <> f xs <> singleton ')'
     where f [] = mempty
           f (y:ys) = " of " <> toBuilder y
-            <> mconcat (fmap (\z -> singleton ',' <> toBuilder z) ys)
+            <> foldMap (\z -> singleton ',' <> toBuilder z) ys
 
 -- | List of pseudo-elements that support the old syntax of a single semicolon,
 -- as well as the new one of two semicolons.

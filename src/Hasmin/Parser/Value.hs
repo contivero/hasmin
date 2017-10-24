@@ -698,7 +698,7 @@ unquotedFontFamily :: Parser Text
 unquotedFontFamily = do
     v  <- ident
     vs <- many (skipComments *> ident)
-    pure $ v <> mconcat (map (T.singleton ' ' <>) vs)
+    pure $ v <> foldMap (T.singleton ' ' <>) vs
 
 
 textualvalue :: Parser Value

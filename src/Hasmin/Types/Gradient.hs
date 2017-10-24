@@ -66,9 +66,8 @@ minifyColorHints [c1,c2] = [newC1, newC2]
             | otherwise = c1
         newC2
             | ch2 == Just (Left (Percentage 100)) = c2 {colorHint = Nothing}
-            | otherwise = if ch2 `notGreaterThan` ch1
-                             then c2 {colorHint = Just $ Right NullLength}
-                             else c2
+            | ch2 `notGreaterThan` ch1 = c2 {colorHint = Just $ Right NullLength}
+            | otherwise                = c2
 minifyColorHints (c@(ColorStop a x):xs) = case x of
                        Nothing -> c : analyzeList (Left $ Percentage 0) 1 (c:xs) xs
                        Just y  -> if isZero y
@@ -85,7 +84,7 @@ y `notGreaterThan` x
                     Left p  -> maybe False (either (<= p) (const False)) y
                     Right d -> maybe False (either (const False) (notGreaterThanLength d)) y
   where notPositive  = maybe False (either (<= 0) notPositiveLength)
-  
+
         notPositiveLength (Length d _) = d <= 0
         notPositiveLength NullLength   = True
 
@@ -179,7 +178,10 @@ data Gradient = OldLinearGradient (Maybe (Either Angle SideOrCorner)) [ColorStop
 
 -- | CSS <https://drafts.csswg.org/css-images-3/#typedef-size \<size\>> data
 -- type, used by @radial-gradient()@.
-data Size = ClosestCorner | ClosestSide | FarthestCorner | FarthestSide
+data Size = ClosestCorner
+          | ClosestSide
+          | FarthestCorner
+          | FarthestSide
           | SL Length
           | PL PercentageLength PercentageLength
   deriving (Eq, Show)
@@ -254,24 +256,20 @@ minifyRadialPosition cond (Just p)
 
 minifyAngleOrSide :: Maybe (Either Angle SideOrCorner)
                   -> Reader Config (Maybe (Either Angle SideOrCorner))
-minifyAngleOrSide mas =
-    case mas of
-      Nothing -> pure Nothing
-      Just y -> case y of
-                  Left a  -> if a == defaultGradientAngle
-                                then pure Nothing
-                                else minify a >>= pure . Just . Left
-                  Right b -> if b == defaultGradientSideOrCorner
-                                then pure Nothing
-                                else pure $ Just (minifySide b)
-  where minifySide (TopSide, Nothing)    = Left NullAngle
+minifyAngleOrSide Nothing  = pure Nothing
+minifyAngleOrSide (Just (Left a))
+    | a == defaultGradientAngle = pure Nothing
+    | otherwise                 = (Just . Left) <$> minify a
+  where defaultGradientAngle = Angle 180 Deg
+minifyAngleOrSide (Just (Right b))
+    | b == defaultGradientSideOrCorner = pure Nothing
+    | otherwise                        = pure $ Just (minifySide b)
+  where defaultGradientSideOrCorner      = (BottomSide, Nothing)
+        minifySide (TopSide, Nothing)    = Left NullAngle
         minifySide (RightSide, Nothing)  = Left (Angle 90 Deg)
         minifySide (BottomSide, Nothing) = Left (Angle 180 Deg)
         minifySide (LeftSide, Nothing)   = Left (Angle 270 Deg)
         minifySide z                     = Right z
-
-        defaultGradientAngle = Angle 180 Deg
-        defaultGradientSideOrCorner = (BottomSide, Nothing)
 
 instance ToText Gradient where
   toBuilder (OldLinearGradient mas csl) = maybe mempty f mas

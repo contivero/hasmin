@@ -83,7 +83,7 @@ fontfamilyname = do
     is <- many (skipComments *> ident)
     if T.toLower i `elem` invalidNames
        then mzero
-       else pure $ i <> mconcat (map (" "<>) is)
+       else pure $ i <> foldMap (" "<>) is
   where invalidNames = ["serif", "sans-serif", "monospace", "cursive",
                         "fantasy", "inherit", "initial", "unset", "default"]
 

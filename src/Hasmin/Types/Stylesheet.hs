@@ -9,8 +9,8 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Stylesheet (
-      Expression(..)
+module Hasmin.Types.Stylesheet 
+    ( Expression(..)
     , MediaQuery(..)
     , Rule(..)
     , KeyframeSelector(..)
@@ -53,8 +53,8 @@ data MediaQuery = MediaQuery1 Text Text [Expression]  -- ^ First possibility in 
                 | MediaQuery2 [Expression] -- ^ Second possibility in the grammar
   deriving (Show, Eq)
 instance Minifiable MediaQuery where
-  minify (MediaQuery1 t1 t2 es) = MediaQuery1 t1 t2 <$> mapM minify es
-  minify (MediaQuery2 es)       = MediaQuery2 <$> mapM minify es
+  minify (MediaQuery1 t1 t2 es) = MediaQuery1 t1 t2 <$> traverse minify es
+  minify (MediaQuery2 es)       = MediaQuery2 <$> traverse minify es
 
 instance ToText MediaQuery where
   toBuilder (MediaQuery1 t1 t2 es) = notOrOnly <> fromText t2 <> expressions
@@ -67,7 +67,7 @@ data Expression = Expression Text (Maybe Value)
                 | InvalidExpression Text
   deriving (Show, Eq)
 instance Minifiable Expression where
-  minify (Expression t mv) = Expression t <$> mapM minify mv
+  minify (Expression t mv) = Expression t <$> traverse minify mv
   minify x = pure x
 instance ToText Expression where
   toBuilder (Expression t mv) =
@@ -102,10 +102,8 @@ instance ToText KeyframeBlock where
       <> mconcatIntersperse toBuilder (singleton ';') ds
       <> singleton '}'
 instance Minifiable KeyframeBlock where
-  minify (KeyframeBlock ss ds) = do
-      decs <- mapM minify ds
-      sels <- mapM minify ss
-      pure $ KeyframeBlock sels decs
+  minify (KeyframeBlock ss ds) = 
+    KeyframeBlock <$> traverse minify ss <*> traverse minify ds
 
 type VendorPrefix = Text
 
@@ -123,9 +121,9 @@ data Rule = AtCharset StringType
  deriving (Eq, Show)
 instance ToText Rule where
   toBuilder (AtMedia mqs rs) = "@media " <> mconcatIntersperse toBuilder (singleton ',') mqs
-      <> singleton '{' <> mconcat (fmap toBuilder rs) <> singleton '}'
+      <> singleton '{' <> foldMap toBuilder rs <> singleton '}'
   toBuilder (AtSupports sc rs) = "@supports " <> toBuilder sc
-      <> singleton '{' <> mconcat (fmap toBuilder rs) <> singleton '}'
+      <> singleton '{' <> foldMap toBuilder rs <> singleton '}'
   toBuilder (AtImport esu mqs) = "@import " <> toBuilder esu <> mediaqueries
       <> singleton ';'
     where mediaqueries =
@@ -145,25 +143,25 @@ instance ToText Rule where
             ,singleton '}']
   toBuilder (AtBlockWithRules t rs) =
     mconcat [singleton '@', fromText t, singleton '{'
-            , mconcat (fmap toBuilder rs), singleton '}']
+            , foldMap toBuilder rs, singleton '}']
   toBuilder (AtBlockWithDec t ds)   =
     mconcat [singleton '@', fromText t, singleton '{'
             ,mconcatIntersperse id (singleton ';') (fmap toBuilder ds)
             ,singleton '}']
   toBuilder (AtKeyframes vp n bs) = singleton '@' <> fromText vp <> "keyframes"
             <> singleton ' ' <> fromText n <> singleton '{'
-            <> mconcat (fmap toBuilder bs) <> singleton '}'
+            <> foldMap toBuilder bs <> singleton '}'
 instance Minifiable Rule where
-  minify (AtMedia mqs rs) = liftA2 AtMedia (mapM minify mqs) (mapM minify rs)
-  minify (AtSupports sc rs) = liftA2 AtSupports (minify sc) (mapM minify rs)
-  minify (AtKeyframes vp n bs) = AtKeyframes vp n <$> mapM minify bs
-  minify (AtBlockWithRules t rs) = AtBlockWithRules t <$> mapM minify rs
-  minify (AtBlockWithDec t ds) = do
-      decs <- cleanRule ds >>= collapseLonghands >>= mapM minify
+  minify (AtMedia mqs rs)        = liftA2 AtMedia (traverse minify mqs) (traverse minify rs)
+  minify (AtSupports sc rs)      = liftA2 AtSupports (minify sc) (traverse minify rs)
+  minify (AtKeyframes vp n bs)   = AtKeyframes vp n <$> traverse minify bs
+  minify (AtBlockWithRules t rs) = AtBlockWithRules t <$> traverse minify rs
+  minify (AtBlockWithDec t ds)   = do
+      decs <- cleanRule ds >>= collapseLonghands >>= traverse minify
       pure $ AtBlockWithDec t decs
   minify (StyleRule ss ds) = do
-      decs <- cleanRule ds >>= collapseLonghands >>= mapM minify >>= sortDeclarations
-      sels <- mapM minify ss >>= removeDuplicateSelectors >>= sortSelectors
+      decs <- cleanRule ds >>= collapseLonghands >>= traverse minify >>= sortDeclarations
+      sels <- traverse minify ss >>= removeDuplicateSelectors >>= sortSelectors
       pure $ StyleRule sels decs
     where sortSelectors :: [Selector] -> Reader Config [Selector]
           sortSelectors sls = do
@@ -182,10 +180,10 @@ instance Minifiable Rule where
   -- convert url() to " "
   minify (AtImport esu mqs) =
       case esu of
-        Left _          -> AtImport esu <$> mapM minify mqs
-        Right (Url ets) -> do a <- mapM minify ets
+        Left _          -> AtImport esu <$> traverse minify mqs
+        Right (Url ets) -> do a <- traverse minify ets
                               let na = either DoubleQuotes id a
-                              b <- mapM minify mqs
+                              b <- traverse minify mqs
                               pure $ AtImport (Left na) b
   minify (AtCharset s) = AtCharset <$> mapString lowercaseText s
   minify x = pure x
@@ -258,7 +256,7 @@ nub' :: (Ord a) => [a] -> [a]
 nub' = go Set.empty
   where go _ [] = []
         go s (x:xs) | Set.member x s = go s xs
-                    | otherwise    = x : go (Set.insert x s) xs
+                    | otherwise      = x : go (Set.insert x s) xs
 
 data SupportsCondition = Not SupportsCondInParens
                        | And SupportsCondInParens (NonEmpty SupportsCondInParens)
@@ -303,8 +301,8 @@ instance ToText SupportsCondInParens where
   toBuilder (ParensDec x)  = "(" <> toBuilder x <> ")"
   toBuilder (ParensCond x) = "(" <> toBuilder x <> ")"
 instance Minifiable SupportsCondInParens where
-  minify (ParensDec x) = ParensDec <$> minify x
-  minify  (ParensCond x)  = ParensCond <$> minify x
+  minify (ParensDec x)  = ParensDec <$> minify x
+  minify (ParensCond x) = ParensCond <$> minify x
 
 instance Minifiable [Rule] where
   minify = minifyRules

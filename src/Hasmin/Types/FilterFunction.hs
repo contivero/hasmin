@@ -8,14 +8,15 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.FilterFunction (
-      FilterFunction(..)
+module Hasmin.Types.FilterFunction
+    ( FilterFunction(..)
     , minifyPseudoShadow
     ) where
 
 import Control.Monad.Reader (Reader, ask)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton, Builder)
+
 import Hasmin.Config
 import Hasmin.Class
 import Hasmin.Types.Dimension
@@ -91,9 +92,9 @@ minifyPseudoShadow constr a b c d = do
               z  <- case c of
                       Just r -> if isZeroLen r
                                    then pure Nothing
-                                   else mapM minify c
+                                   else traverse minify c
                       Nothing -> pure Nothing
-              c2 <- mapM minify d
+              c2 <- traverse minify d
               pure $ constr x y z c2
 
 minifyNumberPercentage :: Either Number Percentage
@@ -117,4 +118,3 @@ filterFunctionEquality (Left a) (Left b)   = toRational a == toRational b
 filterFunctionEquality (Right a) (Right b) = toRational a == toRational b
 filterFunctionEquality (Left a) (Right b)  = toRational a == toRational b/100
 filterFunctionEquality (Right a) (Left b)  = toRational a/100 == toRational b
-
