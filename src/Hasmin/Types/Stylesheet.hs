@@ -153,11 +153,7 @@ instance ToText Rule where
             <> foldMap toBuilder bs <> singleton '}'
 instance Minifiable Rule where
   -- @media all {..} == @media {..}
-  minify (AtMedia [MediaQuery1 t1 t2 xs] rs)
-      | T.null t1 && T.toLower t2 == "all" = do
-          xs' <- traverse minify xs
-          AtMedia [MediaQuery2 xs'] <$> traverse minify rs
-  minify (AtMedia mqs rs)        = liftA2 AtMedia (traverse minify mqs) (traverse minify rs)
+  minify (AtMedia mqs rs)        = AtMedia <$> traverse minMediaQuery mqs <*> traverse minify rs
   minify (AtSupports sc rs)      = liftA2 AtSupports (minify sc) (traverse minify rs)
   minify (AtKeyframes vp n bs)   = AtKeyframes vp n <$> traverse minify bs
   minify (AtBlockWithRules t rs) = AtBlockWithRules t <$> traverse minify rs
@@ -192,6 +188,12 @@ instance Minifiable Rule where
                               pure $ AtImport (Left na) b
   minify (AtCharset s) = AtCharset <$> mapString lowercaseText s
   minify x = pure x
+
+minMediaQuery :: MediaQuery -> Reader Config MediaQuery
+minMediaQuery (MediaQuery1 t1 t2 xs)
+    | T.null t1 && T.toLower t2 == "all" = MediaQuery2 <$> traverse minify xs
+    | otherwise = MediaQuery1 t1 t2 <$> traverse minify xs
+minMediaQuery (MediaQuery2 es) = MediaQuery2 <$> traverse minify es
 
 sortDeclarations :: [Declaration] -> Reader Config [Declaration]
 sortDeclarations ds = do

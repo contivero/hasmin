@@ -44,10 +44,16 @@ atMediaTestInfo :: [(Text, Text)]
 atMediaTestInfo =
   [("@media all {h1{color:red}}",
     "@media {h1{color:red}}")
-  ,("@media not all{h1{color:red}}",
-    "@media not all{h1{color:red}}")
   ,("@media all and (min-width: 500px){h1 {color: red}}",
     "@media (min-width:500px){h1{color:red}}")
+  ,("@media not all{h1{color:red}}",
+    "@media not all{h1{color:red}}")
+  ,("@media all and (min-width:500px), not all and (min-device-pixel-ratio:0){h1{a:a}}",
+    "@media (min-width:500px),not all and (min-device-pixel-ratio:0){h1{a:a}}")
+  ,("@media (min-width:500px),all and (min-device-pixel-ratio:0){h1{a:a}}",
+    "@media (min-width:500px),(min-device-pixel-ratio:0){h1{a:a}}")
+  ,("@media only all{h1{a:a}}",
+    "@media only all{h1{a:a}}")
   ]
 
 atImportTestInfo :: [(Text, Text)]
