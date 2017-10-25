@@ -18,8 +18,15 @@ combineAdjacentMediaQueriesTests =
 
 combineAdjacentMediaQueriesTestsInfo :: [(Text, Text)]
 combineAdjacentMediaQueriesTestsInfo =
-  [("@media all and (min-width:24rem){.Fz\\(s2\\)\\@xs{font-size:1.2rem;}}@media all and (min-width: 24rem){.Px\\(s04\\)\\@xs{padding-left:.25rem; padding-right:.25rem;}}",
-    "@media all and (min-width:24rem){.Fz\\(s2\\)\\@xs{font-size:1.2rem}.Px\\(s04\\)\\@xs{padding-left:.25rem;padding-right:.25rem}}")
+  [("@media (min-width:24rem){.Fz\\(s2\\)\\@xs{font-size:1.2rem;}}@media (min-width:24rem){.Px\\(s04\\)\\@xs{padding-left:.25rem; padding-right:.25rem;}}",
+    "@media (min-width:24rem){.Fz\\(s2\\)\\@xs{font-size:1.2rem}.Px\\(s04\\)\\@xs{padding-left:.25rem;padding-right:.25rem}}")
+
+
+  {- TODO make Eq instance handle this equality.
+   -
+  ,("@media all and (min-width:24rem){.Fz\\(s2\\)\\@xs{font-size:1.2rem;}}@media (min-width:24rem){.Px\\(s04\\)\\@xs{padding-left:.25rem; padding-right:.25rem;}}",
+    "@media (min-width:24rem){.Fz\\(s2\\)\\@xs{font-size:1.2rem}.Px\\(s04\\)\\@xs{padding-left:.25rem;padding-right:.25rem}}")
+  -}
   ]
 
 atRuleTests :: Spec
@@ -30,9 +37,21 @@ atRuleTests = do
       mapM_ (matchSpec (minifyWithTestConfig <$> atRule)) atSupportsTestInfo
     describe "@import minification" $
       mapM_ (matchSpec (minifyWithTestConfig <$> atRule)) atImportTestInfo
+    describe "@media minification" $
+      mapM_ (matchSpec (minifyWithTestConfig <$> atRule)) atMediaTestInfo
+
+atMediaTestInfo :: [(Text, Text)]
+atMediaTestInfo =
+  [("@media all {h1{color:red}}",
+    "@media {h1{color:red}}")
+  ,("@media not all{h1{color:red}}",
+    "@media not all{h1{color:red}}")
+  ,("@media all and (min-width: 500px){h1 {color: red}}",
+    "@media (min-width:500px){h1{color:red}}")
+  ]
 
 atImportTestInfo :: [(Text, Text)]
-atImportTestInfo = 
+atImportTestInfo =
   [("@import  url(\'landscape.css\');",
       "@import \"landscape.css\";")
   ,("@import url(landscape.css);",
@@ -104,7 +123,7 @@ atSupportsTestInfo =
       "@supports (a:a){s{b:b}}")
   ]
 
--- TODO test for 
+-- TODO test for
 {-
 .gallery-loading .gallery-loading-container {
   background: #fff url("//corporate-website-test.s3.amazonaws.com/wp-content/themes/ggs-rcw/img/spinner_white_125px.gif") no-repeat center center;

@@ -9,7 +9,7 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Stylesheet 
+module Hasmin.Types.Stylesheet
     ( Expression(..)
     , MediaQuery(..)
     , Rule(..)
@@ -102,7 +102,7 @@ instance ToText KeyframeBlock where
       <> mconcatIntersperse toBuilder (singleton ';') ds
       <> singleton '}'
 instance Minifiable KeyframeBlock where
-  minify (KeyframeBlock ss ds) = 
+  minify (KeyframeBlock ss ds) =
     KeyframeBlock <$> traverse minify ss <*> traverse minify ds
 
 type VendorPrefix = Text
@@ -152,6 +152,11 @@ instance ToText Rule where
             <> singleton ' ' <> fromText n <> singleton '{'
             <> foldMap toBuilder bs <> singleton '}'
 instance Minifiable Rule where
+  -- @media all {..} == @media {..}
+  minify (AtMedia [MediaQuery1 t1 t2 xs] rs)
+      | T.null t1 && T.toLower t2 == "all" = do
+          xs' <- traverse minify xs
+          AtMedia [MediaQuery2 xs'] <$> traverse minify rs
   minify (AtMedia mqs rs)        = liftA2 AtMedia (traverse minify mqs) (traverse minify rs)
   minify (AtSupports sc rs)      = liftA2 AtSupports (minify sc) (traverse minify rs)
   minify (AtKeyframes vp n bs)   = AtKeyframes vp n <$> traverse minify bs
