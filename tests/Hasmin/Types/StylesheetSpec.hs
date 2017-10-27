@@ -62,6 +62,12 @@ atImportTestInfo =
       "@import \"landscape.css\";")
   ,("@import url(landscape.css);",
       "@import \"landscape.css\";")
+  ,("@import url(landscape.css) all;",
+      "@import \"landscape.css\";")
+  ,("@import url(landscape.css) screen, all and (min-width:500px);",
+      "@import \"landscape.css\" screen,(min-width:500px);")
+  ,("@import url(landscape.css) all and (min-width:500px);",
+      "@import \"landscape.css\" (min-width:500px);")
   ]
 
 mergeRulesTest :: Spec

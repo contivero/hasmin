@@ -129,7 +129,7 @@ instance ToText Rule where
     where mediaqueries =
             case mqs of
               [] -> mempty
-              _  -> singleton ' ' <> mconcatIntersperse toBuilder (singleton ',') mqs
+              x  -> singleton ' ' <> mconcatIntersperse toBuilder (singleton ',') mqs
   toBuilder (AtCharset s) = "@charset " <> toBuilder s <> singleton ';'
   toBuilder (AtNamespace t esu) = "@namespace "
       <> prefix <> toBuilder esu <> singleton ';'
@@ -153,7 +153,7 @@ instance ToText Rule where
             <> foldMap toBuilder bs <> singleton '}'
 instance Minifiable Rule where
   -- @media all {..} == @media {..}
-  minify (AtMedia mqs rs)        = AtMedia <$> traverse minMediaQuery mqs <*> traverse minify rs
+  minify (AtMedia mqs rs)        = AtMedia <$> minify mqs <*> traverse minify rs
   minify (AtSupports sc rs)      = liftA2 AtSupports (minify sc) (traverse minify rs)
   minify (AtKeyframes vp n bs)   = AtKeyframes vp n <$> traverse minify bs
   minify (AtBlockWithRules t rs) = AtBlockWithRules t <$> traverse minify rs
@@ -181,19 +181,24 @@ instance Minifiable Rule where
   -- convert url() to " "
   minify (AtImport esu mqs) =
       case esu of
-        Left _          -> AtImport esu <$> traverse minify mqs
+        Left _          -> AtImport esu <$> minify mqs
         Right (Url ets) -> do a <- traverse minify ets
                               let na = either DoubleQuotes id a
-                              b <- traverse minify mqs
+                              b <- minify mqs
                               pure $ AtImport (Left na) b
   minify (AtCharset s) = AtCharset <$> mapString lowercaseText s
   minify x = pure x
 
-minMediaQuery :: MediaQuery -> Reader Config MediaQuery
-minMediaQuery (MediaQuery1 t1 t2 xs)
-    | T.null t1 && T.toLower t2 == "all" = MediaQuery2 <$> traverse minify xs
-    | otherwise = MediaQuery1 t1 t2 <$> traverse minify xs
-minMediaQuery (MediaQuery2 es) = MediaQuery2 <$> traverse minify es
+instance Minifiable [MediaQuery] where
+  minify (MediaQuery1 t1 t2 xs : ys)
+    | T.null t1 && T.toLower t2 == "all" =
+        case xs of
+          [] -> minify ys
+          _  -> liftA2 (:) (MediaQuery2 <$> traverse minify xs) (minify ys)
+    | otherwise = liftA2 (:) (MediaQuery1 t1 t2 <$> traverse minify xs) (minify ys)
+  minify (MediaQuery2 es : ys) =
+    liftA2 (:) (MediaQuery2 <$> traverse minify es) (minify ys)
+  minify [] = pure []
 
 sortDeclarations :: [Declaration] -> Reader Config [Declaration]
 sortDeclarations ds = do
