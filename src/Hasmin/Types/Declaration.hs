@@ -331,7 +331,7 @@ combineTransformFunctions d@(Declaration _ vs _ _) = do
                              -> (Seq TransformFunction, Seq Value)
                 splitValues' (ts, os) (TransformV x:xs) = splitValues' (ts |> x, os) xs
                 splitValues' (ts, os) (x:xs)            = splitValues' (ts, os |> x) xs
-                splitValues  (ts, os) []                = (ts, os)
+                splitValues' (ts, os) []                = (ts, os)
 
 backgroundSizeReduce :: Declaration -> Values -> Bool -> Declaration
 backgroundSizeReduce d@(Declaration _ vs _ _) initVals inherits =
