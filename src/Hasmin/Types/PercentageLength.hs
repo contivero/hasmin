@@ -12,11 +12,14 @@ module Hasmin.Types.PercentageLength
     ( PercentageLength
     , isZero
     , isNonZeroPercentage
+    , minifyPL
     ) where
 
+import Control.Monad.Reader (Reader)
 import Hasmin.Types.Dimension
 import Hasmin.Types.Numeric
 import Hasmin.Class
+import Hasmin.Config
 
 -- | CSS <length-percentage> data type, i.e.: [length | percentage]
 -- Though because of the name it would be more intuitive to define:
@@ -25,12 +28,13 @@ import Hasmin.Class
 -- makes no sense to minify a Percentage.
 type PercentageLength = Either Percentage Length
 
--- TODO see if this instance can be deleted altogether.
-instance Minifiable PercentageLength where
-  minify x@(Right _) = mapM minify x
-  minify x@(Left p)
-      | p == 0    = pure $ Right NullLength -- minifies 0% to 0
-      | otherwise = pure x
+
+minifyPL :: PercentageLength
+         -> Reader Config PercentageLength
+minifyPL x@(Right _) = mapM minify x
+minifyPL x@(Left p)
+    | p == 0    = pure $ Right NullLength -- minifies 0% to 0
+    | otherwise = pure x
 
 isNonZeroPercentage :: PercentageLength -> Bool
 isNonZeroPercentage (Left p) = p /= 0
@@ -38,5 +42,3 @@ isNonZeroPercentage _        = False
 
 isZero :: (Num a, Eq a) => Either a Length -> Bool
 isZero = either (== 0) isZeroLen
-
-

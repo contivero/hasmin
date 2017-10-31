@@ -73,5 +73,5 @@ instance Minifiable BgSize where
 
 minifyBgSizeArg :: Either PercentageLength Auto
                 -> Reader Config (Either PercentageLength Auto)
-minifyBgSizeArg (Left a)     = Left <$> minify a
+minifyBgSizeArg (Left a)     = Left <$> minifyPL a
 minifyBgSizeArg (Right Auto) = pure $ Right Auto
