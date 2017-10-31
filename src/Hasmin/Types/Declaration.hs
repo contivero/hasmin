@@ -200,9 +200,9 @@ fontWeightOptimizer = optimizeValues f
 
         replaceForSynonym :: TextV -> Value
         replaceForSynonym t
-          | t == TextV "normal" = NumberV 400
-          | t == TextV "bold"   = NumberV 700
-          | otherwise           = Other t
+          | t == "normal" = NumberV 400
+          | t == "bold"   = NumberV 700
+          | otherwise     = Other t
 
 optimizeTransformOrigin :: Declaration -> Reader Config Declaration
 optimizeTransformOrigin d@(Declaration _ vals _ _) = do

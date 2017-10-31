@@ -129,7 +129,7 @@ instance ToText Rule where
     where mediaqueries =
             case mqs of
               [] -> mempty
-              x  -> singleton ' ' <> mconcatIntersperse toBuilder (singleton ',') mqs
+              _  -> singleton ' ' <> mconcatIntersperse toBuilder (singleton ',') mqs
   toBuilder (AtCharset s) = "@charset " <> toBuilder s <> singleton ';'
   toBuilder (AtNamespace t esu) = "@namespace "
       <> prefix <> toBuilder esu <> singleton ';'

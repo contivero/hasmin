@@ -217,7 +217,7 @@ instance Minifiable Value where
                 then FinalBgLayer (Just $ mkOther "none") p s r a bgOrigin bgClip c
                 else FinalBgLayer i p s r a bgOrigin bgClip c
   minify (SingleTransition prop tdur tf tdel) = do
-      let p = if prop == Just (TextV "all")
+      let p = if prop == Just "all"
                  then Nothing
                  else prop -- TODO lowercase here
       (tDuration, tDelay) <- handleTime tdur tdel
@@ -269,21 +269,17 @@ instance Minifiable Value where
               conf <- ask
               pure $ replaceForSynonym (fontweightSettings conf) x
             where replaceForSynonym s (Other t)
-                    | t == TextV "normal"                       = Nothing
-                    | t == TextV "bold" && s == FontWeightMinOn = Just $ NumberV 700
-                    | otherwise                                 = Just $ Other t
+                    | t == "normal"                       = Nothing
+                    | t == "bold" && s == FontWeightMinOn = Just $ NumberV 700
+                    | otherwise                           = Just $ Other t
                   replaceForSynonym _ (NumberV 400) = Nothing
                   replaceForSynonym _ y = Just y
-          optimizeLineHeight Nothing = pure Nothing
-          optimizeLineHeight (Just x) =
-              case x of
-                Other t -> if t == TextV "normal"
-                              then pure Nothing
-                              else Just <$> minify x
-                y       -> Just <$> minify y
+          optimizeLineHeight Nothing                 = pure Nothing
+          optimizeLineHeight (Just (Other "normal")) = pure Nothing
+          optimizeLineHeight (Just x)                = Just <$> minify x
 
   minify (GenericFunc n vs) = GenericFunc n <$> minify vs
-  minify (Local x)        = do
+  minify (Local x) = do
       conf <- ask
       v <- lowercaseParameters x
       pure . Local $ if shouldRemoveQuotes conf
@@ -322,7 +318,7 @@ handleBoxes x y = pure (x, y)
 
 handleAttachment :: Maybe TextV -> Reader Config (Maybe TextV)
 handleAttachment = maybe (pure Nothing) f
-  where f x = pure $ if x == TextV "scroll"
+  where f x = pure $ if x == "scroll"
                         then Nothing
                         else Just x -- TODO might need to lowercase here.
 
@@ -333,7 +329,7 @@ handleColor = maybe (pure Nothing) f
                  else Just <$> minify x
 
 handleBgSize :: Maybe BgSize -> Reader Config (Maybe BgSize)
-handleBgSize (Just b) = do 
+handleBgSize (Just b) = do
     minb <- minify b
     pure $ if minb == BgSize1 (Right Auto)
               then Nothing

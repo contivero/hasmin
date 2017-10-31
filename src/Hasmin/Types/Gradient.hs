@@ -287,9 +287,9 @@ instance ToText Gradient where
   toBuilder (RadialGradient sh sz p cs) = firstPart
       <> mconcatIntersperse id (singleton ',') (fmap toBuilder cs)
     where l = catMaybes [fmap toBuilder sh, fmap toBuilder sz, fmap (\x -> "at " <> toBuilder x) p]
-          firstPart = if null l
-                         then mempty
-                         else mconcatIntersperse id (singleton ' ') l <> singleton ','
+          firstPart
+              | null l    = mempty
+              | otherwise = mconcatIntersperse id (singleton ' ') l <> singleton ','
 
 instance Eq Gradient where
   LinearGradient x1 csl1 == LinearGradient x2 csl2 =

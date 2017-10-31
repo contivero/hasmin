@@ -11,8 +11,8 @@
 -- Parsers for CSS values.
 --
 -----------------------------------------------------------------------------
-module Hasmin.Parser.Value (
-      valuesFor
+module Hasmin.Parser.Value
+    ( valuesFor
     , valuesFallback
     , value
     , valuesInParens
@@ -455,10 +455,7 @@ bgLayer = do
 -- used for the background property, which takes among other things:
 -- <position> [ / <bg-size> ]?
 positionAndBgSize :: Parser (Position, Maybe BgSize)
-positionAndBgSize = do
-    x <- position
-    y <- optional (slash *> bgSize)
-    pure (x,y)
+positionAndBgSize = (,) <$> position <*> optional (slash *> bgSize)
 
 matchKeywords :: [Text] -> Parser TextV
 matchKeywords listOfKeywords = do
