@@ -1,6 +1,53 @@
 # Changelog
 This project adheres to [PVP](https://pvp.haskell.org).
 
+## 1.0.1
+
+### Added
+
+* Removing `all` and `all and` in media query lists, since `all`
+  is assumed when not present. In other words, the following
+  rules are equivalent:
+  ```css
+  @media all {/*..*/}
+  @media {/*..*/}
+  ```
+  and so are these:
+  ```css
+  @media all and (min-width: 500px) {/*..*/}
+  @media (min-width: 500px) {/*..*/}
+  ```
+  Note that this applies to media query lists in at-import rules too.
+
+* Replacing the `url()` notation for a \<string> when used in the `@import`
+  rule.
+
+* Four pseudoelement minifications:
+
+  1. `:nth-of-type(1)` --> `:first-of-type`.
+  2. `:nth-last-of-type(1)` --> `:last-of-type`.
+  3. `:nth-child(1)` --> `:first-child`.
+  4. `:nth-last-child(1)` --> `:last-child`.
+
+* `[class~=x]` to `.x` minification.
+
+### Improved
+* \<position> parser, making hasmin around four times faster on stylesheets with
+  many \<position> values.
+
+### Fixed
+* Length's Eq instance, which would equate lengths with the same numerical
+  value when one had an absolute unit, and the other relative, e.g. 1in and 1em.
+* Escaped character conversion: converting characters would crash the program
+  when:
+
+    1. The escaped character had more than 6 hexadecimal digits (6 is the specs
+       maximum); E.g. `\aaaaaaa`.
+    2. The escaped character's numerical representation was out of the unicode
+       range.
+
+  This is no longer the case.
+
 ## 1.0
 
 ### Added
