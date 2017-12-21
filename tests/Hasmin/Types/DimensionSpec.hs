@@ -62,6 +62,8 @@ spec = do
         Length 1.27 CM `shouldBe` Length 3 PC
       it "1.27cm == 48px" $
         Length 1.27 CM `shouldBe` Length 48 PX
+      it "1in != 1em" $
+        Length 1 IN `shouldNotBe` Length 1 EM
     -- describe "<time> conversions" $ do
       -- it "" $ Duration 1 S `shouldBe` Duration 1000 Ms
     -- describe "<frequency> conversions" $ do

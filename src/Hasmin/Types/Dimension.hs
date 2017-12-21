@@ -46,8 +46,9 @@ data Length = Length Number LengthUnit
   deriving (Show)
 instance Eq Length where
   (Length r1 u1) == (Length r2 u2)
-    | u1 == u2  = r1 == r2
-    | otherwise = toInches r1 u1 == toInches r2 u2
+    | u1 == u2                       = r1 == r2
+    | isAbsolute u1 && isAbsolute u2 = toInches r1 u1 == toInches r2 u2
+    | otherwise                      = r1 == 0 && r2 == 0
   x == y = isZeroLen x && isZeroLen y
 instance Minifiable Length where
   minify NullLength = pure NullLength
@@ -62,6 +63,10 @@ instance Minifiable Length where
 isRelative :: LengthUnit -> Bool
 isRelative x = x == EM || x == EX || x == CH || x == VH
             || x == VW || x == VMIN || x == VMAX || x == REM
+
+isAbsolute :: LengthUnit -> Bool
+isAbsolute x = x == PX || x == PT || x == PC || x == IN
+            || x == MM || x == CM || x == Q
 
 isRelativeLength :: Length -> Bool
 isRelativeLength (Length _ u) = isRelative u
