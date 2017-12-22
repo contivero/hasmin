@@ -20,7 +20,6 @@ module Hasmin.Parser.Value
     , percentage
     , url
     , stringtype
-    , textualvalue
     , stringvalue    -- used in StringSpec
     , shadowList     -- used in ShadowSpec
     , timingFunction
@@ -29,38 +28,39 @@ module Hasmin.Parser.Value
     , color
     , number
     , fontStyle
+    , textualvalue
     ) where
 
 import Control.Applicative ((<|>), many, liftA3, optional)
-import Control.Arrow (first, (&&&))
+import Control.Arrow (first)
 import Control.Monad (mzero)
 import Data.Functor (($>))
-import Data.Attoparsec.Text (asciiCI, char, count, option, Parser, satisfy,
-       skipSpace, string)
-import Data.Map.Strict (Map)
 import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
-import Data.Word (Word8)
 import Data.Char (isAscii)
 import Text.Parser.Permutation ((<|?>), (<$$>), (<$?>), (<||>), permute)
-import Numeric (readSigned, readFloat)
 import qualified Data.Set as Set
+import Data.Attoparsec.Text (asciiCI, char, count, option, Parser,
+       skipSpace, string)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
+import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.List as L
 import qualified Data.Text as T
 
 import Hasmin.Parser.Utils
+import Hasmin.Parser.Numeric
+import Hasmin.Parser.Color
+import Hasmin.Parser.Dimension
+import Hasmin.Parser.Gradient
+import Hasmin.Parser.PercentageLength
+import Hasmin.Parser.Position
 import Hasmin.Types.BgSize
-import Hasmin.Class
-import Hasmin.Types.Color
 import Hasmin.Types.Dimension
 import Hasmin.Types.FilterFunction
-import Hasmin.Types.Gradient
 import Hasmin.Types.Numeric
-import Hasmin.Types.PercentageLength
 import Hasmin.Types.Position
 import Hasmin.Types.RepeatStyle
 import Hasmin.Types.Shadow
@@ -76,65 +76,6 @@ valuesFor propName =
   case Map.lookup (T.toLower propName) propertyValueParsersMap of
     Just x  -> x <* skipComments
     Nothing -> mzero
-
--- | Parser for <https://www.w3.org/TR/css-values-3/#numbers \<number\>>.
-number :: Parser Number
-number = Number <$> rational
-
--- ---------------------------------------------------------------------------
--- Color Parsers
--- ---------------------------------------------------------------------------
-
--- Assumes "rgb(" has already been read
-rgb :: Parser Color
-rgb = functionParser (rgbInt <|> rgbPer)
-  where rgbInt = mkRGBInt <$> word8 <* comma <*> word8 <* comma <*> word8
-        rgbPer = mkRGBPer <$> percentage <* comma
-                          <*> percentage <* comma <*> percentage
-
--- Assumes "rgba(" has already been read
-rgba :: Parser Color
-rgba = functionParser (rgbaInt <|> rgbaPer)
-  where rgbaInt = mkRGBAInt <$> word8 <* comma <*> word8 <* comma
-                            <*> word8 <* comma <*> alphavalue
-        rgbaPer = mkRGBAPer <$> percentage <* comma <*> percentage <* comma
-                            <*> percentage <* comma <*> alphavalue
-
--- Assumes "hsl(" has already been read
-hsl :: Parser Color
-hsl = functionParser p
-  where p = mkHSL <$> int <* comma <*> percentage <* comma <*> percentage
-
--- Assumes "hsla(" has already been read
-hsla :: Parser Color
-hsla = functionParser p
-  where p = mkHSLA <$> int <* comma <*> percentage <* comma
-                   <*> percentage <* comma <*> alphavalue
-
-alphavalue :: Parser Alphavalue
-alphavalue = mkAlphavalue <$> rational
-
-hexvalue :: Parser Value
-hexvalue = ColorV <$> hex
-
-hex :: Parser Color
-hex = do
-    _ <- char '#'
-    a <- hexadecimal
-    b <- hexadecimal
-    c <- hexadecimal
-    x <- optional hexadecimal
-    case x of
-      Nothing -> pure $ mkHex3 a b c
-      Just d  -> do y <- optional hexadecimal
-                    case y of
-                      Nothing -> pure $ mkHex4 a b c d
-                      Just e  -> do f <- hexadecimal
-                                    z <- optional hexadecimal
-                                    case z of
-                                      Nothing -> pure $ mkHex6 [a,b] [c,d] [e,f]
-                                      Just g  -> do h <- hexadecimal
-                                                    pure $ mkHex8 [a,b] [c,d] [e,f] [g,h]
 
 -- ---------------------------------------------------------------------------
 -- Dimensions Parsers
@@ -172,88 +113,8 @@ numericalvalue = do
               Just f  -> pure $ f n
               Nothing -> mzero -- TODO see if we should return an "Other" value
 
--- Create a numerical parser based on a Map.
--- See for instance, the "angle" parser
-dimensionParser :: Map Text (Number -> a) -> a -> Parser a
-dimensionParser m unitlessValue = do
-    n <- number
-    u <- opt (A.takeWhile1 C.isAlpha)
-    if T.null u
-       then if n == 0
-               then pure unitlessValue -- <angle> 0, without units
-               else mzero -- Non-zero <number>, fail
-       else case Map.lookup (T.toCaseFold u) m of
-              Just f  -> pure $ f n
-              Nothing -> mzero -- parsed units aren't angle units, fail
-
-distance :: Parser Length
-distance = dimensionParser distanceConstructorsMap NullLength
-  where distanceConstructorsMap = Map.fromList distanceConstructorsList
-
-angle :: Parser Angle
-angle = dimensionParser angleConstructorsMap NullAngle
-  where angleConstructorsMap = Map.fromList angleConstructorsList
-
-duration :: Parser Duration
-duration = do
-    n <- number
-    u <- opt (A.takeWhile1 C.isAlpha)
-    if T.null u
-       then mzero
-       else case Map.lookup (T.toCaseFold u) durationConstructorsMap of
-              Just f  -> pure $ f n
-              Nothing -> mzero -- parsed units aren't angle units, fail
-  where durationConstructorsMap = Map.fromList $
-            fmap (toText &&& flip Duration) [S, Ms]
-
-angleConstructorsList :: [(Text, Number -> Angle)]
-angleConstructorsList = fmap (toText &&& flip Angle)
-    [Deg, Grad, Rad, Turn]
-
-distanceConstructorsList :: [(Text, Number -> Length)]
-distanceConstructorsList = fmap (toText &&& flip Length)
-    [EM, EX, CH, VH, VW, VMIN, VMAX, REM, Q, CM, MM, IN, PC, PT, PX]
-
--- | Parser for <https://drafts.csswg.org/css-values-3/#percentages \<percentage\>>.
-percentage :: Parser Percentage
-percentage = Percentage <$> rational <* char '%'
-
--- ---------------------------------------------------------------------------
--- Primitives
--- ---------------------------------------------------------------------------
-
--- | \<integer\> data type parser, but into a String instead of an Int, for other
--- parsers to use (e.g.: see the parsers int, or rational)
-int' :: Parser String
-int' = do
-  sign <- char '-' <|> pure '+'
-  d    <- digits
-  case sign of
-    '+' -> pure d
-    '-' -> pure (sign:d)
-    _   -> error "int': parsed a number starting with other than [+|-]"
-
--- | Parser for \<integer\>: [+|-][0-9]+
-int :: Parser Int
-int = read <$> int'
-
-word8 :: Parser Word8
-word8 = read <$> digits
-
--- Note that many properties that allow an integer or real number as a value
--- actually restrict the value to some range, often to a non-negative value.
---
--- | Real number parser. \<number\>: <'int' integer> | [0-9]*.[0-9]+
-rational :: Parser Rational
-rational = do
-    sign <- option [] (wrapMinus <$> (char '-' <|> char '+'))
-    dgts <- ((++) <$> digits <*> option "" fractionalPart)
-           <|> ("0"++) <$> fractionalPart -- append a zero for read not to fail
-    e <- option [] expo
-    pure . fst . head $ readSigned readFloat (sign ++ dgts ++ e)
-  where fractionalPart = (:) <$> char '.' <*> digits
-        expo = (:) <$> satisfy (\c -> c == 'e' || c == 'E') <*> int'
-        wrapMinus x = [x | x == '-'] -- we use this since read fails with leading '+'
+hexvalue :: Parser Value
+hexvalue = ColorV <$> hex
 
 -- | Parser for <https://drafts.csswg.org/css-fonts-3/#propdef-font-style \<font-style\>>,
 -- used in the @font-style@ and @font@ properties.
@@ -288,76 +149,6 @@ where <font-variant-css21> = [normal | small-caps]
 
 positionvalue :: Parser Value
 positionvalue = PositionV <$> position
-
--- | Parser for <https://drafts.csswg.org/css-values-3/#position \<position\>>.
-position :: Parser Position
-position = perLen <|> kword
-  where
-    perLen = percentageLength >>= startsWithPL
-    kword = do
-        i <- ident
-        case Map.lookup (T.toCaseFold i) keywords of
-          Just x  -> skipComments *> x
-          Nothing -> mzero
-    keywords = Map.fromList
-        [("left",   startsWith (Just PosLeft)   tb)
-        ,("right",  startsWith (Just PosRight)  tb)
-        ,("top",    startsWith (Just PosTop)    lr)
-        ,("bottom", startsWith (Just PosBottom) lr)
-        ,("center", startsWithCenter)]
-    tb = (asciiCI "top"  $> Just PosTop,  asciiCI "bottom" $> Just PosBottom)
-    lr = (asciiCI "left" $> Just PosLeft, asciiCI "right"  $> Just PosRight)
-
-    startsWithPL :: PercentageLength -> Parser Position
-    startsWithPL x = skipComments *>
-        (followsWithPL <|> someKeyword <|> wasASinglePL)
-      where
-        pl = Just x
-        followsWithPL = Position Nothing pl Nothing <$> (Just <$> percentageLength)
-        wasASinglePL  = pure $ Position Nothing pl Nothing Nothing
-        someKeyword   = do
-            i <- ident
-            case T.toCaseFold i of
-              "center" -> pure $ Position Nothing pl (Just PosCenter) Nothing
-              "top"    -> pure $ Position Nothing pl (Just PosTop) Nothing
-              "bottom" -> pure $ Position Nothing pl (Just PosBottom) Nothing
-              _        -> mzero
-
-    maybePL :: Parser (Maybe PercentageLength)
-    maybePL = optional percentageLength
-
-    startsWithCenter :: Parser Position
-    startsWithCenter =  followsWithPL
-                    <|> followsWithAKeyword
-                    <|> pure (posTillNow Nothing Nothing)
-      where
-        followsWithPL = (posTillNow Nothing . Just) <$> percentageLength
-        followsWithAKeyword = do
-            i <- ident <* skipComments
-            let f x = posTillNow (Just x) <$> maybePL
-            case T.toCaseFold i of
-              "left"   -> f PosLeft
-              "right"  -> f PosRight
-              "top"    -> f PosTop
-              "bottom" -> f PosBottom
-              "center" -> pure $ posTillNow (Just PosCenter) Nothing
-              _        -> mzero
-        posTillNow = Position (Just PosCenter) Nothing
-
-    -- Used for the cases when a position starts with the X axis (left and right
-    -- keywords) or Y axis (top and bottom)
-    startsWith :: Maybe PosKeyword
-               -> (Parser (Maybe PosKeyword), Parser (Maybe PosKeyword))
-               -> Parser Position
-    startsWith x (p1, p2) = do
-        pl <- optional (percentageLength <* skipComments)
-        let endsWithCenter = Position x pl <$> center <*> pure Nothing
-            endsWithKeywordAndMaybePL = Position x pl <$> posKeyword <*> maybePL
-            endsWithPL = pure $ Position x Nothing Nothing pl
-        endsWithCenter <|> endsWithKeywordAndMaybePL <|> endsWithPL
-      where
-        posKeyword = (p1 <|> p2)  <* skipComments
-        center = asciiCI "center" $> Just PosCenter
 
 {-
 transformOrigin :: Parser Values
@@ -680,7 +471,7 @@ storeProperty' (a,b,_,d,i) x = (a,b, Just x,d,i)
 
 fontFamilyValues :: Parser Values
 fontFamilyValues = singleValue csswideKeyword <|> do
-    v <- fontfamily
+    v  <- fontfamily
     vs <- many ((,) <$> separator <*> fontfamily)
     pure $ Values v vs
 
@@ -697,22 +488,10 @@ unquotedFontFamily = do
     vs <- many (skipComments *> ident)
     pure $ v <> foldMap (T.singleton ' ' <>) vs
 
-
-textualvalue :: Parser Value
-textualvalue = do
-    i <- ident
-    if i == "\\9" -- iehack
-       then mzero
-       else do c <- A.peekChar
-               case c of
-                 Just '(' -> functionParsers i
-                 Just ':' -> mzero -- invalid
-                 _        -> textualParsers i
-
 textualParsers :: Text -> Parser Value
 textualParsers i = let t = T.toCaseFold i
                    in fromMaybe (pure $ mkOther i) (Map.lookup t textualParsersMap)
-  where textualParsersMap = Map.union csswideKeywordsMap namedColorsParsersMap
+  where textualParsersMap = Map.union csswideKeywordsMap ((fmap . fmap) ColorV  namedColorsParsersMap)
 
 csswideKeyword :: Parser Value
 csswideKeyword = do
@@ -739,7 +518,7 @@ stringvalue = StringV <$> stringtype
 functionParsers :: Text -> Parser Value
 functionParsers i = char '(' *>
     case Map.lookup (T.toCaseFold i) functionsMap of
-      Just x -> x <|> genericFunc i
+      Just x  -> x <|> genericFunc i
       Nothing -> genericFunc i
                  <|> (mkOther <$> (f i "(" <$> someText <*> string ")"))
   where f x y z w = x <> y <> z <> w
@@ -925,93 +704,6 @@ shadow = permute (mkShadow <$?> (False, asciiCI "inset" $> True <* skipComments)
             l4 <- optional (distance <* skipComments)
             pure (l1,l2,l3,l4)
 
-radialgradient :: Parser Gradient
-radialgradient = functionParser $ do
-    (def, c) <- option (True, RadialGradient Nothing Nothing) ((False,) <$> endingShapeAndSize <* skipComments)
-    p  <- optional (asciiCI "at" *> skipComments *> position)
-    _  <- if def && isNothing p
-             then pure '*' -- do nothing
-             else comma
-    cs <- colorStopList
-    pure $ c p cs
-  where circle = asciiCI "circle" $> Just Circle <* skipComments
-        ellipse = asciiCI "ellipse" $> Just Ellipse <* skipComments
-        endingShapeAndSize = r1 <|> r2 <|> r3
-          where r1 = permute (RadialGradient <$?> (Nothing, ellipse) <||> (Just <$> (PL <$> percentageLength <*> lexeme percentageLength)))
-                r2 = permute (RadialGradient <$?> (Nothing, circle) <||> ((Just . SL) <$> distance <* skipComments))
-                r3 = permute (RadialGradient <$?> (Nothing, circle <|> ellipse) <||> extentKeyword)
-                   <|> permute (RadialGradient <$$> (circle <|> ellipse) <|?> (Nothing, extentKeyword))
-                extentKeyword = do
-                    i <- ident
-                    _ <- skipComments
-                    case Map.lookup i extentKeywords of
-                      Just x -> pure (Just x)
-                      Nothing -> mzero
-                extentKeywords :: Map Text Size
-                extentKeywords = Map.fromList [("closest-corner",  ClosestCorner)
-                                              ,("closest-side",    ClosestSide)
-                                              ,("farthest-corner", FarthestCorner)
-                                              ,("farthest-side",   FarthestSide)]
-
--- | Assumes "linear-gradient(", or one of its prefixed equivalents, has been parsed.
--- : [<angle>|to <side-or-corner> ,]? <color-stop> [, <color-stop>]+
-lineargradient :: Parser Gradient
-lineargradient = functionParser (lg <|> oldLg)
-  where lg = LinearGradient <$> optional angleOrSide <*> colorStopList
-        oldLg = OldLinearGradient <$> optional ((ga <|> sc) <* comma)
-                                  <*> colorStopList
-        angleOrSide = (ga <|> gs) <* comma
-        ga = Left <$> angle
-        gs = asciiCI "to" *> skipComments *> sc
-        sc = Right <$> sideOrCorner
-
--- <side-or-corner> = [left | right] || [top | bottom]
-sideOrCorner :: Parser (Side, Maybe Side)
-sideOrCorner = orderOne <|> orderTwo
-  where orderOne = (,) <$> leftright <* skipComments
-                       <*> optional topbottom
-        orderTwo = (,) <$> topbottom <* skipComments
-                       <*> optional leftright
-
-leftright :: Parser Side
-leftright =  (asciiCI "left" $> LeftSide)
-         <|> (asciiCI "right" $> RightSide)
-
-topbottom :: Parser Side
-topbottom =  (asciiCI "top" $> TopSide)
-         <|> (asciiCI "bottom" $> BottomSide)
-
-colorStopList :: Parser [ColorStop]
-colorStopList = do
-    c1 <- colorStop
-    _  <- char ',' <* skipComments
-    c2 <- colorStop
-    cs <- many (char ',' *> skipComments *> colorStop)
-    pure $ c1:c2:cs
-
-colorStop :: Parser ColorStop
-colorStop = ColorStop <$> color <* skipComments
-        <*> optional (percentageLength <* skipComments)
-
--- | Parser for <https://drafts.csswg.org/css-color-3/#colorunits \<color\>>.
-color :: Parser Color
-color = hex <|> othercolor
-  where othercolor = do
-            t <- textualvalue
-            case t of
-              ColorV c -> pure c
-              _        -> mzero
-
--- TODO make parser specifically for it instead of reusing numericalvalue
-percentageLength :: Parser PercentageLength
-percentageLength = do
-    n <- numericalvalue
-    case n of
-      PercentageV p -> pure $ Left p
-      NumberV 0     -> pure $ Right NullLength
-      LengthV d     -> pure $ Right d
-      _             -> mzero
-
 numberPercentage :: Parser (Either Number Percentage)
 numberPercentage = do
     n <- numericalvalue
@@ -1113,11 +805,6 @@ format :: Parser Value
 format = Format <$> functionParser p
   where p = (:) <$> stringtype <*> many (comma *> stringtype)
 
-namedColorsParsersMap :: Map Text (Parser Value)
-namedColorsParsersMap = Map.fromList $ foldr f [] keywordColors
-  where f x xs = let a = fst x
-                 in (a, pure $ ColorV (Named a)) : xs
-
 -- | For cases when CSS hacks are used, e.g.: @margin-top: 1px \\9;@.
 valuesFallback :: Parser Values
 valuesFallback = Values <$> value <*> many ((,) <$> separator <*> value) <* skipComments
@@ -1190,3 +877,14 @@ parseIdents ls = do
   where s = Set.fromList ls
 
 -- <single-animation-fill-mode> = none | forwards | backwards | both
+
+textualvalue :: Parser Value
+textualvalue = do
+    i <- ident
+    if i == "\\9" -- iehack
+       then mzero
+       else do c <- A.peekChar
+               case c of
+                 Just '(' -> functionParsers i
+                 Just ':' -> mzero -- invalid
+                 _        -> textualParsers i

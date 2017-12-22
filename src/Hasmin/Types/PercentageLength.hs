@@ -29,8 +29,7 @@ import Hasmin.Config
 type PercentageLength = Either Percentage Length
 
 
-minifyPL :: PercentageLength
-         -> Reader Config PercentageLength
+minifyPL :: PercentageLength -> Reader Config PercentageLength
 minifyPL x@(Right _) = mapM minify x
 minifyPL x@(Left p)
     | p == 0    = pure $ Right NullLength -- minifies 0% to 0

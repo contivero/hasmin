@@ -18,23 +18,18 @@ module Hasmin.Types.String
   , StringType(..)
   ) where
 
-import Control.Applicative (liftA2, (<|>))
 import Control.Monad.Reader (ask, Reader)
 import Data.Attoparsec.Text (Parser, parse, IResult(Done, Partial, Fail), maybeResult, feed)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Foldable (foldl')
-import Data.Bits ((.|.), shiftL)
-import Data.Text.Lazy.Builder (Builder)
 import qualified Data.Text.Lazy.Builder as B
 import qualified Data.Attoparsec.Text as A
-import qualified Data.Char as C
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 
 import Hasmin.Config
-import Hasmin.Parser.Utils
 import Hasmin.Class
+import Hasmin.Parser.String
+import Hasmin.Parser.Primitives
 
 -- | The <https://drafts.csswg.org/css-values-3/#strings \<string\>> data type.
 -- It represents a string, formed by Unicode characters, delimited by either
@@ -105,46 +100,3 @@ toUnquotedURL = unquote unquotedURL
 toUnquotedFontFamily :: Text -> Maybe Text
 toUnquotedFontFamily = unquote fontfamilyname
 
--- TODO can the Parser be avoided by a fold, or one of the provided library
--- functions? Apart from being cleaner, doing so would simplify other functions.
--- | Parse and convert any escaped unicode to its underlying Char.
-convertEscaped :: Parser Text
-convertEscaped = (TL.toStrict . B.toLazyText) <$> go
-  where
-    go = do
-        nonescapedText <- B.fromText <$> A.takeWhile (/= '\\')
-        cont nonescapedText <|> pure nonescapedText
-    cont b = do
-        _ <- A.char '\\'
-        c <- A.peekChar
-        case c of
-          Just _  -> parseEscapedAndContinue b
-          Nothing -> pure (b <> B.singleton '\\')
-
-    parseEscapedAndContinue :: Builder -> Parser Builder
-    parseEscapedAndContinue b = do
-        u8 <- utf8
-        (b `mappend` u8 `mappend`) <$>  go
-
-    utf8 :: Parser Builder
-    utf8 = do
-        mch <- atMost 6 hexadecimal
-        pure $ maybe ("\\" <> B.fromString mch) B.singleton (hexToChar mch)
-
-    -- Interpret a hexadecimal string as a decimal Int, and convert it into the
-    -- corresponding Char.
-    hexToChar :: [Char] -> Maybe Char
-    hexToChar xs
-        | i > maxChar = Nothing
-        | otherwise   = Just (C.chr i)
-      where i = foldl' step 0 xs
-            maxChar = fromEnum (maxBound :: Char)
-            step a c
-                | w - 48 < 10 = (a `shiftL` 4) .|. fromIntegral (w - 48)
-                | w >= 97     = (a `shiftL` 4) .|. fromIntegral (w - 87)
-                | otherwise   = (a `shiftL` 4) .|. fromIntegral (w - 55)
-              where w = C.ord c
-
-    atMost :: Int -> Parser a -> Parser [a]
-    atMost 0 _ = pure []
-    atMost n p = A.option [] $ liftA2 (:) p (atMost (n-1) p)

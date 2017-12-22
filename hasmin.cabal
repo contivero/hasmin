@@ -52,6 +52,14 @@ library
                      -- exposed because it is needed by tests:
                      , Hasmin.Parser.Internal
                      , Hasmin.Parser.Value
+                     , Hasmin.Parser.Numeric
+                     , Hasmin.Parser.Color
+                     , Hasmin.Parser.Dimension
+                     , Hasmin.Parser.Primitives
+                     , Hasmin.Parser.Gradient
+                     , Hasmin.Parser.PercentageLength
+                     , Hasmin.Parser.Position
+                     , Hasmin.Parser.String
                      , Hasmin.Types.Color
                      , Hasmin.Types.Declaration
                      , Hasmin.Types.Dimension
