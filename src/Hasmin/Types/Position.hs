@@ -30,7 +30,7 @@ data PosKeyword = PosCenter
                 | PosRight
                 | PosTop
                 | PosBottom
-  deriving (Eq, Show)
+  deriving (Show, Eq, Enum, Bounded)
 instance ToText PosKeyword where
   toBuilder PosCenter = "center"
   toBuilder PosTop    = "top"
@@ -213,7 +213,7 @@ minAxis PosBottom x
 minAxis PosCenter x = (Just PosCenter, Just x)
 
 instance Eq Position where
-  x == y = let (Position a b c d) = minifyPosition x 
+  x == y = let (Position a b c d) = minifyPosition x
                (Position e f g h) = minifyPosition y
            in a == e && b == f && c == g && d == h
 

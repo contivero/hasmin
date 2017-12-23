@@ -69,7 +69,7 @@ instance Eq TimingFunction where
 -- <https://drafts.csswg.org/css-timing-1/#step-timing-functions step timing function>.
 data StepPosition = Start
                   | End -- End is the default value
-  deriving (Eq, Show)
+  deriving (Show, Eq, Enum, Bounded)
 instance ToText StepPosition where
   toBuilder Start = "start"
   toBuilder End   = "end"

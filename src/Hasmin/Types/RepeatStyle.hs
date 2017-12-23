@@ -65,7 +65,7 @@ data RSKeyword = RsRepeat
                | RsSpace
                | RsRound
                | RsNoRepeat
-  deriving (Eq, Show)
+  deriving (Show, Eq, Enum, Bounded)
 instance ToText RSKeyword where
   toBuilder RsRepeat   = "repeat"
   toBuilder RsSpace    = "space"

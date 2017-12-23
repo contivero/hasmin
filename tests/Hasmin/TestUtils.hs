@@ -51,38 +51,33 @@ matchSpec parser (textToParse, expectedResult) =
   it (unpack textToParse) $
     (toText <$> (textToParse ~> parser)) `parseSatisfies` (== expectedResult)
 
-mkGen :: [a] -> Gen a
-mkGen xs = (xs !!) <$> choose (0, length xs - 1)
+chooseConstructor :: (Enum a, Bounded a) => Gen a
+chooseConstructor = oneof $ fmap pure [minBound..]
 
 newtype Declarations = Declarations [Declaration]
 instance ToText Declarations where
   toText (Declarations ds) = mconcatIntersperse toText (singleton ';') ds
 
 instance Arbitrary Length where
-  arbitrary = liftA2 Length arbitrary distanceUnit
-    where distanceUnit = mkGen [minBound..]
+  arbitrary = liftA2 Length arbitrary chooseConstructor
 
 instance Arbitrary Angle where
-  arbitrary = liftA2 Angle arbitrary angleUnit
-    where angleUnit = mkGen [minBound..]
+  arbitrary = liftA2 Angle arbitrary chooseConstructor
 
 instance Arbitrary Time where
-  arbitrary = liftA2 Time arbitrary durationUnit
-    where durationUnit = mkGen [minBound..]
+  arbitrary = liftA2 Time arbitrary chooseConstructor
 
 instance Arbitrary Frequency where
-  arbitrary = liftA2 Frequency arbitrary frequencyUnit
-    where frequencyUnit = mkGen [minBound..]
+  arbitrary = liftA2 Frequency arbitrary chooseConstructor
 
 instance Arbitrary Resolution where
-  arbitrary = liftA2 Resolution arbitrary resolutionUnit
-    where resolutionUnit = mkGen [minBound..]
+  arbitrary = liftA2 Resolution arbitrary chooseConstructor
 
 instance Arbitrary Number where
   arbitrary = toNumber <$> (arbitrary :: Gen Rational)
 
 instance Arbitrary PosKeyword where
-  arbitrary = mkGen [PosCenter, PosLeft, PosRight, PosTop, PosBottom]
+  arbitrary = chooseConstructor
 
 instance Arbitrary Percentage where
   arbitrary = fmap Percentage (arbitrary :: Gen Rational)
@@ -110,7 +105,7 @@ instance Arbitrary Auto where
   arbitrary = pure Auto
 
 instance Arbitrary StepPosition where
-  arbitrary = oneof [pure Start, pure End]
+  arbitrary = chooseConstructor
 
 instance Arbitrary TimingFunction where
   arbitrary = oneof [ liftM4 CubicBezier arbitrary arbitrary arbitrary arbitrary
@@ -150,15 +145,15 @@ instance Arbitrary RepeatStyle where
                         ]
 
 instance Arbitrary RSKeyword where
-  arbitrary = mkGen [RsRepeat, RsSpace, RsRound, RsNoRepeat]
+  arbitrary = oneof $ fmap pure [minBound..]
 
 -- | Generates color keywords uniformly distributed
 colorKeyword :: Gen Text
-colorKeyword = mkGen $ fmap fst keywordColors
+colorKeyword = oneof $ fmap (pure . fst) keywordColors
 
 -- | Generates a hexadecimal character uniformly distributed
 hexChar :: Gen Char
-hexChar = mkGen hexadecimals
+hexChar = oneof $ fmap pure hexadecimals
 
 hexString :: Gen String
 hexString = liftA2 (\x y -> [x,y]) hexChar hexChar
