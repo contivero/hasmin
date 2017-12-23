@@ -57,6 +57,7 @@ import Hasmin.Parser.Dimension
 import Hasmin.Parser.Gradient
 import Hasmin.Parser.PercentageLength
 import Hasmin.Parser.Position
+import Hasmin.Parser.TimingFunction
 import Hasmin.Types.BgSize
 import Hasmin.Types.Dimension
 import Hasmin.Types.FilterFunction
@@ -65,7 +66,6 @@ import Hasmin.Types.Position
 import Hasmin.Types.RepeatStyle
 import Hasmin.Types.Shadow
 import Hasmin.Types.String
-import Hasmin.Types.TimingFunction
 import Hasmin.Types.TransformFunction
 import Hasmin.Types.Value
 
@@ -294,22 +294,6 @@ singleTransition = do
                else pure $ TextV i
         excludedKeywords = Set.fromList ["initial", "inherit", "unset", "default", "none"]
 
--- | Parser for <https://drafts.csswg.org/css-timing-1/#single-timing-function-production \<single-timing-function\>>.
-timingFunction :: Parser TimingFunction
-timingFunction = do
-    i <- ident
-    fromMaybe mzero $ Map.lookup (T.toLower i) timingFunctionKeywords
-  where timingFunctionKeywords = Map.fromList
-          [("ease",         pure Ease)
-          ,("ease-in",      pure EaseIn)
-          ,("ease-in-out",  pure EaseInOut)
-          ,("ease-out",     pure EaseOut)
-          ,("linear",       pure Linear)
-          ,("step-end",     pure StepEnd)
-          ,("step-start",   pure StepStart)
-          ,("steps",        char '(' *> steps)
-          ,("cubic-bezier", char '(' *> cubicbezier)]
-
 backgroundSize :: Parser Values
 backgroundSize = parseCommaSeparated (BgSizeV <$> bgSize)
 
@@ -422,11 +406,12 @@ font = systemFonts <|> do
                            FontWeight -> pure $ storeProperty' j (mkOther i)
                            _          -> pure $ storeProperty  j x (TextV i)
               Nothing -> mzero
-          where m  = Map.fromList $ zip ["ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded"] (repeat FontStretch)
-                                 ++ zip ["small-caps"] (repeat FontVariant)
-                                 ++ zip ["italic", "oblique"] (repeat FontStyle)
-                                 ++ zip ["bold", "bolder", "lighter"] (repeat FontWeight)
-                                 ++ [("normal", Ambiguous)]
+          where m =
+                  Map.fromList $ zip ["ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded"] (repeat FontStretch)
+                              ++ zip ["small-caps"] (repeat FontVariant)
+                              ++ zip ["italic", "oblique"] (repeat FontStyle)
+                              ++ zip ["bold", "bolder", "lighter"] (repeat FontWeight)
+                              ++ [("normal", Ambiguous)]
         parse4 :: Parser (Maybe TextV, Maybe TextV, Maybe Value, Maybe TextV)
         parse4 = do
             let initialized = (Nothing, Nothing, Nothing, Nothing, 0)
@@ -491,7 +476,8 @@ unquotedFontFamily = do
 textualParsers :: Text -> Parser Value
 textualParsers i = let t = T.toCaseFold i
                    in fromMaybe (pure $ mkOther i) (Map.lookup t textualParsersMap)
-  where textualParsersMap = Map.union csswideKeywordsMap ((fmap . fmap) ColorV  namedColorsParsersMap)
+  where textualParsersMap = Map.union csswideKeywordsMap namedColorsValueParsersMap
+        namedColorsValueParsersMap = (fmap . fmap) ColorV namedColorsParsersMap
 
 csswideKeyword :: Parser Value
 csswideKeyword = do
@@ -517,7 +503,7 @@ stringvalue = StringV <$> stringtype
 
 functionParsers :: Text -> Parser Value
 functionParsers i = char '(' *>
-    case Map.lookup (T.toCaseFold i) functionsMap of
+    case Map.lookup (T.toLower i) functionsMap of
       Just x  -> x <|> genericFunc i
       Nothing -> genericFunc i
                  <|> (mkOther <$> (f i "(" <$> someText <*> string ")"))
@@ -561,95 +547,92 @@ repeatStyle = do
                                     ,("round",     RsRound)]
 
 functionsMap :: Map Text (Parser Value)
-functionsMap = Map.fromList $ fmap (first T.toCaseFold)
-          [("rgb",                     ColorV <$> rgb)
-          ,("rgba",                    ColorV <$> rgba)
-          ,("hsl",                     ColorV <$> hsl)
-          ,("hsla",                    ColorV <$> hsla)
-          ,("url",                     UrlV <$> url)
-          ,("format",                  format)
-          ,("local",                   local)
-          -- <gradient> parsers
-          ,("linear-gradient",         GradientV "linear-gradient" <$> lineargradient)
-          ,("-o-linear-gradient",      GradientV "-o-linear-gradient" <$> lineargradient)
-          ,("-ms-linear-gradient",     GradientV "-ms-linear-gradient" <$> lineargradient)
-          ,("-moz-linear-gradient",    GradientV "-moz-linear-gradient" <$> lineargradient)
-          ,("-webkit-linear-gradient", GradientV "-webkit-linear-gradient" <$> lineargradient)
-          ,("radial-gradient",         GradientV "radial-gradient" <$> radialgradient)
-          ,("-o-radial-gradient",      GradientV "-o-radial-gradient" <$> radialgradient)
-          ,("-moz-radial-gradient",    GradientV "-moz-radial-gradient" <$> radialgradient)
-          ,("-webkit-radial-gradient", GradientV "-webkit-radial-gradient" <$> radialgradient)
-          --,("repeating-linear-gradient", ? ) -- TODO
-          --,("repeating-radial-gradient", ? ) -- TODO
-          -- <shape>
-          ,("rect",                    rect)
-          -- <transform-function>
-          ,("matrix",                  TransformV <$> matrix)
-          ,("matrix3d",                TransformV <$> matrix3d)
-          ,("rotate",                  (TransformV . Rotate) <$> functionParser angle)
-          ,("rotate3d",                TransformV <$> rotate3d)
-          ,("rotateX",                 (TransformV . Rotate) <$> functionParser angle)
-          ,("rotateY",                 (TransformV . Rotate) <$> functionParser angle)
-          ,("rotateZ",                 (TransformV . Rotate) <$> functionParser angle)
-          ,("scale",                   TransformV <$> scale)
-          ,("scale3d",                 TransformV <$> scale3d)
-          ,("scaleX",                  (TransformV . ScaleY) <$> functionParser number)
-          ,("scaleY",                  (TransformV . ScaleY) <$> functionParser number)
-          ,("scaleZ",                  (TransformV . ScaleZ) <$> functionParser number)
-          ,("skew",                    TransformV <$> skew)
-          ,("skewX",                   (TransformV . SkewX) <$> functionParser angle)
-          ,("skewY",                   (TransformV . SkewY) <$> functionParser angle)
-          ,("translate",               TransformV <$> translate)
-          ,("translate3d",             TransformV <$> translate3d)
-          ,("translateX",              (TransformV . TranslateX) <$> functionParser percentageLength)
-          ,("translateY",              (TransformV . TranslateY) <$> functionParser percentageLength)
-          ,("translateZ",              (TransformV . TranslateZ) <$> functionParser distance)
-          ,("perspective",             (TransformV . Perspective) <$> functionParser distance)
-          -- <timing-function>
-          ,("cubic-bezier",            TimingFuncV <$> cubicbezier)
-          ,("steps",                   TimingFuncV <$> steps)
-          -- <filter-function>
-          ,("blur",                    (FilterV . Blur) <$> functionParser distance)
-          ,("contrast",                (FilterV . Contrast) <$> functionParser numberPercentage)
-          ,("grayscale",               (FilterV . Grayscale) <$> functionParser numberPercentage)
-          ,("invert",                  (FilterV . Invert) <$> functionParser numberPercentage)
-          ,("opacity",                 (FilterV . Opacity) <$> functionParser numberPercentage)
-          ,("saturate",                (FilterV . Saturate) <$> functionParser numberPercentage)
-          ,("sepia",                   (FilterV . Sepia) <$> functionParser numberPercentage)
-          ,("brightness",              (FilterV . Brightness) <$> functionParser numberPercentage)
-          ,("drop-shadow",             FilterV <$> dropShadow)
-          ,("hue-rotate",              (FilterV . HueRotate) <$> functionParser angle)
-          ,("element", genericFunc "element")
-          --
-          -- <basic-shape>
-          -- circle() = circle( [<shape-radius>]? [at <position>]? )
-          -- polygon( [<fill-rule>,]? [<shape-arg> <shape-arg>]# )
-          -- inset()
-          -- ellipse( [<shape-radius>{2}]? [at <position>]? )
-          --
-          -- <image> https://drafts.csswg.org/css-images
-          -- Note: <gradient> is a type of <image> !
-          -- cross-fade()
-          -- image()
-          -- image-set()
-          -- image-set()
-          -- element()
-          --
-          --
-          --,("stylistic", functionParser ident) -- IDENT
-          --,("styleset", ? ) -- ident#
-          --,("swash", ? ) -- ident
-          --,("annotation", ? ) -- ident
-          --,("attr", ? ) --  <attr-name> <type-or-unit>? [, <attr-fallback> ]?
-          --,("calc", ? )  -- <calc-sum> , experimental
-          --,("character-variant", ? ) -- ident#
-          --,("element", ? )  -- id selector, experimental
-          --,("local", ? )
-          --,("ornaments", ? ) -- ident
-          --,("symbols", ? )  --  <symbols-type>? [ <string> | <image> ]+
-          --,("var", ? )  -- experimental: <custom-property-name> [, <declaration-value> ]?
--- minmax()
-          ]
+functionsMap = Map.fromList (colorFunctionValueParsers ++ l)
+  where colorFunctionValueParsers = (fmap . fmap . fmap) ColorV colorFunctionsParsers
+        l = [("url",                     UrlV <$> url)
+            ,("format",                  format)
+            ,("local",                   local)
+            -- <gradient> parsers
+            ,("linear-gradient",         GradientV "linear-gradient" <$> lineargradient)
+            ,("-o-linear-gradient",      GradientV "-o-linear-gradient" <$> lineargradient)
+            ,("-ms-linear-gradient",     GradientV "-ms-linear-gradient" <$> lineargradient)
+            ,("-moz-linear-gradient",    GradientV "-moz-linear-gradient" <$> lineargradient)
+            ,("-webkit-linear-gradient", GradientV "-webkit-linear-gradient" <$> lineargradient)
+            ,("radial-gradient",         GradientV "radial-gradient" <$> radialgradient)
+            ,("-o-radial-gradient",      GradientV "-o-radial-gradient" <$> radialgradient)
+            ,("-moz-radial-gradient",    GradientV "-moz-radial-gradient" <$> radialgradient)
+            ,("-webkit-radial-gradient", GradientV "-webkit-radial-gradient" <$> radialgradient)
+            --,("repeating-linear-gradient", ? ) -- TODO
+            --,("repeating-radial-gradient", ? ) -- TODO
+            -- <shape>
+            ,("rect",                    rect)
+            -- <transform-function>
+            ,("matrix",                  TransformV <$> matrix)
+            ,("matrix3d",                TransformV <$> matrix3d)
+            ,("rotate",                  (TransformV . Rotate) <$> functionParser angle)
+            ,("rotate3d",                TransformV <$> rotate3d)
+            ,("rotatex",                 (TransformV . Rotate) <$> functionParser angle)
+            ,("rotatey",                 (TransformV . Rotate) <$> functionParser angle)
+            ,("rotatez",                 (TransformV . Rotate) <$> functionParser angle)
+            ,("scale",                   TransformV <$> scale)
+            ,("scale3d",                 TransformV <$> scale3d)
+            ,("scalex",                  (TransformV . ScaleY) <$> functionParser number)
+            ,("scaley",                  (TransformV . ScaleY) <$> functionParser number)
+            ,("scalez",                  (TransformV . ScaleZ) <$> functionParser number)
+            ,("skew",                    TransformV <$> skew)
+            ,("skewx",                   (TransformV . SkewX) <$> functionParser angle)
+            ,("skewy",                   (TransformV . SkewY) <$> functionParser angle)
+            ,("translate",               TransformV <$> translate)
+            ,("translate3d",             TransformV <$> translate3d)
+            ,("translatex",              (TransformV . TranslateX) <$> functionParser percentageLength)
+            ,("translatey",              (TransformV . TranslateY) <$> functionParser percentageLength)
+            ,("translatez",              (TransformV . TranslateZ) <$> functionParser distance)
+            ,("perspective",             (TransformV . Perspective) <$> functionParser distance)
+            -- <timing-function>
+            ,("cubic-bezier",            TimingFuncV <$> cubicbezier)
+            ,("steps",                   TimingFuncV <$> steps)
+            -- <filter-function>
+            ,("blur",                    (FilterV . Blur) <$> functionParser distance)
+            ,("contrast",                (FilterV . Contrast) <$> functionParser numberPercentage)
+            ,("grayscale",               (FilterV . Grayscale) <$> functionParser numberPercentage)
+            ,("invert",                  (FilterV . Invert) <$> functionParser numberPercentage)
+            ,("opacity",                 (FilterV . Opacity) <$> functionParser numberPercentage)
+            ,("saturate",                (FilterV . Saturate) <$> functionParser numberPercentage)
+            ,("sepia",                   (FilterV . Sepia) <$> functionParser numberPercentage)
+            ,("brightness",              (FilterV . Brightness) <$> functionParser numberPercentage)
+            ,("drop-shadow",             FilterV <$> dropShadow)
+            ,("hue-rotate",              (FilterV . HueRotate) <$> functionParser angle)
+            ,("element",                 genericFunc "element")
+            --
+            -- <basic-shape>
+            -- circle() = circle( [<shape-radius>]? [at <position>]? )
+            -- polygon( [<fill-rule>,]? [<shape-arg> <shape-arg>]# )
+            -- inset()
+            -- ellipse( [<shape-radius>{2}]? [at <position>]? )
+            --
+            -- <image> https://drafts.csswg.org/css-images
+            -- Note: <gradient> is a type of <image> !
+            -- cross-fade()
+            -- image()
+            -- image-set()
+            -- image-set()
+            -- element()
+            --
+            --
+            --,("stylistic", functionParser ident) -- IDENT
+            --,("styleset", ? ) -- ident#
+            --,("swash", ? ) -- ident
+            --,("annotation", ? ) -- ident
+            --,("attr", ? ) --  <attr-name> <type-or-unit>? [, <attr-fallback> ]?
+            --,("calc", ? )  -- <calc-sum> , experimental
+            --,("character-variant", ? ) -- ident#
+            --,("element", ? )  -- id selector, experimental
+            --,("local", ? )
+            --,("ornaments", ? ) -- ident
+            --,("symbols", ? )  --  <symbols-type>? [ <string> | <image> ]+
+            --,("var", ? )  -- experimental: <custom-property-name> [, <declaration-value> ]?
+  -- minmax()
+            ]
 
 dropShadow :: Parser FilterFunction
 dropShadow = functionParser $ do
@@ -770,22 +753,6 @@ rotate3d = functionParser $ do
     z  <-  number <* comma
     a  <-  angle
     pure $ Rotate3d x y z a
-
-cubicbezier :: Parser TimingFunction
-cubicbezier = functionParser $ do
-    p0 <- number <* comma
-    p1 <- number <* comma
-    p2 <- number <* comma
-    p3 <- number
-    pure $ CubicBezier p0 p1 p2 p3
-
-steps :: Parser TimingFunction
-steps = functionParser $ do
-    i <- int
-    s <- optional (comma *> startOrEnd)
-    pure $ Steps i s
-  where startOrEnd = (asciiCI "end" $> End)
-                 <|> (asciiCI "start" $> Start)
 
 -- It uses skipSpace instead of skipComments, since comments aren't valid inside
 -- the url-token. From the spec:

@@ -21,16 +21,20 @@ module Hasmin.Parser.Utils
     , nmchar
     , hexadecimal
     , word8
+    , parserFromPairs
     ) where
 
 import Control.Applicative ((<|>), many)
-import Control.Monad (void)
-import Data.Attoparsec.Text (char, many1, digit,
+import Control.Monad (void, mzero)
+import Data.Attoparsec.Text (char,
   option, Parser, satisfy, skipSpace, string)
 import Data.Text (Text)
+import Data.Maybe (fromMaybe)
+import qualified Data.Text as T
 import Data.Word (Word8)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
+import qualified Data.Map.Strict as Map
 
 import Hasmin.Parser.Primitives
 
@@ -67,12 +71,16 @@ opt = option mempty
 functionParser :: Parser a -> Parser a
 functionParser p = lexeme p <* char ')'
 
--- | Parser one or more digits.
-digits :: Parser String
-digits = many1 digit
 
 hexadecimal :: Parser Char
 hexadecimal = satisfy C.isHexDigit
 
 word8 :: Parser Word8
 word8 = read <$> digits
+
+parserFromPairs :: [(Text, Parser a)] -> Parser a
+parserFromPairs ls = do
+    i <- ident
+    let t = T.toLower i
+    fromMaybe mzero (Map.lookup t m)
+  where m = Map.fromList ls

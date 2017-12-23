@@ -60,6 +60,7 @@ library
                      , Hasmin.Parser.PercentageLength
                      , Hasmin.Parser.Position
                      , Hasmin.Parser.String
+                     , Hasmin.Parser.TimingFunction
                      , Hasmin.Types.Color
                      , Hasmin.Types.Declaration
                      , Hasmin.Types.Dimension

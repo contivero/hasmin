@@ -10,8 +10,10 @@ import Control.Applicative ((<|>))
 import Numeric (readSigned, readFloat)
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
+
 import Hasmin.Types.Numeric
 import Hasmin.Parser.Utils
+import Hasmin.Parser.Primitives
 
 
 -- | Parser for <https://www.w3.org/TR/css-values-3/#numbers \<number\>>.
@@ -40,17 +42,3 @@ rational = do
         expo = (:) <$> A.satisfy (\c -> c == 'e' || c == 'E') <*> int'
         wrapMinus x = [x | x == '-'] -- we use this since read fails with leading '+'
 
--- | \<integer\> data type parser, but into a String instead of an Int, for other
--- parsers to use (e.g.: see the parsers int, or rational)
-int' :: Parser String
-int' = do
-  sign <- A.char '-' <|> pure '+'
-  d    <- digits
-  case sign of
-    '+' -> pure d
-    '-' -> pure (sign:d)
-    _   -> error "int': parsed a number starting with other than [+|-]"
-
--- | Parser for \<integer\>: [+|-][0-9]+
-int :: Parser Int
-int = read <$> int'

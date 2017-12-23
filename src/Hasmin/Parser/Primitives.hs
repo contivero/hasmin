@@ -6,6 +6,9 @@ module Hasmin.Parser.Primitives
     , unicode
     , nmstart
     , nmchar
+    , int
+    , int'
+    , digits
     ) where
 
 import Data.Attoparsec.Text (Parser, (<?>))
@@ -61,3 +64,21 @@ nmchar = B.singleton <$> A.satisfy cond <|> escape
   where cond x = C.isAlphaNum x || x == '_' || x == '-'
               || (not . C.isAscii) x
 
+-- | \<integer\> data type parser, but into a String instead of an Int, for other
+-- parsers to use (e.g.: see the parsers int, or rational)
+int' :: Parser String
+int' = do
+  sign <- A.char '-' <|> pure '+'
+  d    <- digits
+  case sign of
+    '+' -> pure d
+    '-' -> pure (sign:d)
+    _   -> error "int': parsed a number starting with other than [+|-]"
+
+-- | Parser for \<integer\>: [+|-][0-9]+
+int :: Parser Int
+int = read <$> int'
+
+-- | Parser one or more digits.
+digits :: Parser String
+digits = A.many1 A.digit

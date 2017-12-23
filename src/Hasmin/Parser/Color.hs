@@ -75,8 +75,8 @@ namedColorsParsersMap = Map.fromList $ foldr f [] keywordColors
   where f x xs = let a = fst x
                  in (a, pure $ Named a) : xs
 
-colorFunctions :: Map Text (Parser Color)
-colorFunctions = Map.fromList
+colorFunctionsParsers :: [(Text, Parser Color)]
+colorFunctionsParsers =
           [("rgb",  rgb)
           ,("rgba", rgba)
           ,("hsl",  hsl)
@@ -88,4 +88,4 @@ functionPar m i = A.char '(' *> fromMaybe mzero (Map.lookup t m)
   where t = T.toLower i
 
 colorFunctionParser :: Text -> Parser Color
-colorFunctionParser = functionPar colorFunctions
+colorFunctionParser = functionPar (Map.fromList colorFunctionsParsers)
