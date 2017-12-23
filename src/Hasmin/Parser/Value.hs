@@ -270,9 +270,9 @@ transition = parseCommaSeparated singleTransition
 singleTransition :: Parser Value
 singleTransition = do
     st <- permute (mkSingleTransition <$?> (Nothing, Just <$> singleTransitionProperty <* skipComments)
-                                      <|?> (Nothing, Just <$> duration <* skipComments)
+                                      <|?> (Nothing, Just <$> time <* skipComments)
                                       <|?> (Nothing, Just <$> timingFunction <* skipComments)
-                                      <|?> (Nothing, Just <$> duration <* skipComments))
+                                      <|?> (Nothing, Just <$> time <* skipComments))
     if singleTransitionIsEmpty st
        then mzero
        else pure st
@@ -737,8 +737,8 @@ singleAnimation :: Parser Value
 singleAnimation = do
     sa <- permute (mkSingleAnimation <$?> (Nothing, Just <$> keyframesName <* skipComments)
                                      <|?> (Nothing, Just <$> iterationCount <* skipComments)
-                                     <|?> (Nothing, Just <$> duration <* skipComments)
-                                     <|?> (Nothing, Just <$> duration <* skipComments)
+                                     <|?> (Nothing, Just <$> time <* skipComments)
+                                     <|?> (Nothing, Just <$> time <* skipComments)
                                      <|?> (Nothing, Just <$> timingFunction <* skipComments)
                                      <|?> (Nothing, Just <$> animationDirection <* skipComments)
                                      <|?> (Nothing, Just <$> animationFillMode <* skipComments)

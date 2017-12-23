@@ -7,7 +7,7 @@
 -- Stability   : experimental
 -- Portability : unknown
 --
--- CSS Dimension data types: \<length\> (distance), \<angle\>, \<duration\>,
+-- CSS Dimension data types: \<length\> (distance), \<angle\>, \<time\>,
 -- \<frequency\>, and \<resolution\>. Provides conversion of absolute
 -- dimensions into other equivalent dimensions.
 --
@@ -109,7 +109,7 @@ instance ToText Angle where
   toBuilder NullAngle   = singleton '0'
   toBuilder (Angle r u) = toBuilder r <> toBuilder u
 
--- | The \<duration\> CSS data type
+-- | The \<time\> CSS data type
 data Time = Time Number TimeUnit
   deriving (Show)
 instance Eq Time where

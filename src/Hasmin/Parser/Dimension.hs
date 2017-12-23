@@ -35,8 +35,8 @@ angle :: Parser Angle
 angle = dimensionParser angleConstructorsMap NullAngle
   where angleConstructorsMap = Map.fromList angleConstructorsList
 
-duration :: Parser Time
-duration = do
+time :: Parser Time
+time = do
     n <- number
     u <- opt (A.takeWhile1 C.isAlpha)
     if T.null u
