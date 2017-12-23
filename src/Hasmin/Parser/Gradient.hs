@@ -20,10 +20,6 @@ import Text.Parser.Permutation ((<|?>), (<$$>), (<$?>), (<||>), permute)
 import Data.Maybe (isNothing)
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import Data.Text (Text)
-import Control.Monad (mzero)
 
 import Hasmin.Parser.Utils
 import Hasmin.Parser.Color
@@ -48,17 +44,11 @@ radialgradient = functionParser $ do
                 r2 = permute (RadialGradient <$?> (Nothing, circle) <||> ((Just . SL) <$> distance <* skipComments))
                 r3 = permute (RadialGradient <$?> (Nothing, circle <|> ellipse) <||> extentKeyword)
                    <|> permute (RadialGradient <$$> (circle <|> ellipse) <|?> (Nothing, extentKeyword))
-                extentKeyword = do
-                    i <- ident
-                    _ <- skipComments
-                    case Map.lookup i extentKeywords of
-                      Just x -> pure (Just x)
-                      Nothing -> mzero
-                extentKeywords :: Map Text Size
-                extentKeywords = Map.fromList [("closest-corner",  ClosestCorner)
-                                              ,("closest-side",    ClosestSide)
-                                              ,("farthest-corner", FarthestCorner)
-                                              ,("farthest-side",   FarthestSide)]
+                extentKeyword = Just <$>
+                    parserFromPairs [("closest-corner",  pure ClosestCorner)
+                                    ,("closest-side",    pure ClosestSide)
+                                    ,("farthest-corner", pure FarthestCorner)
+                                    ,("farthest-side",   pure FarthestSide)] <* skipComments
 
 -- | Assumes "linear-gradient(", or one of its prefixed equivalents, has been parsed.
 -- : [<angle>|to <side-or-corner> ,]? <color-stop> [, <color-stop>]+
@@ -75,18 +65,14 @@ lineargradient = functionParser (lg <|> oldLg)
 -- <side-or-corner> = [left | right] || [top | bottom]
 sideOrCorner :: Parser (Side, Maybe Side)
 sideOrCorner = orderOne <|> orderTwo
-  where orderOne = (,) <$> leftright <* skipComments
-                       <*> optional topbottom
-        orderTwo = (,) <$> topbottom <* skipComments
-                       <*> optional leftright
+  where orderOne = (,) <$> leftright <* skipComments <*> optional topbottom
+        orderTwo = (,) <$> topbottom <* skipComments <*> optional leftright
 
-leftright :: Parser Side
-leftright =  (A.asciiCI "left" $> LeftSide)
-         <|> (A.asciiCI "right" $> RightSide)
+        leftright :: Parser Side
+        leftright =  parserFromPairs [("left", pure LeftSide), ("right", pure RightSide)]
 
-topbottom :: Parser Side
-topbottom =  (A.asciiCI "top" $> TopSide)
-         <|> (A.asciiCI "bottom" $> BottomSide)
+        topbottom :: Parser Side
+        topbottom = parserFromPairs [("top", pure TopSide), ("bottom", pure BottomSide)]
 
 colorStopList :: Parser [ColorStop]
 colorStopList = do

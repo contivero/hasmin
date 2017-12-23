@@ -45,7 +45,7 @@ duration = do
               Just f  -> pure $ f n
               Nothing -> mzero -- parsed units aren't angle units, fail
   where durationConstructorsMap = Map.fromList $
-            fmap (toText &&& flip Duration) [S, Ms]
+            fmap (toText &&& flip Duration) [minBound..]
 
 angleConstructorsList :: [(Text, Number -> Angle)]
 angleConstructorsList = fmap (toText &&& flip Angle) [minBound..]

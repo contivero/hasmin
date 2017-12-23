@@ -7,7 +7,6 @@ import Control.Applicative ((<|>), optional)
 import Data.Functor (($>))
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Control.Monad (mzero)
 
@@ -18,20 +17,15 @@ import Hasmin.Types.PercentageLength
 
 -- | Parser for <https://drafts.csswg.org/css-values-3/#position \<position\>>.
 position :: Parser Position
-position = perLen <|> kword
+position = perLen <|> keyword
   where
     perLen = percentageLength >>= startsWithPL
-    kword = do
-        i <- ident
-        case Map.lookup (T.toCaseFold i) keywords of
-          Just x  -> skipComments *> x
-          Nothing -> mzero
-    keywords = Map.fromList
-        [("left",   startsWith (Just PosLeft)   tb)
-        ,("right",  startsWith (Just PosRight)  tb)
-        ,("top",    startsWith (Just PosTop)    lr)
-        ,("bottom", startsWith (Just PosBottom) lr)
-        ,("center", startsWithCenter)]
+    keyword =
+        parserFromPairs [("left",   startsWith (Just PosLeft)   tb)
+                        ,("right",  startsWith (Just PosRight)  tb)
+                        ,("top",    startsWith (Just PosTop)    lr)
+                        ,("bottom", startsWith (Just PosBottom) lr)
+                        ,("center", startsWithCenter)]
     tb = (A.asciiCI "top"  $> Just PosTop,  A.asciiCI "bottom" $> Just PosBottom)
     lr = (A.asciiCI "left" $> Just PosLeft, A.asciiCI "right"  $> Just PosRight)
 
@@ -54,9 +48,8 @@ position = perLen <|> kword
     maybePL = optional percentageLength
 
     startsWithCenter :: Parser Position
-    startsWithCenter =  followsWithPL
-                    <|> followsWithAKeyword
-                    <|> pure (posTillNow Nothing Nothing)
+    startsWithCenter = skipComments *>
+        (followsWithPL <|> followsWithAKeyword <|> pure (posTillNow Nothing Nothing))
       where
         followsWithPL = (posTillNow Nothing . Just) <$> percentageLength
         followsWithAKeyword = do
@@ -77,6 +70,7 @@ position = perLen <|> kword
                -> (Parser (Maybe PosKeyword), Parser (Maybe PosKeyword))
                -> Parser Position
     startsWith x (p1, p2) = do
+        _  <- skipComments
         pl <- optional (percentageLength <* skipComments)
         let endsWithCenter = Position x pl <$> center <*> pure Nothing
             endsWithKeywordAndMaybePL = Position x pl <$> posKeyword <*> maybePL

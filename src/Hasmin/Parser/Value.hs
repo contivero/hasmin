@@ -177,9 +177,9 @@ transformOrigin = twoVal <|> oneVal
 -}
 
 bgSize :: Parser BgSize
-bgSize = twovaluesyntax <|> contain <|> cover
-  where cover   = asciiCI "cover" $> Cover
-        contain = asciiCI "contain" $> Contain
+bgSize = twovaluesyntax <|> containOrCover
+  where containOrCover = parserFromPairs [("cover", pure Cover)
+                                         ,("contain", pure Contain)]
         twovaluesyntax = do
             x <- bgsizeValue <* skipComments
             (BgSize2 x <$> bgsizeValue) <|> pure (BgSize1 x)
