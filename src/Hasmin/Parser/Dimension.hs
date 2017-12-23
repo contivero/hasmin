@@ -1,3 +1,14 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Hasmin.Parser.Dimension
+-- Copyright   : (c) 2017 Cristian Adrián Ontivero
+-- License     : BSD3
+-- Stability   : experimental
+-- Portability : unknown
+--
+-- Parsers for CSS dimensions, i.e. \<length>, \<time>, etc.
+--
+-----------------------------------------------------------------------------
 module Hasmin.Parser.Dimension where
 
 import Data.Attoparsec.Text (Parser)

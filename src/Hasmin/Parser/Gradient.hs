@@ -1,5 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Hasmin.Parser.Value
+-- Copyright   : (c) 2017 Cristian Adrián Ontivero
+-- License     : BSD3
+-- Stability   : experimental
+-- Portability : unknown
+--
+-- Parsers for CSS \<gradient> values.
+--
+-----------------------------------------------------------------------------
 
 module Hasmin.Parser.Gradient where
 

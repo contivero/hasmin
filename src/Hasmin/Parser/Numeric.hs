@@ -1,3 +1,12 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Hasmin.Parser.Numeric
+-- Copyright   : (c) 2017 Cristian Adrián Ontivero
+-- License     : BSD3
+-- Stability   : experimental
+-- Portability : unknown
+--
+-----------------------------------------------------------------------------
 module Hasmin.Parser.Numeric
     ( alphavalue
     , rational
@@ -14,7 +23,6 @@ import qualified Data.Attoparsec.Text as A
 import Hasmin.Types.Numeric
 import Hasmin.Parser.Utils
 import Hasmin.Parser.Primitives
-
 
 -- | Parser for <https://www.w3.org/TR/css-values-3/#numbers \<number\>>.
 number :: Parser Number
@@ -41,4 +49,3 @@ rational = do
   where fractionalPart = (:) <$> A.char '.' <*> digits
         expo = (:) <$> A.satisfy (\c -> c == 'e' || c == 'E') <*> int'
         wrapMinus x = [x | x == '-'] -- we use this since read fails with leading '+'
-

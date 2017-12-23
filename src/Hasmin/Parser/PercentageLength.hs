@@ -1,6 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Hasmin.Parser.PercentageLength
+-- Copyright   : (c) 2017 Cristian Adrián Ontivero
+-- License     : BSD3
+-- Stability   : experimental
+-- Portability : unknown
+--
+-----------------------------------------------------------------------------
 module Hasmin.Parser.PercentageLength where
 
 import Control.Applicative ((<|>))

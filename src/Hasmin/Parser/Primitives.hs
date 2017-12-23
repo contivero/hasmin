@@ -1,5 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Hasmin.Parser.Primitives
+-- Copyright   : (c) 2017 Cristian Adrián Ontivero
+-- License     : BSD3
+-- Stability   : experimental
+-- Portability : unknown
+--
+-- Parsers for very basic CSS grammar tokens.
+--
+-----------------------------------------------------------------------------
 module Hasmin.Parser.Primitives
     ( ident
     , escape
@@ -11,16 +21,16 @@ module Hasmin.Parser.Primitives
     , digits
     ) where
 
-import Data.Attoparsec.Text (Parser, (<?>))
-import qualified Data.Attoparsec.Text as A
-import Data.Text (Text)
-import Data.Monoid ((<>))
 import Control.Applicative ((<|>), many)
+import Data.Attoparsec.Text (Parser, (<?>))
+import Data.Monoid ((<>))
+import Data.Text.Lazy.Builder (Builder)
+import Data.Text (Text)
+import qualified Data.Attoparsec.Text as A
+import qualified Data.Char as C
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import qualified Data.Char as C
 import qualified Data.Text.Lazy.Builder as B
-import Data.Text.Lazy.Builder (Builder)
 
 -- TODO combine with unicode to make it more efficient
 -- escape: {unicode}|\\[^\n\r\f0-9a-f]
