@@ -61,6 +61,7 @@ library
                      , Hasmin.Parser.Position
                      , Hasmin.Parser.String
                      , Hasmin.Parser.TimingFunction
+                     , Hasmin.Parser.TransformFunction
                      , Hasmin.Types.Color
                      , Hasmin.Types.Declaration
                      , Hasmin.Types.Dimension

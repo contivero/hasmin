@@ -31,7 +31,7 @@ module Hasmin.Parser.Value
     , textualvalue
     ) where
 
-import Control.Applicative ((<|>), many, liftA3, optional)
+import Control.Applicative ((<|>), many, optional)
 import Control.Arrow (first)
 import Control.Monad (mzero)
 import Data.Functor (($>))
@@ -58,6 +58,7 @@ import Hasmin.Parser.Gradient
 import Hasmin.Parser.PercentageLength
 import Hasmin.Parser.Position
 import Hasmin.Parser.TimingFunction
+import Hasmin.Parser.TransformFunction
 import Hasmin.Types.BgSize
 import Hasmin.Types.Dimension
 import Hasmin.Types.FilterFunction
@@ -704,56 +705,6 @@ rect = functionParser $ do
     length3 <- distance <* comma
     length4 <- distance
     pure $ Rect length1 length2 length3 length4
-
--- | Assumes "translate(" has been already parsed
-translate :: Parser TransformFunction
-translate = functionParser $ do
-    pl  <- percentageLength
-    mpl <- optional (comma *> percentageLength)
-    pure $ Translate pl mpl
-
--- | Parser of scale() function. Assumes "scale(" has been already parsed
-scale :: Parser TransformFunction
-scale = functionParser $ do
-    n  <- number
-    mn <- optional (comma *> number)
-    pure $ Scale n mn
-
-scale3d :: Parser TransformFunction
-scale3d = functionParser $ liftA3 Scale3d n n number
-  where n = number <* comma
-
-skew :: Parser TransformFunction
-skew = functionParser $ do
-    a  <- angle
-    ma <- optional (comma *> angle)
-    pure $ Skew a ma
-
-translate3d :: Parser TransformFunction
-translate3d = functionParser $
-    Translate3d <$> percentageLength <* comma
-                <*> percentageLength <* comma
-                <*> distance
-
-matrix :: Parser TransformFunction
-matrix = functionParser $ do
-    n  <-  number
-    ns <-  count 5 (comma *> number)
-    pure $ mkMat (n:ns)
-
-matrix3d :: Parser TransformFunction
-matrix3d = functionParser $ do
-    n  <-  number
-    ns <-  count 15 (comma *> number)
-    pure $ mkMat3d (n:ns)
-
-rotate3d :: Parser TransformFunction
-rotate3d = functionParser $ do
-    x  <-  number <* comma
-    y  <-  number <* comma
-    z  <-  number <* comma
-    a  <-  angle
-    pure $ Rotate3d x y z a
 
 -- It uses skipSpace instead of skipComments, since comments aren't valid inside
 -- the url-token. From the spec:
