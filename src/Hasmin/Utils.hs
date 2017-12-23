@@ -17,6 +17,7 @@ module Hasmin.Utils
     , restrict
     , textualLength
     , replaceAt
+    , mzip
     ) where
 
 import Data.Monoid ((<>))
@@ -58,3 +59,7 @@ epsilon = 2.2204460492503131e-30 :: Rational
 
 eps :: Rational
 eps = 0.000001 -- See https://bug-30341-attachments.webkit.org/attachment.cgi?id=45276
+
+-- Why does Attoparsec have no instance of MonadZip? :«
+mzip :: Applicative f => f a -> f b -> f (a, b)
+mzip f g = (,) <$> f <*> g

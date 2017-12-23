@@ -27,6 +27,7 @@ import Hasmin.Parser.Position
 import Hasmin.Parser.Dimension
 import Hasmin.Parser.PercentageLength
 import Hasmin.Types.Gradient
+import Hasmin.Utils
 
 radialgradient :: Parser Gradient
 radialgradient = functionParser $ do
@@ -65,8 +66,8 @@ lineargradient = functionParser (lg <|> oldLg)
 -- <side-or-corner> = [left | right] || [top | bottom]
 sideOrCorner :: Parser (Side, Maybe Side)
 sideOrCorner = orderOne <|> orderTwo
-  where orderOne = (,) <$> leftright <* skipComments <*> optional topbottom
-        orderTwo = (,) <$> topbottom <* skipComments <*> optional leftright
+  where orderOne = mzip (leftright <* skipComments) (optional topbottom)
+        orderTwo = mzip (topbottom <* skipComments) (optional leftright)
 
         leftright :: Parser Side
         leftright =  parserFromPairs [("left", pure LeftSide), ("right", pure RightSide)]

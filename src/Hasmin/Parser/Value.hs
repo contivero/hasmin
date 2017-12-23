@@ -68,6 +68,7 @@ import Hasmin.Types.Shadow
 import Hasmin.Types.String
 import Hasmin.Types.TransformFunction
 import Hasmin.Types.Value
+import Hasmin.Utils
 
 -- | Given a propery name, it returns a specific parser of values for that
 -- property. Fails if no specific parser is found.
@@ -246,7 +247,7 @@ bgLayer = do
 -- used for the background property, which takes among other things:
 -- <position> [ / <bg-size> ]?
 positionAndBgSize :: Parser (Position, Maybe BgSize)
-positionAndBgSize = (,) <$> position <*> optional (slash *> bgSize)
+positionAndBgSize = mzip position (optional (slash *> bgSize))
 
 matchKeywords :: [Text] -> Parser TextV
 matchKeywords listOfKeywords = do
@@ -457,7 +458,7 @@ storeProperty' (a,b,_,d,i) x = (a,b, Just x,d,i)
 fontFamilyValues :: Parser Values
 fontFamilyValues = singleValue csswideKeyword <|> do
     v  <- fontfamily
-    vs <- many ((,) <$> separator <*> fontfamily)
+    vs <- many (mzip separator fontfamily)
     pure $ Values v vs
 
 fontfamily :: Parser Value
@@ -514,7 +515,7 @@ genericFunc :: Text -> Parser Value
 genericFunc i = (GenericFunc i <$> valuesInParens) <* char ')'
 
 valuesInParens :: Parser Values
-valuesInParens = Values <$> v <*> many ((,) <$> separator <*> v) <* skipComments
+valuesInParens = Values <$> v <*> many (mzip separator v) <* skipComments
  where v =  textualvalue
          <|> numericalvalue
          <|> hexvalue
@@ -666,7 +667,7 @@ positionList = parseCommaSeparated positionvalue
 parseCommaSeparated :: Parser Value -> Parser Values
 parseCommaSeparated p = do
     v  <- p
-    vs <- lexeme $ many ((,) <$> commaSeparator <*> p)
+    vs <- lexeme $ many (mzip commaSeparator p)
     c  <- A.peekChar
     case c of
       Just x  -> if x `elem` ['!', ';', '}']
@@ -774,7 +775,7 @@ format = Format <$> functionParser p
 
 -- | For cases when CSS hacks are used, e.g.: @margin-top: 1px \\9;@.
 valuesFallback :: Parser Values
-valuesFallback = Values <$> value <*> many ((,) <$> separator <*> value) <* skipComments
+valuesFallback = Values <$> value <*> many (mzip separator value) <* skipComments
 
 value :: Parser Value
 value =  textualvalue

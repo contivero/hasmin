@@ -46,11 +46,12 @@ import Hasmin.Types.Selector
 import Hasmin.Types.Stylesheet
 import Hasmin.Types.Declaration
 import Hasmin.Types.String
+import Hasmin.Utils
 
 -- | Parser for CSS complex selectors (see 'Selector' for more details).
 selector :: Parser Selector
 selector = Selector <$> compoundSelector <*> combinatorsAndSelectors
-  where combinatorsAndSelectors = many ((,) <$> combinator <* skipComments  <*> compoundSelector)
+  where combinatorsAndSelectors = many $ mzip (combinator <* skipComments) compoundSelector
 
 -- First tries with '>>' (descendant), '>' (child), '+' (adjacent sibling), and
 -- '~' (general sibling) combinators. If those fail, it tries with the
