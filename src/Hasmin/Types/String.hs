@@ -19,17 +19,24 @@ module Hasmin.Types.String
   ) where
 
 import Control.Monad.Reader (ask, Reader)
+import Control.Monad (mzero)
+import Control.Applicative (liftA2, (<|>), many)
 import Data.Attoparsec.Text (Parser, parse, IResult(Done, Partial, Fail), maybeResult, feed)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Text.Lazy.Builder as B
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import Data.Text.Lazy.Builder (Builder)
+import qualified Data.Text.Lazy.Builder as B
+import qualified Data.Char as C
+import Data.Bits ((.|.), shiftL)
+import Data.Foldable (foldl')
 
 import Hasmin.Config
 import Hasmin.Class
-import Hasmin.Parser.String
 import Hasmin.Parser.Primitives
+import Hasmin.Parser.Utils
 
 -- | The <https://drafts.csswg.org/css-values-3/#strings \<string\>> data type.
 -- It represents a string, formed by Unicode characters, delimited by either
@@ -75,13 +82,13 @@ unquoteStringType g x@(DoubleQuotes s) = maybe (Right x) Left (g s)
 unquoteStringType g x@(SingleQuotes s) = maybe (Right x) Left (g s)
 
 removeQuotes :: StringType -> Either Text StringType
-removeQuotes = unquoteStringType toIdent
+removeQuotes = unquoteStringType (unquote ident)
 
 unquoteUrl :: StringType -> Either Text StringType
-unquoteUrl = unquoteStringType toUnquotedURL
+unquoteUrl = unquoteStringType (unquote unquotedURL)
 
 unquoteFontFamily :: StringType -> Either Text StringType
-unquoteFontFamily = unquoteStringType toUnquotedFontFamily
+unquoteFontFamily = unquoteStringType (unquote fontfamilyname)
 
 unquote :: Parser Text -> Text -> Maybe Text
 unquote p s = case parse p s of
@@ -91,12 +98,70 @@ unquote p s = case parse p s of
                 par@Partial{} -> maybeResult (feed par mempty)
                 Fail{}        -> Nothing
 
-toIdent :: Text -> Maybe Text
-toIdent = unquote ident
+-- TODO can the Parser be avoided by a fold, or one of the provided library
+-- functions? Apart from being cleaner, doing so would simplify other functions.
+-- | Parse and convert any escaped unicode to its underlying Char.
+convertEscaped :: Parser Text
+convertEscaped = (TL.toStrict . B.toLazyText) <$> go
+  where
+    go = do
+        nonescapedText <- B.fromText <$> A.takeWhile (/= '\\')
+        cont nonescapedText <|> pure nonescapedText
+    cont b = do
+        _ <- A.char '\\'
+        c <- A.peekChar
+        case c of
+          Just _  -> parseEscapedAndContinue b
+          Nothing -> pure (b <> B.singleton '\\')
 
-toUnquotedURL :: Text -> Maybe Text
-toUnquotedURL = unquote unquotedURL
+    parseEscapedAndContinue :: Builder -> Parser Builder
+    parseEscapedAndContinue b = do
+        u8 <- utf8
+        ((b <> u8) <>) <$>  go
 
-toUnquotedFontFamily :: Text -> Maybe Text
-toUnquotedFontFamily = unquote fontfamilyname
+    utf8 :: Parser Builder
+    utf8 = do
+        mch <- atMost 6 hexadecimal
+        pure $ maybe ("\\" <> B.fromString mch) B.singleton (hexToChar mch)
 
+    -- Interpret a hexadecimal string as a decimal Int, and convert it into the
+    -- corresponding Char.
+    hexToChar :: [Char] -> Maybe Char
+    hexToChar xs
+        | i > maxChar = Nothing
+        | otherwise   = Just (C.chr i)
+      where i = foldl' step 0 xs
+            maxChar = fromEnum (maxBound :: Char)
+            step a c
+                | w - 48 < 10 = (a `shiftL` 4) .|. fromIntegral (w - 48)
+                | w >= 97     = (a `shiftL` 4) .|. fromIntegral (w - 87)
+                | otherwise   = (a `shiftL` 4) .|. fromIntegral (w - 55)
+              where w = C.ord c
+
+    atMost :: Int -> Parser a -> Parser [a]
+    atMost 0 _ = pure []
+    atMost n p = A.option [] $ liftA2 (:) p (atMost (n-1) p)
+
+fontfamilyname :: Parser Text
+fontfamilyname = do
+    i  <- ident
+    is <- many (skipComments *> ident)
+    if T.toLower i `elem` invalidNames
+       then mzero
+       else pure $ i <> foldMap (" "<>) is
+  where invalidNames = ["serif", "sans-serif", "monospace", "cursive",
+                        "fantasy", "inherit", "initial", "unset", "default"]
+
+-- | Parse a URL without enclosing quotes.
+-- See <https://drafts.csswg.org/css-syntax-3/#consume-a-url-token §4.3.6. Consume a url token>
+unquotedURL :: Parser Text
+unquotedURL = do
+    t <- many (escape <|> (B.singleton <$> A.satisfy validChar))
+    pure $ TL.toStrict (B.toLazyText (mconcat t))
+  where validChar x = x /= '\"' && x /= '\'' && x /= '(' && x /= ')'
+                   && x /= '\\' && notWhitespace x && notNonprintable x
+        notWhitespace x = x /= '\n' &&  x /= '\t' && x /= ' '
+        notNonprintable x = not (C.chr 0 <= x && x <= C.chr 8)
+                         && x /= '\t'
+                         && not ('\SO' <= x && x <= C.chr 31)
+                         && x /= '\DEL'

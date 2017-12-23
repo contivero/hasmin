@@ -41,11 +41,13 @@ duration = do
     u <- opt (A.takeWhile1 C.isAlpha)
     if T.null u
        then mzero
-       else case Map.lookup (T.toCaseFold u) durationConstructorsMap of
+       else case Map.lookup (T.toLower u) timeConstructorsMap of
               Just f  -> pure $ f n
               Nothing -> mzero -- parsed units aren't angle units, fail
-  where durationConstructorsMap = Map.fromList $
-            fmap (toText &&& flip Time) [minBound..]
+  where timeConstructorsMap = Map.fromList timeConstructorsList
+
+timeConstructorsList :: [(Text, Number -> Time)]
+timeConstructorsList = fmap (toText &&& flip Time) [minBound..]
 
 angleConstructorsList :: [(Text, Number -> Angle)]
 angleConstructorsList = fmap (toText &&& flip Angle) [minBound..]

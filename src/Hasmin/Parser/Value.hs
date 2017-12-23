@@ -41,8 +41,7 @@ import Data.Text (Text)
 import Data.Char (isAscii)
 import Text.Parser.Permutation ((<|?>), (<$$>), (<$?>), (<||>), permute)
 import qualified Data.Set as Set
-import Data.Attoparsec.Text (asciiCI, char, count, option, Parser,
-       skipSpace, string)
+import Data.Attoparsec.Text (asciiCI, char, option, Parser, skipSpace, string)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import Data.Map.Strict (Map)
@@ -59,6 +58,7 @@ import Hasmin.Parser.PercentageLength
 import Hasmin.Parser.Position
 import Hasmin.Parser.TimingFunction
 import Hasmin.Parser.TransformFunction
+import Hasmin.Parser.String
 import Hasmin.Types.BgSize
 import Hasmin.Types.Dimension
 import Hasmin.Types.FilterFunction
@@ -74,14 +74,8 @@ import Hasmin.Utils
 -- | Given a propery name, it returns a specific parser of values for that
 -- property. Fails if no specific parser is found.
 valuesFor :: Text -> Parser Values
-valuesFor propName =
-  case Map.lookup (T.toLower propName) propertyValueParsersMap of
-    Just x  -> x <* skipComments
-    Nothing -> mzero
-
--- ---------------------------------------------------------------------------
--- Dimensions Parsers
--- ---------------------------------------------------------------------------
+valuesFor propName = fromMaybe mzero (Map.lookup p propertyValueParsersMap) <* skipComments
+  where p = T.toLower propName
 
 -- A map relating dimension units and the percentage symbol,
 -- to functions that construct that value. Meant to unify all the numerical
@@ -89,19 +83,17 @@ valuesFor propName =
 -- See numericalvalue.
 numericalConstructorsMap :: Map Text (Number -> Value)
 numericalConstructorsMap   = Map.fromList $ fmap (first T.toCaseFold) l
-  where durationFunc u v   = TimeV (Time v u)
-        frequencyFunc u v  = FrequencyV (Frequency v u)
+  where frequencyFunc u v  = FrequencyV (Frequency v u)
         resolutionFunc u v = ResolutionV (Resolution v u)
-        l = [("s",    durationFunc S)
-            ,("ms",   durationFunc Ms)
-            ,("hz",   frequencyFunc Hz)
+        l = [("hz",   frequencyFunc Hz)
             ,("khz",  frequencyFunc Khz)
             ,("dpi",  resolutionFunc Dpi)
             ,("dpcm", resolutionFunc Dpcm)
             ,("dppx", resolutionFunc Dppx)
             ,("%", \x -> PercentageV (Percentage $ toRational x))
-            ] ++ (fmap . fmap) (LengthV .) distanceConstructorsList
+            ] ++ (fmap . fmap) (TimeV .) timeConstructorsList
               ++ (fmap . fmap) (AngleV .) angleConstructorsList
+              ++ (fmap . fmap) (LengthV .) distanceConstructorsList
 
 -- Unified numerical parser.
 -- Parses <number>, dimensions (i.e. <length>, <angle>, ...), and <percentage>
@@ -268,7 +260,7 @@ image = do
                if Set.member lowercased possibilities
                   then fromMaybe mzero (Map.lookup lowercased functionsMap)
                   else mzero
-  where possibilities = Set.fromList $ map T.toCaseFold
+  where possibilities = Set.fromList
             ["url", "element", "linear-gradient", "radial-gradient"]
 
 transition :: Parser Values
@@ -463,7 +455,7 @@ fontFamilyValues = singleValue csswideKeyword <|> do
     pure $ Values v vs
 
 fontfamily :: Parser Value
-fontfamily = (StringV <$> stringtype) <|> (mkOther <$> unquotedFontFamily)
+fontfamily = stringvalue <|> (mkOther <$> unquotedFontFamily)
 
 local :: Parser Value
 local = functionParser $
@@ -495,10 +487,10 @@ csswideKeyword = do
                                   else mzero
 
 csswideKeywordsMap :: Map Text (Parser Value)
-csswideKeywordsMap  = Map.fromList $ map (first T.toCaseFold)
-                                 [("initial", pure Initial)
-                                 ,("inherit", pure Inherit)
-                                 ,("unset",   pure Unset)]
+csswideKeywordsMap  = Map.fromList $
+    [("initial", pure Initial)
+    ,("inherit", pure Inherit)
+    ,("unset",   pure Unset)]
 
 stringvalue :: Parser Value
 stringvalue = StringV <$> stringtype
@@ -520,7 +512,7 @@ valuesInParens = Values <$> v <*> many (mzip separator v) <* skipComments
  where v =  textualvalue
          <|> numericalvalue
          <|> hexvalue
-         <|> (StringV <$> stringtype)
+         <|> stringvalue
 
 stringOrUrl :: Parser (Either StringType Url)
 stringOrUrl = (Left <$> stringtype) <|> (Right <$> someUrl)
@@ -637,12 +629,9 @@ functionsMap = Map.fromList (colorFunctionValueParsers ++ l)
             ]
 
 dropShadow :: Parser FilterFunction
-dropShadow = functionParser $ do
-    l1 <- distance
-    l2 <- lexeme distance
-    l3 <- optional (distance <* skipComments)
-    c  <- optional color
-    pure $ DropShadow l1 l2 l3 c
+dropShadow = functionParser $
+    DropShadow <$> len <*> len <*> optional len <*> optional color
+  where len = distance <* skipComments
 
 textShadow :: Parser Values
 textShadow = parseCommaSeparated shadowText
@@ -699,12 +688,8 @@ numberPercentage = do
 
 -- | Assumes "rect(" has been already parsed
 rect :: Parser Value
-rect = functionParser $ do
-    length1 <- distance <* comma
-    length2 <- distance <* comma
-    length3 <- distance <* comma
-    length4 <- distance
-    pure $ Rect length1 length2 length3 length4
+rect = functionParser (Rect <$> dc <*> dc <*> dc <*> distance)
+  where dc = distance <* comma
 
 -- It uses skipSpace instead of skipComments, since comments aren't valid inside
 -- the url-token. From the spec:
@@ -732,7 +717,7 @@ value :: Parser Value
 value =  textualvalue
      <|> numericalvalue
      <|> hexvalue
-     <|> (StringV <$> stringtype)
+     <|> stringvalue
      <|> invalidvalue
 
 separator :: Parser Separator
@@ -742,22 +727,6 @@ separator = lexeme $ (char ',' $> Comma)
 
 commaSeparator :: Parser Separator
 commaSeparator = lexeme (char ',' $> Comma)
-
--- <string> data type parser
-stringtype :: Parser StringType
-stringtype = doubleQuotesString <|> singleQuotesString
-
-doubleQuotesString :: Parser StringType
-doubleQuotesString =  char '\"' *> (DoubleQuotes <$> untilDoubleQuotes)
-  where untilDoubleQuotes = mappend <$> A.takeWhile (\c -> c /= '\\' && c /= '\"') <*> checkCharacter
-        checkCharacter = (string "\"" $> mempty)
-                      <|> (T.cons <$> char '\\' <*> untilDoubleQuotes)
-
-singleQuotesString :: Parser StringType
-singleQuotesString = char '\'' *> (SingleQuotes <$> untilSingleQuotes)
-  where untilSingleQuotes = mappend <$> A.takeWhile (\c -> c /= '\\' && c /= '\'') <*> checkCharacter
-        checkCharacter = (string "\'" $> mempty)
-                      <|> (T.cons <$> char '\\' <*> untilSingleQuotes)
 
 -- <single-animation>#
 animation :: Parser Values
