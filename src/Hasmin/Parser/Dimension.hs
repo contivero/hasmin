@@ -37,13 +37,10 @@ duration = do
             fmap (toText &&& flip Duration) [S, Ms]
 
 angleConstructorsList :: [(Text, Number -> Angle)]
-angleConstructorsList = fmap (toText &&& flip Angle)
-    [Deg, Grad, Rad, Turn]
+angleConstructorsList = fmap (toText &&& flip Angle) [minBound..]
 
--- TODO try to list the constructors with an enum
 distanceConstructorsList :: [(Text, Number -> Length)]
-distanceConstructorsList = fmap (toText &&& flip Length)
-    [EM, EX, CH, VH, VW, VMIN, VMAX, REM, Q, CM, MM, IN, PC, PT, PX]
+distanceConstructorsList = fmap (toText &&& flip Length) [minBound..]
 
 -- Create a numerical parser based on a Map.
 -- See for instance, the "angle" parser

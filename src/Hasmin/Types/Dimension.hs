@@ -101,7 +101,7 @@ instance Minifiable Angle where
   minify a@(Angle r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
-               DimMinOn  -> minDim Angle r u [Turn, Grad, Rad, Deg]
+               DimMinOn  -> minDim Angle r u [minBound..]
                DimMinOff -> a
   minify NullAngle = pure NullAngle
 
@@ -120,7 +120,7 @@ instance Minifiable Duration where
   minify d@(Duration r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
-                DimMinOn  -> minDim Duration r u [S, Ms]
+                DimMinOn  -> minDim Duration r u [minBound..]
                 DimMinOff -> d
 instance ToText Duration where
   toBuilder (Duration r u) = toBuilder r <> toBuilder u
@@ -136,7 +136,7 @@ instance Minifiable Frequency where
   minify f@(Frequency r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
-                DimMinOn  -> minDim Frequency r u [Khz, Hz]
+                DimMinOn  -> minDim Frequency r u [minBound..]
                 DimMinOff -> f
 instance ToText Frequency where
   toBuilder (Frequency r u) = toBuilder r <> toBuilder u
@@ -152,7 +152,7 @@ instance Minifiable Resolution where
   minify x@(Resolution r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
-               DimMinOn  -> minDim Resolution r u [Dpcm, Dppx, Dpi]
+               DimMinOn  -> minDim Resolution r u [minBound..]
                DimMinOff -> x
 instance ToText Resolution where
   toBuilder (Resolution r u) = toBuilder r <> toBuilder u
@@ -174,7 +174,7 @@ class Unit a where
 
 data LengthUnit = IN | CM | MM | Q | PC | PT | PX            -- absolute
                   | EM | EX | CH | VH | VW | VMIN | VMAX | REM -- relative
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum, Bounded)
 instance ToText LengthUnit where
   toBuilder IN   = "in"
   toBuilder CM   = "cm"
@@ -201,22 +201,22 @@ instance  Unit LengthUnit where
   convertTo PX = toPixels
   convertTo _  = const
 
-data AngleUnit = Deg | Grad | Rad | Turn
-  deriving (Show, Eq)
+data AngleUnit = Turn | Grad | Rad | Deg
+  deriving (Show, Eq, Enum, Bounded)
 instance ToText AngleUnit where
-  toBuilder Deg  = "deg"
+  toBuilder Turn = "turn"
   toBuilder Grad = "grad"
   toBuilder Rad  = "rad"
-  toBuilder Turn = "turn"
+  toBuilder Deg  = "deg"
 instance Unit AngleUnit where
-  convertTo Deg  = toDegrees
+  convertTo Turn = toTurns
   convertTo Grad = toGradians
   convertTo Rad  = toRadians
-  convertTo Turn = toTurns
+  convertTo Deg  = toDegrees
 
 data DurationUnit = S -- seconds
                   | Ms -- miliseconds
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum, Bounded)
 instance ToText DurationUnit where
   toBuilder S  = "s"
   toBuilder Ms = "ms"
@@ -225,7 +225,7 @@ instance Unit DurationUnit where
   convertTo Ms = toMiliseconds
 
 data FrequencyUnit = Hz | Khz
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum, Bounded)
 instance ToText FrequencyUnit where
   toBuilder Hz  = "hz"
   toBuilder Khz = "khz"
@@ -233,8 +233,8 @@ instance Unit FrequencyUnit where
   convertTo Hz  = toHertz
   convertTo Khz = toKilohertz
 
-data ResolutionUnit = Dpi | Dpcm | Dppx
-  deriving (Show, Eq)
+data ResolutionUnit = Dpcm | Dppx | Dpi
+  deriving (Show, Eq, Enum, Bounded)
 instance ToText ResolutionUnit where
   toBuilder Dpi  = "dpi"
   toBuilder Dpcm = "dpcm"
