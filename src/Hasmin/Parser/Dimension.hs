@@ -35,7 +35,7 @@ angle :: Parser Angle
 angle = dimensionParser angleConstructorsMap NullAngle
   where angleConstructorsMap = Map.fromList angleConstructorsList
 
-duration :: Parser Duration
+duration :: Parser Time
 duration = do
     n <- number
     u <- opt (A.takeWhile1 C.isAlpha)
@@ -45,7 +45,7 @@ duration = do
               Just f  -> pure $ f n
               Nothing -> mzero -- parsed units aren't angle units, fail
   where durationConstructorsMap = Map.fromList $
-            fmap (toText &&& flip Duration) [minBound..]
+            fmap (toText &&& flip Time) [minBound..]
 
 angleConstructorsList :: [(Text, Number -> Angle)]
 angleConstructorsList = fmap (toText &&& flip Angle) [minBound..]

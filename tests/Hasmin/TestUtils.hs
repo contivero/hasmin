@@ -60,25 +60,23 @@ instance ToText Declarations where
 
 instance Arbitrary Length where
   arbitrary = liftA2 Length arbitrary distanceUnit
-    -- TODO keep it DRY, avoid repeating constructor list here (i.e. SPOF)
-    where distanceUnit = mkGen [IN, CM, MM, Q, PC, PT, PX, EM, EX,
-                                CH, VH, VW, VMIN, VMAX, REM]
+    where distanceUnit = mkGen [minBound..]
 
 instance Arbitrary Angle where
   arbitrary = liftA2 Angle arbitrary angleUnit
-    where angleUnit = mkGen [Deg, Grad, Rad, Turn]
+    where angleUnit = mkGen [minBound..]
 
-instance Arbitrary Duration where
-  arbitrary = liftA2 Duration arbitrary durationUnit
-    where durationUnit = mkGen [S, Ms]
+instance Arbitrary Time where
+  arbitrary = liftA2 Time arbitrary durationUnit
+    where durationUnit = mkGen [minBound..]
 
 instance Arbitrary Frequency where
   arbitrary = liftA2 Frequency arbitrary frequencyUnit
-    where frequencyUnit = mkGen [Hz, Khz]
+    where frequencyUnit = mkGen [minBound..]
 
 instance Arbitrary Resolution where
   arbitrary = liftA2 Resolution arbitrary resolutionUnit
-    where resolutionUnit = mkGen [Dpi, Dpcm, Dppx]
+    where resolutionUnit = mkGen [minBound..]
 
 instance Arbitrary Number where
   arbitrary = toNumber <$> (arbitrary :: Gen Rational)

@@ -13,7 +13,7 @@ dimensionTests =
       it "Minified <angle>s are equivalent to the original ones" $
         property (prop_minificationEq :: Angle -> Bool)
       it "Minified <time>s are equivalent to the original ones" $
-        property (prop_minificationEq :: Duration -> Bool)
+        property (prop_minificationEq :: Time -> Bool)
       it "Minified <frequency>s are equivalent to the original ones" $
         property (prop_minificationEq :: Frequency -> Bool)
       it "Minified <resolution>s are equivalent to the original ones" $
@@ -65,7 +65,7 @@ spec = do
       it "1in != 1em" $
         Length 1 IN `shouldNotBe` Length 1 EM
     -- describe "<time> conversions" $ do
-      -- it "" $ Duration 1 S `shouldBe` Duration 1000 Ms
+      -- it "" $ Time 1 S `shouldBe` Time 1000 Ms
     -- describe "<frequency> conversions" $ do
       -- it "" $ Frequency 1 Khz `shouldBe` Frequency 1000 Hz
     -- describe "<resolution> conversions" $ do

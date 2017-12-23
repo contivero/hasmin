@@ -17,8 +17,8 @@ module Hasmin.Types.Dimension
     , LengthUnit(..)
     , Angle(..)
     , AngleUnit(..)
-    , Duration(..)
-    , DurationUnit(..)
+    , Time(..)
+    , TimeUnit(..)
     , Frequency(..)
     , FrequencyUnit(..)
     , Resolution(..)
@@ -110,20 +110,20 @@ instance ToText Angle where
   toBuilder (Angle r u) = toBuilder r <> toBuilder u
 
 -- | The \<duration\> CSS data type
-data Duration = Duration Number DurationUnit
+data Time = Time Number TimeUnit
   deriving (Show)
-instance Eq Duration where
-  (Duration r1 u1) == (Duration r2 u2)
+instance Eq Time where
+  (Time r1 u1) == (Time r2 u2)
     | u1 == u2  = r1 == r2
     | otherwise = toSeconds r1 u1 == toSeconds r2 u2
-instance Minifiable Duration where
-  minify d@(Duration r u) = do
+instance Minifiable Time where
+  minify d@(Time r u) = do
       dimSettings <- asks dimensionSettings
       pure $ case dimSettings of
-                DimMinOn  -> minDim Duration r u [minBound..]
+                DimMinOn  -> minDim Time r u [minBound..]
                 DimMinOff -> d
-instance ToText Duration where
-  toBuilder (Duration r u) = toBuilder r <> toBuilder u
+instance ToText Time where
+  toBuilder (Time r u) = toBuilder r <> toBuilder u
 
 -- | The \<frequency\> CSS data type
 data Frequency = Frequency Number FrequencyUnit
@@ -214,13 +214,13 @@ instance Unit AngleUnit where
   convertTo Rad  = toRadians
   convertTo Deg  = toDegrees
 
-data DurationUnit = S -- seconds
-                  | Ms -- miliseconds
+data TimeUnit = S -- seconds
+              | Ms -- miliseconds
   deriving (Show, Eq, Enum, Bounded)
-instance ToText DurationUnit where
+instance ToText TimeUnit where
   toBuilder S  = "s"
   toBuilder Ms = "ms"
-instance Unit DurationUnit where
+instance Unit TimeUnit where
   convertTo S  = toSeconds
   convertTo Ms = toMiliseconds
 
@@ -334,11 +334,11 @@ toTurns d Grad = d / 400
 toTurns d Rad  = d / (2 * rationalPi)
 toTurns d Turn = d
 ------------------------------------------------------------------------------
-toSeconds :: Number -> DurationUnit -> Number
+toSeconds :: Number -> TimeUnit -> Number
 toSeconds d S     = d
 toSeconds d Ms = d / 1000
 
-toMiliseconds :: Number -> DurationUnit -> Number
+toMiliseconds :: Number -> TimeUnit -> Number
 toMiliseconds d S     = d * 1000
 toMiliseconds d Ms = d
 ------------------------------------------------------------------------------

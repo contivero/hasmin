@@ -87,7 +87,7 @@ valuesFor propName =
 -- See numericalvalue.
 numericalConstructorsMap :: Map Text (Number -> Value)
 numericalConstructorsMap   = Map.fromList $ fmap (first T.toCaseFold) l
-  where durationFunc u v   = DurationV (Duration v u)
+  where durationFunc u v   = TimeV (Time v u)
         frequencyFunc u v  = FrequencyV (Frequency v u)
         resolutionFunc u v = ResolutionV (Resolution v u)
         l = [("s",    durationFunc S)

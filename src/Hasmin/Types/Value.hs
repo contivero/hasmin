@@ -53,7 +53,7 @@ data Value = Inherit
            | PercentageV Percentage
            | LengthV Length
            | AngleV Angle
-           | DurationV Duration
+           | TimeV Time
            | FrequencyV Frequency
            | ResolutionV Resolution
            | ColorV Color
@@ -72,9 +72,9 @@ data Value = Inherit
            --              <bg-image> || <position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <box> || <box> || <'background-color'>
            | FinalBgLayer (Maybe Value) (Maybe Position) (Maybe BgSize) (Maybe RepeatStyle) (Maybe TextV) (Maybe TextV) (Maybe TextV) (Maybe Color)
            -- [ none | <single-transition-property> ] || <time> || <single-transition-timing-function> || <time>
-           | SingleTransition (Maybe TextV) (Maybe Duration) (Maybe TimingFunction) (Maybe Duration)
+           | SingleTransition (Maybe TextV) (Maybe Time) (Maybe TimingFunction) (Maybe Time)
            --                         <time> || <timing-function> || <time> || <iteration-count> || <animation-direction> || <animation-fill-mode> || <animation-play-state> || [ none | <keyframes-name> ]
-           | SingleAnimation (Maybe Duration) (Maybe TimingFunction) (Maybe Duration) (Maybe Value)  (Maybe TextV) (Maybe TextV) (Maybe TextV) (Maybe Value)
+           | SingleAnimation (Maybe Time) (Maybe TimingFunction) (Maybe Time) (Maybe Value)  (Maybe TextV) (Maybe TextV) (Maybe TextV) (Maybe Value)
            -- [ [ <'font-style'> || <font-variant-css21> || <'font-weight'> || <'font-stretch'> ]? <'font-size'> [ / <'line-height'> ]? <'font-family'> ] |
            | FontV (Maybe TextV) (Maybe TextV) (Maybe Value) (Maybe TextV) Value (Maybe Value) [Value]
            | StringV StringType
@@ -121,7 +121,7 @@ instance ToText Value where
   toBuilder (ColorV c)      = toBuilder c
   toBuilder (LengthV d)     = toBuilder d
   toBuilder (AngleV a)      = toBuilder a
-  toBuilder (DurationV d)   = toBuilder d
+  toBuilder (TimeV d)       = toBuilder d
   toBuilder (FrequencyV f)  = toBuilder f
   toBuilder (ResolutionV r) = toBuilder r
   toBuilder (FilterV f)     = toBuilder f
@@ -180,7 +180,7 @@ instance Minifiable Value where
   minify (ColorV c)       = ColorV <$> minify c
   minify (LengthV d)      = LengthV <$> minify d
   minify (AngleV a)       = AngleV <$> minify a
-  minify (DurationV d)    = DurationV <$> minify d
+  minify (TimeV d)        = TimeV <$> minify d
   minify (FrequencyV f)   = FrequencyV <$> minify f
   minify (ResolutionV r)  = ResolutionV <$> minify r
   minify (GradientV t g)  = GradientV t <$> minify g
@@ -220,11 +220,11 @@ instance Minifiable Value where
       let p = if prop == Just "all"
                  then Nothing
                  else prop -- TODO lowercase here
-      (tDuration, tDelay) <- handleTime tdur tdel
-      tfunc               <- handleTimingFunction tf
-      pure $ if isNothing p && isNothing tDuration && isNothing tDelay && isNothing tfunc
-                then SingleTransition p (Just $ Duration 0 S) tfunc tDelay
-                else SingleTransition p tDuration tfunc tDelay
+      (tTime, tDelay) <- handleTime tdur tdel
+      tfunc           <- handleTimingFunction tf
+      pure $ if isNothing p && isNothing tTime && isNothing tDelay && isNothing tfunc
+                then SingleTransition p (Just $ Time 0 S) tfunc tDelay
+                else SingleTransition p tTime tfunc tDelay
   minify (SingleAnimation t1 tf t2 ic ad af ap kf) = do
       (tdur, tdel) <- handleTime t1 t2
       tfunc        <- handleTimingFunction tf
@@ -396,19 +396,19 @@ handleTimingFunction (Just tfunc)
     | otherwise = Just <$> minify tfunc
 
 -- Used for SingleAnimation and SingleTransition minification.
-handleTime :: Maybe Duration -> Maybe Duration -> Reader Config (Maybe Duration, Maybe Duration)
-handleTime (Just t) Nothing = if t == Duration 0 S
+handleTime :: Maybe Time -> Maybe Time -> Reader Config (Maybe Time, Maybe Time)
+handleTime (Just t) Nothing = if t == Time 0 S
                                  then pure (Nothing, Nothing)
                                  else do newT <- minify t
                                          pure (Just newT, Nothing)
 handleTime (Just t1) (Just t2)
-    | t1 == Duration 0 S = if t2 == t1
-                              then pure (Nothing, Nothing)
-                              else do newT2 <- minify t2
-                                      newT1 <- minify t1
-                                      pure (Just newT1, Just newT2)
+    | t1 == Time 0 S = if t2 == t1
+                          then pure (Nothing, Nothing)
+                          else do newT2 <- minify t2
+                                  newT1 <- minify t1
+                                  pure (Just newT1, Just newT2)
     | otherwise = do newT1 <- minify t1
-                     if t2 == Duration 0 S
+                     if t2 == Time 0 S
                         then pure (Just t1, Nothing)
                         else do newT2 <- minify t2
                                 pure (Just newT1, Just newT2)
