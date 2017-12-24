@@ -8,8 +8,8 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.Value (
-      Value(..)
+module Hasmin.Types.Value
+    ( Value(..)
     , Values(..)
     , TextV(..)
     , Separator(..)
@@ -24,14 +24,14 @@ module Hasmin.Types.Value (
 import Control.Monad.Reader (ask, Reader, mapReader)
 import Data.Monoid ((<>))
 import Data.Maybe (isJust, catMaybes, isNothing)
-import Data.Text (Text, toCaseFold)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Lazy.Builder (fromText, singleton, Builder)
 import Data.String (IsString)
 
+import Hasmin.Class
 import Hasmin.Config
 import Hasmin.Types.BgSize
-import Hasmin.Class
 import Hasmin.Types.Color
 import Hasmin.Types.Dimension
 import Hasmin.Types.FilterFunction
@@ -67,12 +67,25 @@ data Value = Inherit
            | PositionV Position
            | RepeatStyleV RepeatStyle
            | BgSizeV BgSize
-           --          <bg-image> || <position> [ / <bg-size> ]?  || <repeat-style>    || <attachment>    || <box>{1,2}
-           | BgLayer (Maybe Value) (Maybe Position) (Maybe BgSize) (Maybe RepeatStyle) (Maybe TextV) (Maybe TextV) (Maybe TextV)
+           -- <bg-image> || <position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <box>{1,2}
+           | BgLayer
+              { _bgimage      :: Maybe Value
+              , _bgposition   :: Maybe Position
+              , _bgsize       :: Maybe BgSize
+              , _bgrepeat     :: Maybe RepeatStyle
+              , _bgattachment :: Maybe TextV
+              , _bgbox1       :: Maybe TextV
+              , _bgbox2       :: Maybe TextV
+              }
            --              <bg-image> || <position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <box> || <box> || <'background-color'>
            | FinalBgLayer (Maybe Value) (Maybe Position) (Maybe BgSize) (Maybe RepeatStyle) (Maybe TextV) (Maybe TextV) (Maybe TextV) (Maybe Color)
            -- [ none | <single-transition-property> ] || <time> || <single-transition-timing-function> || <time>
-           | SingleTransition (Maybe TextV) (Maybe Time) (Maybe TimingFunction) (Maybe Time)
+           | SingleTransition
+              { _transitionproperty :: Maybe TextV
+              , _time1 :: Maybe Time
+              , _transitiontimingfunction :: Maybe TimingFunction
+              , _time2 :: Maybe Time
+              }
            --                         <time> || <timing-function> || <time> || <iteration-count> || <animation-direction> || <animation-fill-mode> || <animation-play-state> || [ none | <keyframes-name> ]
            | SingleAnimation (Maybe Time) (Maybe TimingFunction) (Maybe Time) (Maybe Value)  (Maybe TextV) (Maybe TextV) (Maybe TextV) (Maybe Value)
            -- [ [ <'font-style'> || <font-variant-css21> || <'font-weight'> || <'font-stretch'> ]? <'font-size'> [ / <'line-height'> ]? <'font-family'> ] |
@@ -91,7 +104,7 @@ newtype TextV = TextV { getText :: Text }
   deriving (Show, Ord, IsString)
 
 instance Eq TextV where
-  TextV t1 == TextV t2 = toCaseFold t1 == toCaseFold t2
+  TextV t1 == TextV t2 = T.toLower t1 == T.toLower t2
 instance ToText TextV where
   toText = getText
 
@@ -397,10 +410,9 @@ handleTimingFunction (Just tfunc)
 
 -- Used for SingleAnimation and SingleTransition minification.
 handleTime :: Maybe Time -> Maybe Time -> Reader Config (Maybe Time, Maybe Time)
-handleTime (Just t) Nothing = if t == Time 0 S
-                                 then pure (Nothing, Nothing)
-                                 else do newT <- minify t
-                                         pure (Just newT, Nothing)
+handleTime (Just t) Nothing
+    | t == Time 0 S = pure (Nothing, Nothing)
+    | otherwise     = mzip (Just <$> minify t) (pure Nothing)
 handleTime (Just t1) (Just t2)
     | t1 == Time 0 S = if t2 == t1
                           then pure (Nothing, Nothing)
@@ -415,14 +427,14 @@ handleTime (Just t1) (Just t2)
 handleTime _ _ = pure (Nothing, Nothing)
 
 removeIfEqualTo :: Text -> Maybe TextV -> Maybe TextV
-removeIfEqualTo _ Nothing  = Nothing
+removeIfEqualTo _ Nothing = Nothing
 removeIfEqualTo s (Just x)
     | x == TextV s = Nothing
     | otherwise    = Just x
 
 -- Unquotes font family names when possible
 optimizeFontFamily :: Value -> Reader Config Value
-optimizeFontFamily (Other t) = mkOther <$> lowercaseText (getText t)
+optimizeFontFamily (Other t)   = mkOther <$> lowercaseText (getText t)
 optimizeFontFamily (StringV s) = do
     conf <- ask
     ffamily <- mapString lowercaseText s

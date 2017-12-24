@@ -11,7 +11,6 @@
 -- Parsers for CSS \<gradient> values.
 --
 -----------------------------------------------------------------------------
-
 module Hasmin.Parser.Gradient where
 
 import Control.Applicative ((<|>), many, optional)

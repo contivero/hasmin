@@ -1,4 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Hasmin.Parser.Color
+-- Copyright   : (c) 2017 Cristian Adrián Ontivero
+-- License     : BSD3
+-- Stability   : experimental
+-- Portability : unknown
+--
+-- Parsers for CSS \<color> values.
+--
+-----------------------------------------------------------------------------
 module Hasmin.Parser.Color where
 
 import Control.Applicative ((<|>),  optional)
@@ -63,12 +74,11 @@ hsla = functionParser p
 -- | Parser for <https://drafts.csswg.org/css-color-3/#colorunits \<color\>>.
 color :: Parser Color
 color = hex <|> othercolor
-  where othercolor = do
-          i <- ident
-          let t = T.toLower i
-          case Map.lookup t namedColorsParsersMap of
-            Just y  -> y
-            Nothing -> colorFunctionParser t
+  where
+    othercolor = do
+      i <- ident
+      let t = T.toLower i
+      fromMaybe (colorFunctionParser t) (Map.lookup t namedColorsParsersMap)
 
 namedColorsParsersMap :: Map Text (Parser Color)
 namedColorsParsersMap = Map.fromList $ foldr f [] keywordColors

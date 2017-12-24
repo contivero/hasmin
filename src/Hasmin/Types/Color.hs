@@ -31,14 +31,15 @@ import Data.Monoid ((<>))
 import Data.Char (isHexDigit, digitToInt, intToDigit, toLower)
 import Data.Maybe (fromMaybe)
 import Data.Ratio ((%))
-import Data.Text (pack, Text)
-import Data.Text.Lazy.Builder (Builder, singleton, fromText)
+import Data.Text (Text)
+import Data.Text.Lazy.Builder (Builder, singleton)
+import qualified Data.Text.Lazy.Builder as B
 import Data.Word (Word8)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 
-import Hasmin.Config
 import Hasmin.Class
+import Hasmin.Config
 import Hasmin.Types.Numeric
 import Hasmin.Utils
 
@@ -70,12 +71,8 @@ instance Eq Color where
   (Hex6 r1 g1 b1) == (Hex8 r2 g2 b2 a)
     | a == "ff" = r1 == r2 && g1 == g2 && b1 == b2
     | otherwise = False
-  c1 == (Named s) = case Map.lookup (T.toLower s) colorMap of
-                      Just a  -> a == c1
-                      Nothing -> False
-  (Named s) == c2 = case Map.lookup (T.toLower s) colorMap of
-                      Just a  -> a == c2
-                      Nothing -> False
+  c1 == (Named s) = Map.lookup (T.toLower s) colorMap == Just c1
+  (Named s) == c2 = c2 == Named s
   a == b = toLongHex a == toLongHex b
 
 instance Ord Color where
@@ -128,14 +125,14 @@ instance ToText Color where
     where values = toBuilderWithCommas [toText h, toText s, toText l]
   toBuilder (HSLA h s l a)    = "hsla(" <> values <> singleton ')'
     where values = toBuilderWithCommas [toText h, toText s, toText l, toText a]
-  toBuilder (Named a)         = fromText a
+  toBuilder (Named a)         = B.fromText a
   toBuilder (Hex3 r g b)      = singleton '#' <> singleton r <> singleton g <> singleton b
   toBuilder (Hex4 r g b a)    = singleton '#' <> singleton r <> singleton g <> singleton b <> singleton a
-  toBuilder (Hex6 r g b)      = fromText . pack $ mconcat ["#", r, g, b]
-  toBuilder (Hex8 r g b a)    = fromText . pack $ mconcat ["#", r, g, b, a]
+  toBuilder (Hex6 r g b)      = B.fromString $ mconcat ["#", r, g, b]
+  toBuilder (Hex8 r g b a)    = B.fromString $ mconcat ["#", r, g, b, a]
 
 toBuilderWithCommas :: [Text] -> Builder
-toBuilderWithCommas = mconcatIntersperse fromText (singleton ',')
+toBuilderWithCommas = mconcatIntersperse B.fromText (singleton ',')
 
 -- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 --                              Smart constructors
@@ -237,10 +234,9 @@ hexToWord8 :: String -> Word8
 hexToWord8 = fromIntegral . foldl (\s c -> s*16 + digitToInt c) 0
 
 toRGBAInt :: Color -> Color
-toRGBAInt (Named s) = case Map.lookup (T.toLower s) colorMap of
-                        Just a  -> toRGBAInt a
-                        Nothing -> error e
+toRGBAInt (Named s) = maybe (error e) toRGBAInt (Map.lookup t colorMap)
   where e = T.unpack $ "Invalid color keyword (" <> s <> "). Can't convert to rgba"
+        t = T.toLower s
 toRGBAInt (Hex3 r g b) = RGBAInt (f [r,r]) (f [g,g]) (f [b,b]) 1
   where f = fromIntegral . hexToWord8
 toRGBAInt (Hex6 r g b) = RGBAInt (hexToWord8 r) (hexToWord8 g) (hexToWord8 b) 1

@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Hasmin.Parser.PercentageLength
@@ -12,12 +11,12 @@
 module Hasmin.Parser.PercentageLength where
 
 import Control.Applicative ((<|>))
+import Control.Monad (mzero)
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Map.Strict as Map
 import qualified Data.Char as C
 import qualified Data.Text as T
-import Control.Monad (mzero)
 
 import Hasmin.Parser.Utils
 import Hasmin.Parser.Numeric
@@ -39,4 +38,4 @@ percentageLength = do
                  Just f  -> pure $ f n
                  Nothing -> mzero
   where plMap = Map.fromList $
-            ("%", Left . toPercentage):((fmap . fmap) (Right .) distanceConstructorsList)
+            ("%", Left . toPercentage):(fmap . fmap) (Right .) distanceConstructorsList

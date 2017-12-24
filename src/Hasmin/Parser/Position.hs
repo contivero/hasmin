@@ -1,6 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Hasmin.Parser.Position
+-- Copyright   : (c) 2017 Cristian Adrián Ontivero
+-- License     : BSD3
+-- Stability   : experimental
+-- Portability : unknown
+--
+-- Parsers for CSS \<position> values.
+--
+-----------------------------------------------------------------------------
 module Hasmin.Parser.Position where
 
 import Control.Applicative ((<|>), optional)
