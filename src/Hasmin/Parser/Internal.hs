@@ -21,204 +21,27 @@ module Hasmin.Parser.Internal
     , supportsCondition
     ) where
 
-import Control.Applicative ((<|>), many, some, empty, optional)
+import Control.Applicative ((<|>), many, some, optional)
 import Data.Functor (($>))
-import Data.Attoparsec.Combinator (lookAhead, sepBy, endOfInput)
-import Data.Attoparsec.Text (asciiCI, char, many1, manyTill,
-  option, Parser, satisfy, string)
-import Data.List.NonEmpty (NonEmpty( (:|) ))
+import Data.Attoparsec.Combinator (lookAhead, endOfInput)
+import Data.Attoparsec.Text (asciiCI, char, manyTill,
+  Parser, satisfy)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import Data.Text.Lazy.Builder as LB
-import Data.Map.Strict (Map)
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Char as C
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 
 import Hasmin.Parser.Utils
 import Hasmin.Parser.Value
-import Hasmin.Types.Selector
+import Hasmin.Parser.Selector
 import Hasmin.Types.Stylesheet
 import Hasmin.Types.Declaration
-import Hasmin.Types.String
-import Hasmin.Utils
-
--- | Parser for CSS complex selectors (see 'Selector' for more details).
-selector :: Parser Selector
-selector = Selector <$> compoundSelector <*> combinatorsAndSelectors
-  where combinatorsAndSelectors = many $ mzip (combinator <* skipComments) compoundSelector
-
--- First tries with '>>' (descendant), '>' (child), '+' (adjacent sibling), and
--- '~' (general sibling) combinators. If those fail, it tries with the
--- descendant (whitespace) combinator. This is done to allow comments in-between.
---
--- | Parser for selector combinators, i.e. ">>" (descendant), '>' (child), '+'
--- (adjacent sibling), '~' (general sibling), and ' ' (descendant) combinators.
-combinator :: Parser Combinator
-combinator =  (skipComments *> ((string ">>" $> DescendantBrackets)
-          <|> (char '>' $> Child)
-          <|> (char '+' $> AdjacentSibling)
-          <|> (char '~' $> GeneralSibling)))
-          <|> (satisfy ws $> DescendantSpace)
-  where ws c = c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
-
-compoundSelector :: Parser CompoundSelector
-compoundSelector =
-    (:|) <$> (typeSelector <|> universal)
-                           <*> many p
-                       <|> ((Universal mempty :|) <$> many1 p)
-  where p = idSel <|> classSel <|> attributeSel <|> pseudo
--- | Parses a \"number sign\" (U+0023, \#) immediately followed by the ID value,
--- which must be a CSS identifier.
-idSel :: Parser SimpleSelector
-idSel = do
-    _    <- char '#'
-    name <- mconcat <$> many1 nmchar
-    pure . IdSel . TL.toStrict $ toLazyText name
-
--- class: '.' IDENT
-classSel :: Parser SimpleSelector
-classSel = char '.' *> (ClassSel <$> ident)
-
-{-
-attrib
-  : '[' S* [ namespace_prefix ]? IDENT S*
-        [ [ PREFIXMATCH |
-            SUFFIXMATCH |
-            SUBSTRINGMATCH |
-            '=' |
-            INCLUDES |
-            DASHMATCH ] S* [ IDENT | STRING ] S*
-        ]? ']'
-  ;
--}
--- FIXME namespace prefixes aren't allowed inside attribute selectors,
--- but they should be.
-attributeSel :: Parser SimpleSelector
-attributeSel = do
-    _     <- char '['
-    attId <- lexeme ident
-    g     <- option Attribute attValue
-    _     <- char ']'
-    pure $ AttributeSel (g attId)
-  where attValue = do
-          f <- ((string "^=" $> (:^=:)) <|>
-                (string "$=" $> (:$=:)) <|>
-                (string "*=" $> (:*=:)) <|>
-                (string "="  $> (:=:))  <|>
-                (string "~=" $> (:~=:)) <|>
-                (string "|=" $> (:|=:))) <* skipComments
-          attval <- identOrString <* skipComments
-          pure (`f` attval)
-
-identOrString :: Parser (Either Text StringType)
-identOrString = (Left <$> ident) <|> (Right <$> stringtype)
-
--- type_selector: [namespace_prefix]? element_name
-typeSelector :: Parser SimpleSelector
-typeSelector = Type <$> opt namespacePrefix <*> ident
-
--- universal: [ namespace_prefix ]? '*'
-universal :: Parser SimpleSelector
-universal = Universal <$> opt namespacePrefix <* char '*'
-
--- namespace_prefix: [ IDENT | '*' ]? '|'
-namespacePrefix :: Parser Text
-namespacePrefix = opt (ident <|> string "*") <* char '|'
-
-{- '::' starts a pseudo-element, ':' a pseudo-class
-   Exceptions: :first-line, :first-letter, :before and :after.
-   Note that pseudo-elements are restricted to one per selector and
-   occur only in the last simple_selector_sequence.
-
-   <pseudo-class-selector> = ':' <ident-token> |
-                             ':' <function-token> <any-value> ')'
-   <pseudo-element-selector> = ':' <pseudo-class-selector>
--}
--- pseudo: ':' ':'? [ IDENT | functional_pseudo ]
-pseudo :: Parser SimpleSelector
-pseudo = char ':' *> (pseudoElementSelector <|> pseudoClassSelector)
-  where pseudoClassSelector = do
-            i <- ident
-            c <- A.peekChar
-            case c of
-              Just '(' -> char '(' *> case Map.lookup (T.toCaseFold i) fpcMap of
-                            Just p  -> functionParser p
-                            Nothing -> functionParser (FunctionalPseudoClass i <$> A.takeWhile (/= ')'))
-              _        -> pure $ PseudoClass i
-        pseudoElementSelector =
-            (char ':' *> (PseudoElem <$> ident)) <|> (ident >>= handleSpecialCase)
-          where
-            handleSpecialCase :: Text -> Parser SimpleSelector
-            handleSpecialCase t
-                | isSpecialPseudoElement = pure $ PseudoElem t
-                | otherwise              = empty
-              where isSpecialPseudoElement = T.toCaseFold t `elem` specialPseudoElements
-
--- \<An+B> microsyntax parser.
-anplusb :: Parser AnPlusB
-anplusb = (asciiCI "even" $> Even)
-      <|> (asciiCI "odd" $> Odd)
-      <|> do
-        s    <- optional parseSign
-        dgts <- option mempty digits
-        case dgts of
-          [] -> ciN *> skipComments *> option (A s Nothing) (AB s Nothing <$> bValue)
-          _  -> let n = read dgts :: Int
-                in (ciN *> skipComments *> option (A s $ Just n) (AB s (Just n) <$> bValue))
-                    <|> (pure . B $ getSign s * n)
-  where ciN       = satisfy (\c -> c == 'N' || c == 'n')
-        parseSign = (char '-' $> Minus) <|> (char '+' $> Plus)
-        getSign (Just Minus) = -1
-        getSign _            = 1
-        bValue    = do
-            readPlus <- (char '-' $> False) <|> (char '+' $> True)
-            d        <- skipComments *> digits
-            if readPlus
-               then pure $ read d
-               else pure $ read ('-':d)
-
--- Functional pseudo classes parsers map
-fpcMap :: Map Text (Parser SimpleSelector)
-fpcMap = Map.fromList
-    [buildTuple "nth-of-type"      (\x -> FunctionalPseudoClass2 x <$> anplusb)
-    ,buildTuple "nth-last-of-type" (\x -> FunctionalPseudoClass2 x <$> anplusb)
-    ,buildTuple "nth-column"       (\x -> FunctionalPseudoClass2 x <$> anplusb)
-    ,buildTuple "nth-last-column"  (\x -> FunctionalPseudoClass2 x <$> anplusb)
-    ,buildTuple "not"              (\x -> FunctionalPseudoClass1 x <$> compoundSelectorList)
-    ,buildTuple "matches"          (\x -> FunctionalPseudoClass1 x <$> compoundSelectorList)
-    ,buildTuple "nth-child"        (anbAndSelectors . FunctionalPseudoClass3)
-    ,buildTuple "nth-last-child"   (anbAndSelectors . FunctionalPseudoClass3)
-    ,buildTuple "lang"             (const (Lang <$> identOrString))
-    --
-    -- :drop( [ active || valid || invalid ]? )
-    -- The :drop() functional pseudo-class is identical to :drop
-    -- ,("drop", anplusb)
-    --
-    -- It accepts a comma-separated list of one or more language ranges as its
-    -- argument. Each language range in :lang() must be a valid CSS <ident> or
-    -- <string>.
-    -- ,("lang", anplusb)
-    --
-    -- ,("dir", text)
-    -- ,("has", relative selectors)
-    ]
-  where buildTuple t c = (t, c t)
-        compoundSelectorList = (:) <$> compoundSelector <*> many (comma *> compoundSelector)
-        anbAndSelectors constructor = do
-            a <- anplusb <* skipComments
-            o <- option [] (asciiCI "of" *> skipComments *> compoundSelectorList)
-            pure $ constructor a o
-
--- | Parse a list of comma-separated selectors, ignoring whitespace and
--- comments.
-selectors :: Parser [Selector]
-selectors = lexeme selector `sepBy` char ','
 
 -- | Parser for a declaration, starting by the property name.
 declaration :: Parser Declaration
@@ -240,10 +63,10 @@ property = mappend <$> opt ie7orLessHack <*> ident
 -- | Used to parse the "!important" at the end of declarations, ignoring spaces
 -- and comments after the '!'.
 important :: Parser Bool
-important = option False (char '!' *> skipComments *> asciiCI "important" $> True)
+important = A.option False (char '!' *> skipComments *> asciiCI "important" $> True)
 
 iehack :: Parser Bool
-iehack = option False (string "\\9" $> True)
+iehack = A.option False (A.string "\\9" $> True)
 
 -- Note: The handleSemicolons outside is needed to handle parsing "h1 { ; }".
 --
@@ -251,7 +74,7 @@ iehack = option False (string "\\9" $> True)
 -- declarations (e.g. ; ;)
 declarations :: Parser [Declaration]
 declarations = many (declaration <* handleSemicolons) <* handleSemicolons
-  where handleSemicolons = many (string ";" *> skipComments)
+  where handleSemicolons = many (A.char ';' *> skipComments)
 
 -- | Parser for CSS at-rules (e.g. \@keyframes, \@media)
 atRule :: Parser Rule
@@ -279,7 +102,7 @@ atRule = do
 atImport :: Parser Rule
 atImport = do
     esu <- skipComments *> stringOrUrl
-    mql <- option [] mediaQueryList
+    mql <- A.option [] mediaQueryList
     _   <- skipComments <* char ';'
     pure $ AtImport esu mql
 
@@ -291,7 +114,7 @@ atCharset = AtCharset <$> (lexeme stringtype <* char ';')
 -- <namespace-prefix> = IDENT
 atNamespace :: Parser Rule
 atNamespace = do
-    i   <- skipComments *> option mempty ident
+    i   <- skipComments *> A.option mempty ident
     ret <- if T.null i
               then (AtNamespace i . Left) <$> stringtype
               else decideBasedOn i
@@ -324,19 +147,19 @@ keyframeBlock = do
 
 atMedia :: Parser Rule
 atMedia = do
-  m <- satisfy C.isSpace *> mediaQueryList
-  _ <- char '{' <* skipComments
-  r <- manyTill (rule <* skipComments) (lookAhead (char '}'))
-  _ <- char '}'
-  pure $ AtMedia m r
+    m <- satisfy C.isSpace *> mediaQueryList
+    _ <- char '{' <* skipComments
+    r <- manyTill (rule <* skipComments) (lookAhead (char '}'))
+    _ <- char '}'
+    pure $ AtMedia m r
 
 atSupports :: Parser Rule
 atSupports = do
-  sc <- satisfy C.isSpace *> supportsCondition
-  _  <- lexeme (char '{')
-  r  <- manyTill (rule <* skipComments) (lookAhead (char '}'))
-  _ <- char '}'
-  pure $ AtSupports sc r
+    sc <- satisfy C.isSpace *> supportsCondition
+    _  <- lexeme (char '{')
+    r  <- manyTill (rule <* skipComments) (lookAhead (char '}'))
+    _ <- char '}'
+    pure $ AtSupports sc r
 
 -- | Parser for a <https://drafts.csswg.org/css-conditional-3/#supports_condition supports_condition>,
 -- needed by @\@supports@ rules.
@@ -407,7 +230,7 @@ rules = manyTill (rule <* skipComments) endOfInput
 -- and comments.
 stylesheet :: Parser [Rule]
 stylesheet = do
-  charset    <- option [] ((:[]) <$> atCharset <* skipComments)
+  charset    <- A.option [] ((:[]) <$> atCharset <* skipComments)
   imports    <- many (atImport <* skipComments)
   namespaces <- many (atNamespace <* skipComments)
   _ <- skipComments -- if there is no charset, import, or namespace at rule we need this here.
@@ -444,7 +267,7 @@ mediaQuery = mediaQuery1 <|> mediaQuery2
         mediaType = lexeme ident
         andExpressions = many (h *> expression)
         h = lexeme (asciiCI "and" *> satisfy C.isSpace)
-        optionalNotOrOnly = option mempty (asciiCI "not" <|> asciiCI "only")
+        optionalNotOrOnly = A.option mempty (asciiCI "not" <|> asciiCI "only")
 
 -- https://www.w3.org/TR/mediaqueries-4/#typedef-media-condition-without-or
 expression :: Parser Expression
