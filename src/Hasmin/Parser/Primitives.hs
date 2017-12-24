@@ -21,7 +21,7 @@ module Hasmin.Parser.Primitives
     , digits
     ) where
 
-import Control.Applicative ((<|>), many)
+import Control.Applicative ((<|>), some, many)
 import Data.Attoparsec.Text (Parser, (<?>))
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (Builder)
@@ -91,4 +91,4 @@ int = read <$> int'
 
 -- | Parser one or more digits.
 digits :: Parser String
-digits = A.many1 A.digit
+digits = some A.digit
