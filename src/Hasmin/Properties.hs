@@ -130,6 +130,7 @@ propertiesTraits = Map.fromList $ processTuples
     ,("break-before",                       "auto",                     NonInherited, mempty, mempty)
     ,("break-inside",                       "auto",                     NonInherited, mempty, mempty)
     ,("caption-side",                       "top",                      Inherited, mempty, mempty)
+    ,("caret-color",                        "auto",                     Inherited, mempty, mempty)
     ,("clear",                              "none",                     NonInherited, mempty, mempty)
     ,("clip",                               "auto",                     NonInherited, mempty, mempty) -- deprecated!
     ,("color",                              mempty {-UA dependent-},    Inherited, mempty, mempty)
@@ -161,21 +162,26 @@ propertiesTraits = Map.fromList $ processTuples
     ,("flex-shrink",                        "1",                        NonInherited, ["flex"], mempty)
     ,("flex-wrap",                          "nowrap", NonInherited, ["flex-flow"], mempty)
     ,("float",                              "none", NonInherited, mempty, mempty)
-    ,("font",                               mempty {-shorthand-}, Inherited, mempty, ["font-style", "font-variant", "font-weight", "font-stretch", "font-size", "line-height", "font-family"])
+
+    -- It seems it's neither inherited nor not inherited. It's not even a
+    -- property, but an @font-face "descriptor".
+    ,("font-display",                       "auto", NonInherited, mempty, mempty)
+
     ,("font-family",                        mempty {-UA dependent-}, Inherited, ["font"], mempty)
     ,("font-feature-settings",              "normal", Inherited, mempty, mempty)
     ,("font-kerning",                       "auto", Inherited, ["font"], mempty)
     ,("font-language-override",             "normal", Inherited, ["font"], mempty)
-    ,("font-size",                          "medium", Inherited, ["font"], mempty)
+    ,("font",                               mempty {-shorthand-}, Inherited, mempty, ["font-style", "font-variant", "font-weight", "font-stretch", "font-size", "line-height", "font-family"])
     ,("font-size-adjust",                   "none", Inherited, ["font"], mempty)
+    ,("font-size",                          "medium", Inherited, ["font"], mempty)
     ,("font-stretch",                       "normal", Inherited, ["font"], mempty)
     ,("font-style",                         "normal", Inherited, ["font"], mempty)
     ,("font-synthesis",                     "weight style", Inherited, mempty, mempty)
-    ,("font-variant",                       "normal", Inherited, ["font"], mempty)
     ,("font-variant-alternates",            "normal", Inherited, mempty, mempty)
     ,("font-variant-caps",                  "normal", Inherited, mempty, mempty)
     ,("font-variant-east-asian",            "normal", Inherited, mempty, mempty)
     ,("font-variant-ligatures",             "normal", Inherited, mempty, mempty)
+    ,("font-variant",                       "normal", Inherited, ["font"], mempty)
     ,("font-variant-numeric",               "normal", Inherited, mempty, mempty)
     ,("font-variant-position",              "normal", Inherited, mempty, mempty)
     ,("font-weight",                        "normal", Inherited, ["font"], mempty)
