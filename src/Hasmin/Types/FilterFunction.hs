@@ -17,22 +17,26 @@ import Control.Monad.Reader (Reader, ask)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton, Builder)
 
-import Hasmin.Config
 import Hasmin.Class
-import Hasmin.Types.Dimension
+import Hasmin.Config
 import Hasmin.Types.Color
+import Hasmin.Types.Dimension
 import Hasmin.Types.Numeric
+
+-- The CSS spec calls it <number-percentage>, amount comes from the mozilla
+-- docs.
+type Amount = Either Number Percentage
 
 -- | CSS <https://drafts.fxtf.org/filter-effects/#typedef-filter-function \<filter-function\>>
 -- data type.
 data FilterFunction = Blur Length
-                    | Brightness (Either Number Percentage)
-                    | Contrast (Either Number Percentage)
-                    | Grayscale (Either Number Percentage)
-                    | Invert (Either Number Percentage)
-                    | Opacity (Either Number Percentage)
-                    | Saturate (Either Number Percentage)
-                    | Sepia (Either Number Percentage)
+                    | Brightness Amount
+                    | Contrast Amount
+                    | Grayscale Amount
+                    | Invert Amount
+                    | Opacity Amount
+                    | Saturate Amount
+                    | Sepia Amount
                     | HueRotate Angle
                     | DropShadow Length Length (Maybe Length) (Maybe Color)
   deriving (Show)
@@ -97,8 +101,7 @@ minifyPseudoShadow constr a b c d = do
               c2 <- traverse minify d
               pure $ constr x y z c2
 
-minifyNumberPercentage :: Either Number Percentage
-                       -> Reader Config (Either Number Percentage)
+minifyNumberPercentage :: Amount -> Reader Config Amount
 minifyNumberPercentage x = do
     conf <- ask
     pure $ if shouldMinifyFilterFunctions conf
@@ -112,8 +115,7 @@ minifyNumberPercentage x = do
             | 0 < p && p < 10 = Right p
             | otherwise       = Left $ toNumber (p / 100)
 
-filterFunctionEquality :: Either Number Percentage
-                       -> Either Number Percentage -> Bool
+filterFunctionEquality :: Amount -> Amount -> Bool
 filterFunctionEquality (Left a) (Left b)   = toRational a == toRational b
 filterFunctionEquality (Right a) (Right b) = toRational a == toRational b
 filterFunctionEquality (Left a) (Right b)  = toRational a == toRational b/100

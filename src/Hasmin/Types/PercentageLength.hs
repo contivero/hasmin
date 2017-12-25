@@ -16,10 +16,11 @@ module Hasmin.Types.PercentageLength
     ) where
 
 import Control.Monad.Reader (Reader)
-import Hasmin.Types.Dimension
-import Hasmin.Types.Numeric
+
 import Hasmin.Class
 import Hasmin.Config
+import Hasmin.Types.Dimension
+import Hasmin.Types.Numeric
 
 -- | CSS <length-percentage> data type, i.e.: [length | percentage]
 -- Though because of the name it would be more intuitive to define:
@@ -27,7 +28,6 @@ import Hasmin.Config
 -- they are inverted here to make use of Either's Functor instance, because it
 -- makes no sense to minify a Percentage.
 type PercentageLength = Either Percentage Length
-
 
 minifyPL :: PercentageLength -> Reader Config PercentageLength
 minifyPL x@(Right _) = mapM minify x

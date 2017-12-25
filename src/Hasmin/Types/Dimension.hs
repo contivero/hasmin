@@ -7,9 +7,9 @@
 -- Stability   : experimental
 -- Portability : unknown
 --
--- CSS Dimension data types: \<length\> (distance), \<angle\>, \<time\>,
--- \<frequency\>, and \<resolution\>. Provides conversion of absolute
--- dimensions into other equivalent dimensions.
+-- CSS Dimension data types: \<length\>, \<angle\>, \<time\>, \<frequency\>,
+-- and \<resolution\>. Provides conversion of absolute dimensions into other
+-- equivalent dimensions.
 --
 -----------------------------------------------------------------------------
 module Hasmin.Types.Dimension
@@ -35,9 +35,10 @@ module Hasmin.Types.Dimension
 import Control.Monad.Reader (asks)
 import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton, fromText)
+
 import Hasmin.Class
-import Hasmin.Types.Numeric
 import Hasmin.Config
+import Hasmin.Types.Numeric
 import Hasmin.Utils
 
 -- | The \<length\> CSS data type
@@ -172,8 +173,8 @@ minDim constructor r u (x:xs)
 class Unit a where
   convertTo :: a -> Number -> a -> Number
 
-data LengthUnit = IN | CM | MM | Q | PC | PT | PX            -- absolute
-                  | EM | EX | CH | VH | VW | VMIN | VMAX | REM -- relative
+data LengthUnit = IN | CM | MM | PC | PT | PX | Q            -- absolute
+                | EM | EX | CH | VH | VW | VMIN | VMAX | REM -- relative
   deriving (Show, Eq, Enum, Bounded)
 instance ToText LengthUnit where
   toBuilder IN   = "in"

@@ -43,10 +43,10 @@ import Hasmin.Utils
 
 -- | A CSS <https://www.w3.org/TR/css-syntax-3/#declaration \<declaration\>>.
 data Declaration = Declaration
-    { propertyName :: Text -- ^ Property name of the declaration.
-    , valueList    :: Values  -- ^ Values used in the declaration.
-    , isImportant  :: Bool  -- ^ Whether the declaration is \"!important\" (i.e. ends with it).
-    , hasIEhack    :: Bool    -- ^ Whether the declaration ends with the \"\\9\" IE hack.
+    { propertyName :: Text   -- ^ Property name of the declaration.
+    , valueList    :: Values -- ^ Values used in the declaration.
+    , isImportant  :: Bool   -- ^ Whether the declaration is \"!important\" (i.e. ends with it).
+    , hasIEhack    :: Bool   -- ^ Whether the declaration ends with the \"\\9\" IE hack.
     } deriving (Eq, Show)
 instance ToText Declaration where
   toBuilder (Declaration p vs i h) = fromText p <> singleton ':'
@@ -289,7 +289,6 @@ transformOriginKeywords = Map.fromList
     ,("bottom", PercentageV (Percentage 100))
     ,("left",   LengthV NullLength)
     ,("center", PercentageV (Percentage 50))]
-
 
 -- | Minifies a declaration, based on the property's specific traits (i.e. if
 -- it inherits or not, and what its initial value is), and the chosen

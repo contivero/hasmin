@@ -21,8 +21,9 @@ import Data.Monoid ((<>))
 import Data.Text.Lazy.Builder (singleton)
 import Data.Maybe (catMaybes, fromJust, isNothing, isJust)
 import Data.Either (isLeft)
-import Hasmin.Config
+
 import Hasmin.Class
+import Hasmin.Config
 import Hasmin.Types.Color
 import Hasmin.Types.Dimension
 import Hasmin.Types.Numeric
