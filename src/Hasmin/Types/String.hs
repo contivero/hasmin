@@ -20,7 +20,7 @@ module Hasmin.Types.String
 
 import Control.Monad.Reader (ask, Reader)
 import Control.Monad (mzero)
-import Control.Applicative (liftA2, (<|>), many)
+import Control.Applicative ((<|>), many)
 import Data.Attoparsec.Text (Parser, parse, IResult(Done, Partial, Fail), maybeResult, feed)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -137,10 +137,6 @@ convertEscaped = (TL.toStrict . B.toLazyText) <$> go
                 | w >= 97     = (a `shiftL` 4) .|. fromIntegral (w - 87)
                 | otherwise   = (a `shiftL` 4) .|. fromIntegral (w - 55)
               where w = C.ord c
-
-    atMost :: Int -> Parser a -> Parser [a]
-    atMost 0 _ = pure []
-    atMost n p = A.option [] $ liftA2 (:) p (atMost (n-1) p)
 
 fontfamilyname :: Parser Text
 fontfamilyname = do

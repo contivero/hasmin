@@ -18,10 +18,12 @@ module Hasmin.Utils
     , textualLength
     , replaceAt
     , mzip
+    , reduceTRBL
     ) where
 
 import Data.Monoid ((<>))
 import qualified Data.Text as T
+import Data.List.NonEmpty (NonEmpty((:|)))
 
 import Hasmin.Class
 
@@ -63,3 +65,20 @@ eps = 0.000001 -- See https://bug-30341-attachments.webkit.org/attachment.cgi?id
 -- Why does Attoparsec have no instance of MonadZip? :«
 mzip :: Applicative f => f a -> f b -> f (a, b)
 mzip f g = (,) <$> f <*> g
+
+reduceTRBL :: Eq a => NonEmpty a -> NonEmpty a
+reduceTRBL xs =
+    case xs of
+      t:|[r,b,l] -> reduce4 t r b l
+      t:|[r,b]   -> reduce3 t r b
+      t:|[r]     -> reduce2 t r
+      _          -> xs
+  where reduce4 tv rv bv lv
+            | lv == rv  = reduce3 tv rv bv
+            | otherwise = xs
+        reduce3 tv rv bv
+            | tv == bv  = reduce2 tv rv
+            | otherwise = tv:|[rv, bv]
+        reduce2 tv rv
+            | tv == rv  = tv:|[]
+            | otherwise = tv:|[rv]

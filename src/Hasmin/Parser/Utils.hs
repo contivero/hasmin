@@ -22,9 +22,10 @@ module Hasmin.Parser.Utils
     , hexadecimal
     , word8
     , parserFromPairs
+    , atMost
     ) where
 
-import Control.Applicative ((<|>), many)
+import Control.Applicative (liftA2, (<|>), many)
 import Control.Monad (void, mzero)
 import Data.Attoparsec.Text (char,
   option, Parser, satisfy, skipSpace, string)
@@ -71,7 +72,6 @@ opt = option mempty
 functionParser :: Parser a -> Parser a
 functionParser p = lexeme p <* char ')'
 
-
 hexadecimal :: Parser Char
 hexadecimal = satisfy C.isHexDigit
 
@@ -84,3 +84,7 @@ parserFromPairs ls = do
     let t = T.toLower i
     fromMaybe mzero (Map.lookup t m)
   where m = Map.fromList ls
+
+atMost :: Int -> Parser a -> Parser [a]
+atMost 0 _ = pure []
+atMost n p = A.option [] $ liftA2 (:) p (atMost (n-1) p)

@@ -29,6 +29,7 @@ module Hasmin.Parser.Value
     , number
     , fontStyle
     , textualvalue
+    , borderRadius
     ) where
 
 import Control.Applicative ((<|>), many, optional)
@@ -48,6 +49,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.List as L
 import qualified Data.Text as T
+import Data.List.NonEmpty (NonEmpty((:|)))
 
 import Hasmin.Parser.Utils
 import Hasmin.Parser.Numeric
@@ -59,6 +61,7 @@ import Hasmin.Parser.Position
 import Hasmin.Parser.TimingFunction
 import Hasmin.Parser.TransformFunction
 import Hasmin.Parser.String
+import Hasmin.Types.BorderRadius
 import Hasmin.Types.BgSize
 import Hasmin.Types.Dimension
 import Hasmin.Types.FilterFunction
@@ -74,8 +77,8 @@ import Hasmin.Utils
 -- | Given a propery name, it returns a specific parser of values for that
 -- property. Fails if no specific parser is found.
 valuesFor :: Text -> Parser Values
-valuesFor propName = fromMaybe mzero (Map.lookup p propertyValueParsersMap) <* skipComments
-  where p = T.toLower propName
+valuesFor propName = maybe mzero (<* skipComments) parser
+  where parser = Map.lookup (T.toLower propName) propertyValueParsersMap
 
 -- A map relating dimension units and the percentage symbol,
 -- to functions that construct that value. Meant to unify all the numerical
@@ -306,6 +309,7 @@ propertyValueParsersMap = Map.fromList
     ,("background",                 background)
     ,("background-repeat",          parseCommaSeparated (RepeatStyleV <$> repeatStyle))
     ,("background-size",            backgroundSize)
+    ,("border-radius",              singleValue (BorderRadiusV <$> borderRadius))
     ,("box-shadow",                 shadowList)
     ,("-o-box-shadow",              shadowList)
     ,("-moz-box-shadow",            shadowList)
@@ -487,7 +491,7 @@ csswideKeyword = do
                                   else mzero
 
 csswideKeywordsMap :: Map Text (Parser Value)
-csswideKeywordsMap  = Map.fromList $
+csswideKeywordsMap  = Map.fromList
     [("initial", pure Initial)
     ,("inherit", pure Inherit)
     ,("unset",   pure Unset)]
@@ -776,3 +780,11 @@ textualvalue = do
                  Just '(' -> functionParsers i
                  Just ':' -> mzero -- invalid
                  _        -> textualParsers i
+
+                                -- <length-percentage>{1,4} [ / <length-percentage>{1,4} ]?
+borderRadius :: Parser BorderRadius
+borderRadius = do
+    x  <- percentageLength <* skipComments
+    xs <- atMost 3 (percentageLength <* skipComments)
+    ys <- A.option [] $ A.char '/' *> atMost 4 (skipComments *> percentageLength)
+    pure $ BorderRadius (x:|xs) ys

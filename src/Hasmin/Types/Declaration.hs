@@ -22,6 +22,8 @@ import Data.Foldable (toList)
 import Data.Maybe (fromMaybe)
 import Data.Sequence (Seq, (|>))
 import Data.List (find, delete, minimumBy, (\\))
+import Data.List.NonEmpty (NonEmpty((:|)))
+import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
 import Data.Text.Lazy.Builder (singleton, fromText)
 import qualified Data.Map.Strict as Map
@@ -98,10 +100,10 @@ propertyOptimizations = Map.fromList
   ,("right",                      nullPercentageToLength)
   ,("bottom",                     nullPercentageToLength)
   ,("left",                       nullPercentageToLength)
-  ,("border-color",               pure . reduceTRBL)
-  ,("border-width",               pure . reduceTRBL)
-  ,("border-style",               pure . reduceTRBL)
-  ,("padding",                    nullPercentageToLength >=> pure . reduceTRBL)
+  ,("border-color",               pure . reduceTRBLDec)
+  ,("border-width",               pure . reduceTRBLDec)
+  ,("border-style",               pure . reduceTRBLDec)
+  ,("padding",                    nullPercentageToLength >=> pure . reduceTRBLDec)
   ,("padding-top",                nullPercentageToLength)
   ,("padding-right",              nullPercentageToLength)
   ,("padding-bottom",             nullPercentageToLength)
@@ -110,7 +112,7 @@ propertyOptimizations = Map.fromList
   ,("margin-right",               nullPercentageToLength)
   ,("margin-bottom",              nullPercentageToLength)
   ,("margin-left",                nullPercentageToLength)
-  ,("margin",                     nullPercentageToLength >=> pure . reduceTRBL)
+  ,("margin",                     nullPercentageToLength >=> pure . reduceTRBLDec)
   ,("grid-row-gap",               nullPercentageToLength)
   ,("grid-column-gap",            nullPercentageToLength)
   ,("line-height",                nullPercentageToLength)
@@ -519,12 +521,12 @@ mergeIntoTRBL :: Declaration       -- ^ A margin declaration
               -> Maybe Declaration -- ^ If successful, the combination of both
 mergeIntoTRBL d1@(Declaration _ (Values v1 vs) i1 h1) d2@(Declaration p2 (Values v2 _) i2 h2)
     | h1 || h2     = Nothing -- TODO handle ie hacks
-    | i1 && not i2 = Just $ reduceTRBL d1 -- margin:6px !important;margin-top:0; --> margin:6px !important
+    | i1 && not i2 = Just $ reduceTRBLDec d1 -- margin:6px !important;margin-top:0; --> margin:6px !important
     | not i1 && i2 = Nothing -- margin:6px;margin-top:0!important; --> stays the same
     | otherwise    = do
           (_,index) <- find (\(x,_) -> T.isInfixOf x (T.toCaseFold p2)) indexTable
           let mkDec ys  = d1 {valueList = mkValues $ replaceAt index v2 ys}
-              retDec ys = let mergedDec = reduceTRBL (mkDec ys)
+              retDec ys = let mergedDec = reduceTRBLDec (mkDec ys)
                           in if textualLength mergedDec <= originalLength
                                 then Just mergedDec
                                 else Nothing
@@ -541,22 +543,9 @@ mergeIntoTRBL d1@(Declaration _ (Values v1 vs) i1 h1) d2@(Declaration p2 (Values
 -- E.g.: margin: 6px 6px 6px 6px;  --> margin: 6px;
 --       margin: 1px 0 2px 0;      --> margin: 1px 0 2px;
 -- can be used with "border-image-outset" too.
-reduceTRBL :: Declaration -> Declaration
-reduceTRBL d@(Declaration _ (Values v1 vs) _ _) =
-    case v1:map snd vs of
-      [t,r,b,l] -> reduce4 t r b l
-      [t,r,b]   -> reduce3 t r b
-      [t,r]     -> reduce2 t r
-      _         -> d
-  where reduce4 tv rv bv lv
-            | lv == rv  = reduce3 tv rv bv
-            | otherwise = d
-        reduce3 tv rv bv
-            | tv == bv  = reduce2 tv rv
-            | otherwise = d { valueList = mkValues [tv, rv, bv] }
-        reduce2 tv rv
-            | tv == rv  = d { valueList = mkValues [tv] }
-            | otherwise = d { valueList = mkValues [tv, rv] }
+reduceTRBLDec :: Declaration -> Declaration
+reduceTRBLDec d@(Declaration _ (Values v1 vs) _ _) =
+    d { valueList = mkValues . NE.toList $ reduceTRBL (v1:|map snd vs) }
 
 mapValues :: (Value -> Reader Config Value) -> Values -> Reader Config Values
 mapValues f (Values v1 vs) = do

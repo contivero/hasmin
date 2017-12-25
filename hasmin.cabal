@@ -63,6 +63,7 @@ library
                      , Hasmin.Parser.TimingFunction
                      , Hasmin.Parser.TransformFunction
                      , Hasmin.Parser.Selector
+                     , Hasmin.Types.BorderRadius
                      , Hasmin.Types.Color
                      , Hasmin.Types.Declaration
                      , Hasmin.Types.Dimension

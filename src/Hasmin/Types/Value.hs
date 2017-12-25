@@ -32,6 +32,7 @@ import Data.String (IsString)
 import Hasmin.Class
 import Hasmin.Config
 import Hasmin.Types.BgSize
+import Hasmin.Types.BorderRadius
 import Hasmin.Types.Color
 import Hasmin.Types.Dimension
 import Hasmin.Types.FilterFunction
@@ -66,6 +67,7 @@ data Value = Inherit
            | ShadowText Length Length (Maybe Length) (Maybe Color) -- <shadow-t> type
            | PositionV Position
            | RepeatStyleV RepeatStyle
+           | BorderRadiusV BorderRadius
            | BgSizeV BgSize
            -- <bg-image> || <position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <box>{1,2}
            | BgLayer
@@ -153,6 +155,7 @@ instance ToText Value where
     where funcValues = mconcatIntersperse toBuilder (singleton ',') [a, b, c, d]
   toBuilder (PositionV p)   = toBuilder p
   toBuilder (RepeatStyleV r) = toBuilder r
+  toBuilder (BorderRadiusV b) = toBuilder b
   toBuilder (BgSizeV b)     = toBuilder b
   toBuilder (BgLayer a b c d e f g) =
       let sz  = maybe mempty (\x -> singleton '/' <> toBuilder x) c
@@ -190,22 +193,23 @@ instance ToText Value where
        <> maybeToBuilder ml <> maybeToBuilder mc
 
 instance Minifiable Value where
-  minify (ColorV c)       = ColorV <$> minify c
-  minify (LengthV d)      = LengthV <$> minify d
-  minify (AngleV a)       = AngleV <$> minify a
-  minify (TimeV d)        = TimeV <$> minify d
-  minify (FrequencyV f)   = FrequencyV <$> minify f
-  minify (ResolutionV r)  = ResolutionV <$> minify r
-  minify (GradientV t g)  = GradientV t <$> minify g
-  minify (FilterV f)      = FilterV <$> minify f
-  minify (TransformV tf)  = TransformV <$> minify tf
-  minify (TimingFuncV tf) = TimingFuncV <$> minify tf
-  minify (StringV s)      = StringV <$> minify s
-  minify (UrlV u)         = UrlV <$> minify u
-  minify (Format x)       = Format <$> mapM minify x
-  minify (PositionV p)    = PositionV <$> minify p
-  minify (RepeatStyleV r) = RepeatStyleV <$> minify r
-  minify (BgSizeV b)      = BgSizeV <$> minify b
+  minify (ColorV c)        = ColorV <$> minify c
+  minify (LengthV d)       = LengthV <$> minify d
+  minify (AngleV a)        = AngleV <$> minify a
+  minify (TimeV d)         = TimeV <$> minify d
+  minify (FrequencyV f)    = FrequencyV <$> minify f
+  minify (ResolutionV r)   = ResolutionV <$> minify r
+  minify (GradientV t g)   = GradientV t <$> minify g
+  minify (FilterV f)       = FilterV <$> minify f
+  minify (TransformV tf)   = TransformV <$> minify tf
+  minify (TimingFuncV tf)  = TimingFuncV <$> minify tf
+  minify (StringV s)       = StringV <$> minify s
+  minify (UrlV u)          = UrlV <$> minify u
+  minify (Format x)        = Format <$> mapM minify x
+  minify (PositionV p)     = PositionV <$> minify p
+  minify (RepeatStyleV r)  = RepeatStyleV <$> minify r
+  minify (BgSizeV b)       = BgSizeV <$> minify b
+  minify (BorderRadiusV b) = BorderRadiusV <$> minify b
   minify (ShadowV s)      = ShadowV <$> minify s
   minify (ShadowText l1 l2 ml mc) = minifyPseudoShadow ShadowText l1 l2 ml mc
   minify (BgLayer img pos sz rst att b1 b2) = do
