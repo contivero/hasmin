@@ -27,12 +27,12 @@ data BorderRadius = BorderRadius (NonEmpty PercentageLength) [PercentageLength]
 instance Minifiable BorderRadius where
   minify (BorderRadius xs ys) =
       minifyBorderRadius <$> traverse minifyPL xs <*> traverse minifyPL ys
-    where minifyBorderRadius xs [] = BorderRadius (reduceTRBL xs) []
-          minifyBorderRadius xs ys
+    where minifyBorderRadius as [] = BorderRadius (reduceTRBL as) []
+          minifyBorderRadius as bs
               | l1 == l2  = BorderRadius l1 []
               | otherwise = BorderRadius l1 (NE.toList l2)
-            where l1 = reduceTRBL xs
-                  l2 = reduceTRBL (NE.fromList ys)
+            where l1 = reduceTRBL as
+                  l2 = reduceTRBL (NE.fromList bs)
 
 instance ToText BorderRadius where
   toBuilder (BorderRadius (h:|ts) xs) = toBuilder h <> f ' ' ts <> f '/' xs

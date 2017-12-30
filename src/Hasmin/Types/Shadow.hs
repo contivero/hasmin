@@ -22,12 +22,12 @@ import Hasmin.Types.Dimension
 
 -- | CSS <https://drafts.csswg.org/css-backgrounds-3/#typedef-shadow \<shadow\>>
 -- data type, used by the @box-shadow@ property.
-data Shadow = Shadow { inset        :: Bool
-                     , sOffsetX     :: Length
-                     , sOffsetY     :: Length
-                     , blurRadius   :: Maybe Length
-                     , spreadRadius :: Maybe Length
-                     , sColor       :: Maybe Color
+data Shadow = Shadow { _inset        :: Bool
+                     , _sOffsetX     :: Length
+                     , _sOffsetY     :: Length
+                     , _blurRadius   :: Maybe Length
+                     , _spreadRadius :: Maybe Length
+                     , _sColor       :: Maybe Color
                      } deriving (Eq, Show)
 
 instance ToText Shadow where

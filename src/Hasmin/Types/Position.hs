@@ -14,6 +14,7 @@ module Hasmin.Types.Position (
     , minifyPosition
     , p50
     , l0
+    , centerpos
     ) where
 
 import Data.Text (Text)
@@ -225,3 +226,6 @@ p100 = Just $ Left 100
 
 p50 :: Maybe PercentageLength
 p50 = Just $ Left 50
+
+centerpos :: Position
+centerpos = Position (Just PosCenter) Nothing Nothing Nothing

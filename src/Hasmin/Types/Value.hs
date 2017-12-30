@@ -32,6 +32,7 @@ import Data.String (IsString)
 import Hasmin.Class
 import Hasmin.Config
 import Hasmin.Types.BgSize
+import Hasmin.Types.BasicShape
 import Hasmin.Types.BorderRadius
 import Hasmin.Types.Color
 import Hasmin.Types.Dimension
@@ -68,6 +69,7 @@ data Value = Inherit
            | PositionV Position
            | RepeatStyleV RepeatStyle
            | BorderRadiusV BorderRadius
+           | BasicShapeV BasicShape
            | BgSizeV BgSize
            -- <bg-image> || <position> [ / <bg-size> ]? || <repeat-style> || <attachment> || <box>{1,2}
            | BgLayer
@@ -156,6 +158,7 @@ instance ToText Value where
   toBuilder (PositionV p)   = toBuilder p
   toBuilder (RepeatStyleV r) = toBuilder r
   toBuilder (BorderRadiusV b) = toBuilder b
+  toBuilder (BasicShapeV b)   = toBuilder b
   toBuilder (BgSizeV b)     = toBuilder b
   toBuilder (BgLayer a b c d e f g) =
       let sz  = maybe mempty (\x -> singleton '/' <> toBuilder x) c
@@ -209,6 +212,7 @@ instance Minifiable Value where
   minify (PositionV p)     = PositionV <$> minify p
   minify (RepeatStyleV r)  = RepeatStyleV <$> minify r
   minify (BgSizeV b)       = BgSizeV <$> minify b
+  minify (BasicShapeV b)    = BasicShapeV <$> minify b
   minify (BorderRadiusV b) = BorderRadiusV <$> minify b
   minify (ShadowV s)      = ShadowV <$> minify s
   minify (ShadowText l1 l2 ml mc) = minifyPseudoShadow ShadowText l1 l2 ml mc

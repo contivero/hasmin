@@ -50,33 +50,36 @@ library
                      , Hasmin.Class
                      , Hasmin.Types.Stylesheet
                      -- exposed because it is needed by tests:
-                     , Hasmin.Parser.Internal
-                     , Hasmin.Parser.Value
-                     , Hasmin.Parser.Numeric
+                     , Hasmin.Parser.BasicShape
+                     , Hasmin.Parser.BorderRadius
                      , Hasmin.Parser.Color
                      , Hasmin.Parser.Dimension
-                     , Hasmin.Parser.Primitives
                      , Hasmin.Parser.Gradient
+                     , Hasmin.Parser.Internal
+                     , Hasmin.Parser.Numeric
                      , Hasmin.Parser.PercentageLength
                      , Hasmin.Parser.Position
+                     , Hasmin.Parser.Primitives
+                     , Hasmin.Parser.Selector
                      , Hasmin.Parser.String
                      , Hasmin.Parser.TimingFunction
                      , Hasmin.Parser.TransformFunction
-                     , Hasmin.Parser.Selector
+                     , Hasmin.Parser.Value
+                     , Hasmin.Types.BasicShape
+                     , Hasmin.Types.BgSize
                      , Hasmin.Types.BorderRadius
                      , Hasmin.Types.Color
                      , Hasmin.Types.Declaration
                      , Hasmin.Types.Dimension
+                     , Hasmin.Types.FilterFunction
                      , Hasmin.Types.Numeric
+                     , Hasmin.Types.Position
+                     , Hasmin.Types.RepeatStyle
+                     , Hasmin.Types.String
+                     , Hasmin.Types.TimingFunction
                      , Hasmin.Types.TransformFunction
                      , Hasmin.Types.Value
-                     , Hasmin.Types.RepeatStyle
-                     , Hasmin.Types.FilterFunction
-                     , Hasmin.Types.Position
-                     , Hasmin.Types.BgSize
-                     , Hasmin.Types.String
                      , Hasmin.Utils
-                     , Hasmin.Types.TimingFunction
   other-modules:       Hasmin.Parser.Utils
                      , Hasmin.Properties
                      , Hasmin.Types.Selector

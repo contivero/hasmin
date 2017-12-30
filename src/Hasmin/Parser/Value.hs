@@ -49,19 +49,19 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.List as L
 import qualified Data.Text as T
-import Data.List.NonEmpty (NonEmpty((:|)))
 
-import Hasmin.Parser.Utils
-import Hasmin.Parser.Numeric
+import Hasmin.Parser.BasicShape
+import Hasmin.Parser.BorderRadius
 import Hasmin.Parser.Color
 import Hasmin.Parser.Dimension
 import Hasmin.Parser.Gradient
+import Hasmin.Parser.Numeric
 import Hasmin.Parser.PercentageLength
 import Hasmin.Parser.Position
+import Hasmin.Parser.String
 import Hasmin.Parser.TimingFunction
 import Hasmin.Parser.TransformFunction
-import Hasmin.Parser.String
-import Hasmin.Types.BorderRadius
+import Hasmin.Parser.Utils
 import Hasmin.Types.BgSize
 import Hasmin.Types.Dimension
 import Hasmin.Types.FilterFunction
@@ -603,10 +603,10 @@ functionsMap = Map.fromList (colorFunctionValueParsers ++ l)
             ,("element",                 genericFunc "element")
             --
             -- <basic-shape>
-            -- circle() = circle( [<shape-radius>]? [at <position>]? )
-            -- polygon( [<fill-rule>,]? [<shape-arg> <shape-arg>]# )
-            -- inset()
-            -- ellipse( [<shape-radius>{2}]? [at <position>]? )
+            ,("circle",                  BasicShapeV <$> functionParser circle)
+            ,("ellipse",                 BasicShapeV <$> functionParser ellipse)
+            ,("inset",                   BasicShapeV <$> functionParser inset)
+            ,("polygon",                 BasicShapeV <$> functionParser polygon)
             --
             -- <image> https://drafts.csswg.org/css-images
             -- Note: <gradient> is a type of <image> !
@@ -780,11 +780,3 @@ textualvalue = do
                  Just '(' -> functionParsers i
                  Just ':' -> mzero -- invalid
                  _        -> textualParsers i
-
-                                -- <length-percentage>{1,4} [ / <length-percentage>{1,4} ]?
-borderRadius :: Parser BorderRadius
-borderRadius = do
-    x  <- percentageLength <* skipComments
-    xs <- atMost 3 (percentageLength <* skipComments)
-    ys <- A.option [] $ A.char '/' *> atMost 4 (skipComments *> percentageLength)
-    pure $ BorderRadius (x:|xs) ys
