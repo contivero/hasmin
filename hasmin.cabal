@@ -106,6 +106,8 @@ test-suite spec
   other-modules:       Hasmin.Parser.InternalSpec
                      , Hasmin.Parser.ValueSpec
                      , Hasmin.TestUtils
+                     , Hasmin.Types.BasicShapeSpec
+                     , Hasmin.Types.BgSizeSpec
                      , Hasmin.Types.ColorSpec
                      , Hasmin.Types.DeclarationSpec
                      , Hasmin.Types.DimensionSpec
@@ -114,13 +116,12 @@ test-suite spec
                      , Hasmin.Types.PositionSpec
                      , Hasmin.Types.RepeatStyleSpec
                      , Hasmin.Types.SelectorSpec
-                     , Hasmin.Types.ValueSpec
-                     , Hasmin.Types.BgSizeSpec
                      , Hasmin.Types.ShadowSpec
                      , Hasmin.Types.StringSpec
                      , Hasmin.Types.StylesheetSpec
                      , Hasmin.Types.TimingFunctionSpec
                      , Hasmin.Types.TransformFunctionSpec
+                     , Hasmin.Types.ValueSpec
   build-depends:       base             >=4.9     && <5.1
                      , attoparsec       >=0.12    && <0.14
                      , hspec            >=2.2     && <3.0

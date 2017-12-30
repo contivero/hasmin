@@ -601,7 +601,6 @@ functionsMap = Map.fromList (colorFunctionValueParsers ++ l)
             ,("drop-shadow",             FilterV <$> dropShadow)
             ,("hue-rotate",              (FilterV . HueRotate) <$> functionParser angle)
             ,("element",                 genericFunc "element")
-            --
             -- <basic-shape>
             ,("circle",                  BasicShapeV <$> functionParser circle)
             ,("ellipse",                 BasicShapeV <$> functionParser ellipse)
@@ -625,7 +624,6 @@ functionsMap = Map.fromList (colorFunctionValueParsers ++ l)
             --,("calc", ? )  -- <calc-sum> , experimental
             --,("character-variant", ? ) -- ident#
             --,("element", ? )  -- id selector, experimental
-            --,("local", ? )
             --,("ornaments", ? ) -- ident
             --,("symbols", ? )  --  <symbols-type>? [ <string> | <image> ]+
             --,("var", ? )  -- experimental: <custom-property-name> [, <declaration-value> ]?

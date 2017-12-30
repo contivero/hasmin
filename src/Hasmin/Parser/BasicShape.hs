@@ -40,22 +40,24 @@ circle =
 
 -- ellipse( [<shape-radius>{2}]? [at <position>]? )
 ellipse :: Parser BasicShape
-ellipse =
-    Ellipse <$> optional (pair shapeRadius)
-            <*> optional (lexeme position)
+ellipse = Ellipse <$> twoSR <*> optional atPosition
+  where atPosition = lexeme (A.asciiCI "at") *> position
+        twoSR      = A.option None $ do
+            sr1 <- shapeRadius
+            (Two sr1 <$> (skipComments *> shapeRadius)) <|> pure (One sr1)
 
 -- polygon( [<fill-rule>,]? [<shape-arg> <shape-arg>]# )
 polygon :: Parser BasicShape
-polygon = Polygon <$> optional fillrule <*> many (pair percentageLength)
-
-pair :: Parser a -> Parser (a, a)
-pair p = mzip (lexeme p) p
+polygon = Polygon <$> optional fillrule <*> shapeargs
+  where shapeargs = (:|) <$> pairOf percentageLength
+                         <*> many (comma *> pairOf percentageLength)
+        fillrule  = parserFromPairs
+                      [("nonzero", pure NonZero)
+                      ,("evenodd", pure EvenOdd)] <* comma
+        pairOf p = mzip (p <* skipComments) p
 
 shapeRadius :: Parser ShapeRadius
 shapeRadius = either SRPercentage SRLength <$> percentageLength
            <|> parserFromPairs [("closest-side", pure SRClosestSide)
                                ,("farthest-side", pure SRFarthestSide)]
 
-fillrule :: Parser FillRule
-fillrule = parserFromPairs [("nonzero", pure NonZero)
-                           ,("evenodd", pure EvenOdd)]
