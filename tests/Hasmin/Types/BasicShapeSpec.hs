@@ -8,12 +8,15 @@ import Data.Attoparsec.Text (Parser)
 
 import Hasmin.Parser.Value
 import Hasmin.Types.Value
+import Hasmin.Types.BasicShape
 import Hasmin.TestUtils
 
 basicShapeTests :: Spec
 basicShapeTests =
-  describe "<basic-shape> tests" $
+  describe "<basic-shape> tests" $ do
     traverse_ (matchSpec f) basicShapeTestsInfo
+    it "Minified <basic-shape> maintains semantical equivalence" $
+      property (prop_minificationEq :: BasicShape -> Bool)
   where f :: Parser Value
         f = minifyWithTestConfig <$> value
 

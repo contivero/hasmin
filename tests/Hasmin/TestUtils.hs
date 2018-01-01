@@ -8,7 +8,7 @@ module Hasmin.TestUtils
     ) where
 
 import Test.Hspec
-import Test.QuickCheck
+import Test.QuickCheck hiding (NonZero)
 import Test.Hspec.Attoparsec (parseSatisfies, (~>))
 
 import Control.Applicative (liftA2, liftA3)
@@ -28,6 +28,8 @@ import Hasmin.Types.Numeric
 import Hasmin.Types.Position
 import Hasmin.Types.TimingFunction
 import Hasmin.Types.RepeatStyle
+import Hasmin.Types.BasicShape
+import Hasmin.Types.BorderRadius
 import Hasmin.Utils
 
 
@@ -146,6 +148,38 @@ instance Arbitrary RepeatStyle where
 
 instance Arbitrary RSKeyword where
   arbitrary = oneof $ fmap pure [minBound..]
+
+instance Arbitrary BasicShape where
+  arbitrary = oneof
+      [liftA2 Inset arbitrary arbitrary
+      ,liftA2 Circle arbitrary arbitrary
+      ,liftA2 Ellipse arbitrary arbitrary
+      ,liftA2 Polygon arbitrary arbitrary
+      ]
+
+instance Arbitrary FillRule where
+  arbitrary = oneof [pure NonZero, pure EvenOdd]
+
+instance Arbitrary a => Arbitrary (AtMost2 a) where
+  arbitrary = oneof
+      [pure None
+      ,One <$> arbitrary
+      ,liftA2 Two arbitrary arbitrary
+      ]
+
+instance Arbitrary ShapeRadius where
+  arbitrary = oneof
+      [SRLength <$> arbitrary
+      ,SRPercentage <$> arbitrary
+      ,pure SRClosestSide
+      ,pure SRFarthestSide
+      ]
+
+instance Arbitrary Position where
+  arbitrary = Position <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+
+instance Arbitrary BorderRadius where
+  arbitrary = BorderRadius <$> arbitrary <*> arbitrary
 
 -- | Generates color keywords uniformly distributed
 colorKeyword :: Gen Text
