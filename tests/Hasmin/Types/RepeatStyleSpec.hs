@@ -3,7 +3,6 @@
 module Hasmin.Types.RepeatStyleSpec where
 
 import Data.Text (Text)
-import Control.Applicative (liftA2)
 import Hasmin.Parser.Value
 import Hasmin.Types.RepeatStyle
 import Hasmin.TestUtils
@@ -11,7 +10,7 @@ import Hasmin.TestUtils
 repeatStyleTests :: Spec
 repeatStyleTests =
     describe "<repeat-style> minification tests" $ do
-      it "Minified <repeat-style> maintains semantic equivalence" $ 
+      it "Minified <repeat-style> maintains semantic equivalence" $
         property (prop_minificationEq :: RepeatStyle -> Bool)
       mapM_ (matchSpec f) repeatStyleTestsInfo
   where f = minifyWithTestConfig <$> repeatStyle
