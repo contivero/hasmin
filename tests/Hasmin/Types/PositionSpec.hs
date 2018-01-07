@@ -7,13 +7,14 @@ import Data.Text (Text)
 import Hasmin.Parser.Value
 import Hasmin.TestUtils
 
+import Hasmin.Types.Position
+
 positionMinificationTests :: Spec
 positionMinificationTests =
-    describe "<position> minification" $
-        mapM_ (matchSpec f) positionMinificationTestsInfo
-      -- it "Minifies <position> properly" $
-      -- it "Minified <position> maintains semantical equivalence" $ do
-        -- property (prop_minificationEq :: Position -> Bool)
+    describe "<position> minification" $ do
+      mapM_ (matchSpec f) positionMinificationTestsInfo
+      it "Minified <position> maintains semantical equivalence" $
+        quickCheckWith (stdArgs {maxSuccess = 200000}) (prop_minificationEq :: Position -> Bool)
   where f = minifyWithTestConfig <$> position
 
 positionMinificationTestsInfo :: [(Text, Text)]
@@ -60,6 +61,7 @@ positionMinificationTestsInfo =
   ,("left 50% top 0%", "top")
   ,("left 50% top",    "top")
   ,("center top",      "top")
+  ,("center 0%",       "top")
 
   ,("100% 0%",         "100% 0")
   ,("right top",       "100% 0")
@@ -70,6 +72,7 @@ positionMinificationTestsInfo =
   ,("top 0% right",    "100% 0")
   ,("top right 0%",    "100% 0")
   ,("top right",       "100% 0")
+  ,("right 0%",        "100% 0")
 
   ,("100%",             "100%")
   ,("100% 50%",         "100%")
@@ -130,6 +133,7 @@ positionMinificationTestsInfo =
   ,("20px bottom",         "20px 100%")
   ,("right 20px",          "100% 20px")
   ,("top 30px right 0",    "100% 30px")
+  -- ,("left -1% bottom -1%", "99% 99%") -- TODO
   ]
 
 spec :: Spec

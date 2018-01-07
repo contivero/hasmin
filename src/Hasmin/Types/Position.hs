@@ -20,7 +20,7 @@ module Hasmin.Types.Position (
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Lazy.Builder (singleton, fromText)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, isNothing)
 import Hasmin.Class
 import Hasmin.Types.Dimension
 import Hasmin.Types.PercentageLength
@@ -66,7 +66,9 @@ minifyPosition p@(Position (Just x) Nothing Nothing Nothing) = f x
 minifyPosition p@(Position (Just x) Nothing Nothing (Just y)) =
     minifyPos2 x y
   where mkPos2 i j = if isZero j
-                        then Position Nothing i Nothing l0
+                        then if i == p50
+                                then Position (Just PosTop) Nothing Nothing Nothing
+                                else Position Nothing i Nothing l0
                         else Position Nothing i Nothing (Just j)
         minifyPos2 PosLeft a   = mkPos2 l0 a
         minifyPos2 PosRight a  = mkPos2 p100 a
@@ -79,7 +81,7 @@ minifyPosition p@(Position Nothing (Just x) (Just y) Nothing) =
                         else Position Nothing (Just i) Nothing j
         minifyPos2 a PosTop    = mkPos2 a l0
         minifyPos2 a PosBottom = mkPos2 a p100
-        minifyPos2 a PosCenter = mkPos2 a p50
+        minifyPos2 a PosCenter = mkPos2 a Nothing
         minifyPos2 _ _         = p
 -- Two <lenght-percentage>
 minifyPosition p@(Position Nothing (Just x) Nothing (Just y)) = f x y
@@ -149,7 +151,7 @@ minifyPosition p@(Position (Just x) (Just y) (Just z) Nothing)
         minifyPos3 PosLeft b PosCenter
           | isZero b     = Position Nothing l0 Nothing Nothing
           | b == Left 50 = Position Nothing p50 Nothing Nothing
-          | otherwise    = Position Nothing (Just b) Nothing p50
+          | otherwise    = Position Nothing (Just b) Nothing Nothing
         minifyPos3 PosRight b PosTop
           | isZero b     = Position Nothing p100 Nothing l0
           | otherwise    = Position (Just PosRight) (Just b) Nothing l0
@@ -161,8 +163,18 @@ minifyPosition p@(Position (Just x) (Just y) (Just z) Nothing)
           | otherwise    = Position (Just PosRight) (Just b) Nothing p50
         minifyPos3 _ _ _ = p
 minifyPosition p@(Position (Just c) Nothing (Just a) (Just b)) = f $ minAxis a b
-  where f (x, y)
+  where isHorizontal i = i == PosLeft || i == PosRight
+        f (x, y)
           | c == PosLeft && x == Just PosTop && isJust y = minifyPosition $ Position Nothing l0 Nothing y
+          | c == PosCenter && isHorizontal a = Position x y Nothing Nothing
+          | c == PosTop && isNothing x =
+              if y == p50
+                 then Position (Just PosTop) Nothing Nothing Nothing
+                 else Position x y Nothing l0
+          | c == PosBottom && isNothing x =
+              if y == p50
+                 then Position (Just PosBottom) Nothing Nothing Nothing
+                 else Position x y Nothing p100
           | otherwise = if Just a == x && Just b == y
                            then p
                            else minifyPosition $ p {origin2 = x, offset2 = y }
@@ -186,7 +198,7 @@ minifyPos4 v1 v2 v3 v4
         minifyPos4' PosLeft a PosBottom b
             | isZero b  = minifyPosition $ Position Nothing (Just a) Nothing p100
             | isZero a  = minifyPosition $ Position (Just PosLeft) Nothing (Just PosTop) (Just b)
-            | otherwise = minifyPosition $ Position (Just PosLeft) (Just a) (Just PosBottom) (Just b)
+            | otherwise = Position (Just PosLeft) (Just a) (Just PosBottom) (Just b)
         minifyPos4' PosRight a PosBottom b
             | isZero a && isZero b = Position Nothing p100 Nothing p100
             | otherwise            = Position (Just PosRight) (Just a) (Just PosBottom) (Just b)
@@ -201,12 +213,12 @@ minAxis PosTop x =
                     else (Just PosTop, Just x)
 minAxis PosLeft x =
     case x of
-      Left 50 -> (Just PosCenter, Nothing)
+      Left 50 -> (Nothing, p50)
       smth    -> if isZero smth
-                    then (Just PosLeft, Nothing)
+                    then (Nothing, l0)
                     else (Just PosLeft, Just x)
 minAxis PosRight x
-    | isZero x  = (Just PosRight, Nothing)
+    | isZero x  = (Nothing, p100)
     | otherwise = (Just PosRight, Just x)
 minAxis PosBottom x
     | isZero x  = (Just PosBottom, Nothing)
@@ -217,6 +229,7 @@ instance Eq Position where
   x == y = let (Position a b c d) = minifyPosition x
                (Position e f g h) = minifyPosition y
            in a == e && b == f && c == g && d == h
+              || a == g && b == h && c == e && d == f
 
 l0 :: Maybe PercentageLength
 l0 = Just $ Right NullLength
