@@ -10,6 +10,7 @@
 -----------------------------------------------------------------------------
 module Hasmin.Types.BorderRadius
     ( BorderRadius(..)
+    , isZeroBR
     ) where
 
 import Data.List.NonEmpty (NonEmpty((:|)))
@@ -45,3 +46,7 @@ instance ToText BorderRadius where
   toBuilder (BorderRadius (h:|ts) xs) = toBuilder h <> f ' ' ts <> f '/' xs
     where f _ [] = mempty
           f i ys = B.singleton i <> mconcatIntersperse toBuilder " " ys
+
+isZeroBR :: BorderRadius -> Bool
+isZeroBR (BorderRadius (pl:|[]) []) = isZero pl
+isZeroBR _                          = False

@@ -16,7 +16,7 @@ basicShapeTests =
   describe "<basic-shape> tests" $ do
     traverse_ (matchSpec f) basicShapeTestsInfo
     it "Minified <basic-shape> maintains semantical equivalence" $
-      property (prop_minificationEq :: BasicShape -> Bool)
+        quickCheckWith (stdArgs {maxSuccess = 10000}) (prop_minificationEq :: BasicShape -> Bool)
   where f :: Parser Value
         f = minifyWithTestConfig <$> value
 

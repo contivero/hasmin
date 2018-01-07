@@ -10,7 +10,12 @@
 -- Portability : unknown
 --
 -----------------------------------------------------------------------------
-module Hasmin.Types.BasicShape where
+module Hasmin.Types.BasicShape
+    ( BasicShape(..)
+    , ShapeRadius(..)
+    , AtMost2(..)
+    , FillRule(..)
+    ) where
 
 import Control.Monad.Reader (Reader)
 import Data.Monoid ((<>), mempty)
@@ -29,6 +34,8 @@ import Hasmin.Config
 import Hasmin.Class
 import Hasmin.Utils
 
+type ShapeArg = PercentageLength
+
 -- | CSS <https://drafts.csswg.org/css-shapes/#basic-shape-functions \<basic-shape\>> data type.
 data BasicShape
        -- inset( <shape-arg>{1,4} [round <border-radius>]? )
@@ -39,15 +46,69 @@ data BasicShape
         | Ellipse (AtMost2 ShapeRadius) (Maybe Position)
        -- polygon( [<fill-rule>,]? [<shape-arg> <shape-arg>]# )
         | Polygon (Maybe FillRule) (NonEmpty (ShapeArg, ShapeArg))
-  deriving (Show, Eq)
+  deriving Show
 
-type ShapeArg = PercentageLength
+instance Eq BasicShape where
+    Inset sas1 mbr1 == Inset sas2 mbr2     = eqUsing sasEq sas1 sas2 && mbrEq mbr1 mbr2
+    Circle msr1 mp1 == Circle msr2 mp2     = msrEq msr1 msr2 && mpEq mp1 mp2
+    Ellipse sr2 mp1 == Ellipse sr2' mp2    = sr2Eq sr2 sr2' && mpEq mp1 mp2
+    Polygon mfr1 sas1 == Polygon mfr2 sas2 = mfrEq mfr1 mfr2 && eqUsing pairEq sas1 sas2
+    _ == _                                 = False
 
-data ShapeRadius
-        = SRLength Length
-        | SRPercentage Percentage
-        | SRClosestSide
-        | SRFarthestSide
+eqUsing :: (a -> a -> Bool) -> NonEmpty a -> NonEmpty a -> Bool
+eqUsing f (x:|xs) (y:|ys) = f x y && go xs ys
+  where go [] []    = True
+        go (_:_) [] = False
+        go [] (_:_) = False
+        go (c:cs) (d:ds) = f c d && go cs ds
+
+pairEq :: (Num a, Eq a) => (Either a Length, Either a Length)
+                        -> (Either a Length, Either a Length) -> Bool
+pairEq (a1, a2) (b1, b2) = a1 `sasEq` b1 && a2 `sasEq` b2
+
+sasEq :: (Num a, Eq a) => Either a Length -> Either a Length -> Bool
+sasEq a b = isZero a && isZero b || a == b
+
+mfrEq :: Maybe FillRule -> Maybe FillRule -> Bool
+mfrEq Nothing (Just NonZero) = True
+mfrEq (Just NonZero) Nothing = True
+mfrEq x y                    = x == y
+
+sr2Eq :: AtMost2 ShapeRadius -> AtMost2 ShapeRadius -> Bool
+sr2Eq None x =
+    case x of
+      One SRClosestSide               -> True
+      Two SRClosestSide SRClosestSide -> True
+      None                            -> True
+      _                               -> False
+sr2Eq (One SRClosestSide) None               = True
+sr2Eq (One x) (Two y SRClosestSide)          = x == y
+sr2Eq (One x) (One y)                        = x == y
+sr2Eq One{} _                                = False
+sr2Eq (Two x SRClosestSide) (One y)          = x == y
+sr2Eq (Two SRClosestSide SRClosestSide) None = True
+sr2Eq (Two a b) (Two c d)                    = a == c && b == d
+sr2Eq Two{} _                                = False
+
+msrEq :: Maybe ShapeRadius -> Maybe ShapeRadius -> Bool
+msrEq Nothing (Just SRClosestSide) = True
+msrEq (Just SRClosestSide) Nothing = True
+msrEq x y                          = x == y
+
+mbrEq :: Maybe BorderRadius -> Maybe BorderRadius -> Bool
+mbrEq Nothing y = maybe True isZeroBR y
+mbrEq x Nothing = mbrEq Nothing x
+mbrEq x y       = x == y
+
+mpEq :: Maybe Position -> Maybe Position -> Bool
+mpEq Nothing (Just x) = x == centerpos
+mpEq (Just x) Nothing = x == centerpos
+mpEq x y              = x == y
+
+data ShapeRadius = SRLength Length
+                 | SRPercentage Percentage
+                 | SRClosestSide
+                 | SRFarthestSide
   deriving (Show, Eq)
 
 instance ToText ShapeRadius where
@@ -81,8 +142,6 @@ instance Minifiable BasicShape where
               pure $ if isZeroBR x
                         then Nothing
                         else Just x
-          isZeroBR (BorderRadius (a:|[]) []) = isZero a
-          isZeroBR _                         = False
   minify (Circle msr mp) = do
       mp' <- traverse minify mp
       let newPos = if mp' == Just centerpos then Nothing else mp'
@@ -122,14 +181,14 @@ instance ToText BasicShape where
     where msr' = maybe mempty toBuilder msr
           mp'  = maybe mempty (\x -> "at " <> toBuilder x) mp
           ms   = if isJust msr && isJust mp then " " else mempty
-  toBuilder (Ellipse m2sr mp) = surround "ellipse" $ f m2sr mp
-    where f :: AtMost2 ShapeRadius -> Maybe Position -> Builder
-          f sr2 mp' = bsr2 <> maybe mempty (\x -> " at " <> toBuilder x) mp'
-            where bsr2 =
-                      case sr2 of
-                        One rx    -> toBuilder rx
-                        Two rx ry -> toBuilder rx <> " " <> toBuilder ry
-                        None      -> mempty
+  toBuilder (Ellipse m2sr mp) = surround "ellipse" $ bsr2 <> ms <> mp'
+    where ms   = if bsr2 == mempty || mp' == mempty then mempty else " "
+          mp'  = maybe mempty (\x -> "at " <> toBuilder x) mp
+          bsr2 =
+              case m2sr of
+                One rx    -> toBuilder rx
+                Two rx ry -> toBuilder rx <> " " <> toBuilder ry
+                None      -> mempty
   toBuilder (Polygon mfr xys) = surround "polygon" $ f mfr xys
     where f Nothing xys'   = mconcatIntersperse g "," (NE.toList xys')
           f (Just fr) xys' = toBuilder fr <> "," <> mconcatIntersperse g "," (NE.toList xys')
