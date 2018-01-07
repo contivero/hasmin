@@ -9,6 +9,7 @@ module Hasmin.TestUtils
 
 import Test.Hspec
 import Test.QuickCheck hiding (NonZero)
+import Test.QuickCheck.Instances()
 import Test.Hspec.Attoparsec (parseSatisfies, (~>))
 
 import Control.Applicative (liftA2, liftA3)
