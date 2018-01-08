@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS -Wno-orphans #-}
 
 module Hasmin.TestUtils
     ( module Hasmin.TestUtils
