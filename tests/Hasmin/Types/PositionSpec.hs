@@ -3,6 +3,7 @@
 module Hasmin.Types.PositionSpec where
 
 import Data.Text (Text)
+import Test.Hspec.QuickCheck (modifyMaxSuccess)
 
 import Hasmin.Parser.Value
 import Hasmin.TestUtils
@@ -13,8 +14,8 @@ positionMinificationTests :: Spec
 positionMinificationTests =
     describe "<position> minification" $ do
       mapM_ (matchSpec f) positionMinificationTestsInfo
-      it "Minified <position> maintains semantical equivalence" $
-        quickCheckWith (stdArgs {maxSuccess = 200000}) (prop_minificationEq :: Position -> Bool)
+      modifyMaxSuccess (const 200000) . it "Minified <position> maintains semantical equivalence" $
+        property (prop_minificationEq :: Position -> Bool)
   where f = minifyWithTestConfig <$> position
 
 positionMinificationTestsInfo :: [(Text, Text)]

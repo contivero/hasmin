@@ -5,6 +5,7 @@ module Hasmin.Types.BasicShapeSpec where
 import Data.Text (Text)
 import Data.Foldable (traverse_)
 import Data.Attoparsec.Text (Parser)
+import Test.Hspec.QuickCheck (modifyMaxSuccess)
 
 import Hasmin.Parser.Value
 import Hasmin.Types.Value
@@ -15,8 +16,8 @@ basicShapeTests :: Spec
 basicShapeTests =
   describe "<basic-shape> tests" $ do
     traverse_ (matchSpec f) basicShapeTestsInfo
-    it "Minified <basic-shape> maintains semantical equivalence" $
-        quickCheckWith (stdArgs {maxSuccess = 10000}) (prop_minificationEq :: BasicShape -> Bool)
+    modifyMaxSuccess (const 10000) . it "Minified <basic-shape> maintains semantical equivalence" $
+      property (prop_minificationEq :: BasicShape -> Bool)
   where f :: Parser Value
         f = minifyWithTestConfig <$> value
 
