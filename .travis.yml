@@ -137,7 +137,7 @@ script:
       stack --no-terminal $ARGS test --test-arguments=--format=failed-examples --bench --no-run-benchmarks --haddock --no-haddock-deps
       ;;
     cabal)
-      cabal install --enable-tests --test-options--format-failed-examples --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
+      cabal install --enable-tests --enable-benchmarks --force-reinstalls --ghc-options=-O0 --reorder-goals --max-backjumps=-1 $CABALARGS $PACKAGES
 
       ORIGDIR=$(pwd)
       for dir in $PACKAGES
@@ -152,6 +152,7 @@ script:
         cd "$PKGVER"
         cabal configure --enable-tests
         cabal build
+        cabal test --show-details=direct --test-option=--format=failed-examples 
         cd $ORIGDIR
       done
       ;;
