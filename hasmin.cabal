@@ -138,7 +138,7 @@ test-suite doctest
   main-is:             DocTest.hs
   ghc-options:         -threaded -Wall -fno-warn-orphans
   build-depends:       base             >=4.10    && <5.0
-                     , doctest          >=0.11    && <0.14
+                     , doctest          >=0.11    && <0.15
                      , doctest-discover >=0.1.0.0 && <0.2
                      , hasmin
 
