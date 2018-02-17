@@ -149,7 +149,7 @@ benchmark bench
   main-is:             Benchmarks.hs
   ghc-options:         -threaded -Wall -fno-warn-orphans
   build-depends:       base             >=4.10    && <5.0
-                     , criterion        >=0.11    && <1.3
+                     , criterion        >=0.11    && <1.4
                      , directory        >=1.3.0.0 && <1.4
                      , text             >=1.2     && <1.3
                      , hasmin
