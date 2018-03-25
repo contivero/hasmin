@@ -1,6 +1,15 @@
 # Changelog
 This project adheres to [PVP](https://pvp.haskell.org).
 
+## 1.0.2
+### Added
+* `caret-color` and `font-display` to the property traits table, enabling their minification.
+* `border-radius` minification.
+* Parsing and minification of `<basic-shape>`.
+
+### Improved
+* Position minification
+
 ## 1.0.1
 
 ### Added
