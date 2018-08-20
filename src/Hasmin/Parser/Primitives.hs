@@ -54,10 +54,10 @@ unicode = do
        else fail "unicode escaped character with length greater than 6"
   where ws x = x == ' ' || x == '\n' || x == '\r' || x == '\t' || x == '\f'
 
--- ident: -?{nmstart}{nmchar}*
+-- ident: -?-?{nmstart}{nmchar}*
 ident :: Parser Text
 ident = do
-    dash <- A.option mempty (B.singleton <$> A.char '-')
+    dash <- (B.fromText <$> A.string "--") <|> (B.singleton <$> A.char '-') <|> pure mempty
     ns   <- nmstart
     nc   <- mconcat <$> many nmchar
     pure $ TL.toStrict (B.toLazyText (dash <> ns <> nc))
