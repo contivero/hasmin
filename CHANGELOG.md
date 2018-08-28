@@ -1,6 +1,10 @@
 # Changelog
 This project adheres to [PVP](https://pvp.haskell.org).
 
+## 1.0.2.1
+### Fixed
+* Parser not supporting CSS variables. #3
+
 ## 1.0.2
 ### Added
 * `caret-color` and `font-display` to the property traits table, enabling their minification.
