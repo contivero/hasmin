@@ -20,14 +20,14 @@ To use it as a library, see
 ## Building & Installing
 ### Stack
 The easiest and prefered way is using
-[stack](https://docs.haskellstack.org/en/stable/README/). Clone the repo, then:
+[stack](https://docs.haskellstack.org/en/stable/README/). To directly install, use the following one-liner:
 ```sh
-$ cd path/to/hasmin/repo
-$ stack build
+git clone git@github.com:contivero/hasmin.git && cd hasmin && stack install
 ```
-After that, you can install it with `stack install` (installs by default to `~/.local/bin`).
-If you'd rather just try it out, use `stack exec hasmin` (keep in mind it has
-a slight additional delay at the beginning when run this way).
+Stack installs inside `~/.local/bin` by default. If you'd rather just try hasmin
+out, replace `install` by `build`, and then use `stack exec hasmin` from inside
+the hasmin directory (keep in mind it has a slight additional delay at the
+beginning when run this way).
 
 ### Cabal
 Alternatively, you can use [cabal](https://www.haskell.org/cabal/):
