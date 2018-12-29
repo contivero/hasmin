@@ -189,7 +189,7 @@ replaceWithZero s d@(Declaration p (Values v vs) _ _)
           | otherwise                             = v
         f _ _ = v
 
--- Converts the keywords "normal" and "bold" to 400 and 700, respectively.
+-- | Converts the keywords "normal" and "bold" to 400 and 700, respectively.
 fontWeightOptimizer :: Declaration -> Reader Config Declaration
 fontWeightOptimizer = optimizeValues f
   where f :: Value -> Reader Config Value
@@ -212,42 +212,35 @@ optimizeTransformOrigin d@(Declaration _ vals _ _) = do
     pure $ if shouldMinifyTransformOrigin conf
               then d { valueList = optimizeTransformOrigin' vals}
               else d
-  where optimizeTransformOrigin' :: Values -> Values
-        optimizeTransformOrigin' v =
-          mkValues $ case valuesToList v of
-                       [x, y, z] -> if isZeroVal z
-                                       then transformOrigin2 x y
-                                       else transformOrigin3 x y z
-                       [x, y]    -> transformOrigin2 x y
-                       [x]       -> transformOrigin1 x
-                       x         -> x
+  where
+    optimizeTransformOrigin' :: Values -> Values
+    optimizeTransformOrigin' v =
+        mkValues $ case valuesToList v of
+            [x, y, z] -> if isZeroVal z
+                            then transformOrigin2 x y
+                            else transformOrigin3 x y z
+            [x, y]    -> transformOrigin2 x y
+            [x]       -> transformOrigin1 x
+            x         -> x
 
--- isZeroVal is needed because we are using a generic parser for
--- transform-origin, so 0 parses as a number instead of a distance.
-isZeroVal :: Value -> Bool
-isZeroVal (LengthV (Length 0 _)) = True
-isZeroVal (LengthV NullLength)   = True
-isZeroVal (NumberV (Number 0))   = True
-isZeroVal (PercentageV 0)        = True
-isZeroVal _                      = False
+    transformOrigin1 :: Value -> [Value]
+    transformOrigin1 (Other "top")    = [Other "top"]
+    transformOrigin1 (Other "bottom") = [Other "bottom"]
+    transformOrigin1 (Other "right")  = [PercentageV (Percentage 100)]
+    transformOrigin1 (Other "left")   = [LengthV NullLength]
+    transformOrigin1 (Other "center") = [PercentageV (Percentage 50)]
+    transformOrigin1 (PercentageV 0)  = [LengthV NullLength]
+    transformOrigin1 x                = [x]
 
-transformOrigin1 :: Value -> [Value]
-transformOrigin1 (Other "top")    = [Other "top"]
-transformOrigin1 (Other "bottom") = [Other "bottom"]
-transformOrigin1 (Other "right")  = [PercentageV (Percentage 100)]
-transformOrigin1 (Other "left")   = [LengthV NullLength]
-transformOrigin1 (Other "center") = [PercentageV (Percentage 50)]
-transformOrigin1 (PercentageV 0)  = [LengthV NullLength]
-transformOrigin1 x                = [x]
-
-transformOrigin2 :: Value -> Value -> [Value]
-transformOrigin2 x y
-    | equalsCenter x     = firstIsCenter
-    | equalsCenter y     = secondIsCenter
-    | isYoffsetKeyword x = fmap convertValue [y,x]
-    | isXoffsetKeyword y = fmap convertValue [y,x]
-    | otherwise          = fmap convertValue [x,y]
-  where firstIsCenter
+    transformOrigin2 :: Value -> Value -> [Value]
+    transformOrigin2 x y
+        | equalsCenter x     = firstIsCenter
+        | equalsCenter y     = secondIsCenter
+        | isYoffsetKeyword x = fmap convertValue [y,x]
+        | isXoffsetKeyword y = fmap convertValue [y,x]
+        | otherwise          = fmap convertValue [x,y]
+      where
+        firstIsCenter
             | equalsCenter y           = [per50]
             | isYoffsetKeyword y       = [y]
             | y == per100              = [Other "bottom"]
@@ -272,14 +265,25 @@ transformOrigin2 x y
             | otherwise = n
         convertValue i = i
 
-transformOrigin3 :: Value -> Value -> Value -> [Value]
-transformOrigin3 x y z
-    | x == Other "top" || x == Other "bottom"
-      || y == Other "left" || y == Other "right" = fmap replaceKeywords [y, x, z]
-    | otherwise = fmap replaceKeywords [x, y, z]
-  where replaceKeywords :: Value -> Value
+    transformOrigin3 :: Value -> Value -> Value -> [Value]
+    transformOrigin3 x y z
+        | x == Other "top" || x == Other "bottom"
+          || y == Other "left" || y == Other "right" = fmap replaceKeywords [y, x, z]
+        | otherwise = fmap replaceKeywords [x, y, z]
+      where
+        replaceKeywords :: Value -> Value
         replaceKeywords (Other t) = fromMaybe x (Map.lookup (getText t) transformOriginKeywords)
         replaceKeywords e         = e
+
+-- isZeroVal is needed because we are using a generic parser for
+-- transform-origin, so 0 parses as a number instead of a distance.
+isZeroVal :: Value -> Bool
+isZeroVal (LengthV (Length 0 _)) = True
+isZeroVal (LengthV NullLength)   = True
+isZeroVal (NumberV (Number 0))   = True
+isZeroVal (PercentageV 0)        = True
+isZeroVal _                      = False
+
 
 -- transform-origin keyword meanings.
 transformOriginKeywords :: Map Text Value
@@ -297,12 +301,12 @@ minifyDec :: Declaration -> Maybe Values -> Inheritance -> Declaration
 minifyDec d@(Declaration p vs _ _) mv inhs =
     case mv of
       -- Use the found initial values to try to reduce the declaration
-      Just vals ->
+      Just initialVals ->
           case Map.lookup (T.toCaseFold p) declarationExceptions of
             -- Use a specific function to reduce the property if
             -- needed, otherwise use the general property reducer
-            Just f  -> f d vals inhs
-            Nothing -> reduceDeclaration d vals inhs
+            Just f  -> f d initialVals inhs
+            Nothing -> reduceDeclaration d initialVals inhs
       -- Property with no defined initial values. Try to reduce css-wide keywords
       Nothing   ->
           if inhs == NonInherited && vs == initial || inhs == Inherited && vs == inherit
@@ -322,78 +326,80 @@ inherit = Values Inherit mempty
 -- normal declaration minification scheme and need special treatment.
 declarationExceptions :: Map Text (Declaration -> Values -> Inheritance -> Declaration)
 declarationExceptions = Map.fromList $ map (first T.toCaseFold)
-  [("background-size",         backgroundSizeReduce)
-  ,("-webkit-background-size", backgroundSizeReduce)
-  ,("font-synthesis",          fontSynthesisReduce)
-  ,("overflow",                reduceDefaultingToFirst)
-  -- Needed because otherwise the reducer replaces commas by spaces.
-  -- i.e. text-shadow: 1px 1px red,2px 2px blue ==>
-  --      text-shadow: 1px 1px red 2px 2px blue.
-  ,("text-shadow",             \d _ _ -> d)
-  ]
+    [("background-size",         backgroundSizeReduce)
+    ,("-webkit-background-size", backgroundSizeReduce)
+    ,("font-synthesis",          fontSynthesisReduce)
+    ,("overflow",                reduceDefaultingToFirst)
+    -- Needed because otherwise the reducer replaces commas by spaces.
+    -- i.e. text-shadow: 1px 1px red,2px 2px blue ==>
+    --      text-shadow: 1px 1px red 2px 2px blue.
+    ,("text-shadow",             \d _ _ -> d)
+    ]
+  where
+    fontSynthesisReduce :: Declaration -> Values -> Inheritance -> Declaration
+    fontSynthesisReduce d@(Declaration _ vs _ _) initVals inhs =
+        case valuesToList initVals \\ valuesToList vs of
+          [] -> d {valueList = initial} -- "initial" is shorter than "weight style"
+          _  -> d {valueList = shortestEquiv vs initVals inhs}
+
+    -- For properties whose second value, if omitted, is copied from the first
+    -- (for instance 'overflow').
+    reduceDefaultingToFirst :: Declaration -> Values -> Inheritance -> Declaration
+    reduceDefaultingToFirst d@(Declaration _ vs _ _) initVals inhs =
+        case valuesToList vs of
+          [v1,v2] -> if v1 == v2
+                        then reduceDeclaration (d { valueList = (mkValues [v1]) }) initVals inhs
+                        else d
+          _       -> reduceDeclaration d initVals inhs
+
+    backgroundSizeReduce :: Declaration -> Values -> Inheritance -> Declaration
+    backgroundSizeReduce d@(Declaration _ vs _ _) initVals inhs =
+        case valuesToList vs of
+          [v1,v2] -> if v2 == mkOther "auto"
+                        then d { valueList = mkValues [v1] }
+                        else d
+          _       -> d { valueList = shortestEquiv vs initVals inhs }
 
 combineTransformFunctions :: Declaration -> Reader Config Declaration
 combineTransformFunctions d@(Declaration _ vs _ _) = do
     combinedFuncs <- combine (toList tfValues)
     let newVals = fmap TransformV combinedFuncs ++ toList otherValues
     pure $ d { valueList = mkValues newVals}
-  where decValues               = valuesToList vs
-        (tfValues, otherValues) = splitValues decValues
-        splitValues = splitValues' (mempty, mempty)
-          where splitValues' :: (Seq TransformFunction, Seq Value) -> [Value]
-                             -> (Seq TransformFunction, Seq Value)
-                splitValues' (ts, os) (TransformV x:xs) = splitValues' (ts |> x, os) xs
-                splitValues' (ts, os) (x:xs)            = splitValues' (ts, os |> x) xs
-                splitValues' (ts, os) []                = (ts, os)
-
-backgroundSizeReduce :: Declaration -> Values -> Inheritance -> Declaration
-backgroundSizeReduce d@(Declaration _ vs _ _) initVals inhs =
-    case valuesToList vs of
-      [v1,v2] -> if v2 == mkOther "auto"
-                    then d { valueList = mkValues [v1] }
-                    else d
-      _       -> d { valueList = shortestEquiv vs initVals inhs }
-
-fontSynthesisReduce :: Declaration -> Values -> Inheritance -> Declaration
-fontSynthesisReduce d@(Declaration _ vs _ _) initVals inhs =
-    case valuesToList initVals \\ valuesToList vs of
-      [] -> d {valueList = initial} -- "initial" is shorter than "weight style"
-      _  -> d {valueList = shortestEquiv vs initVals inhs}
-
-
--- For properties whose second value, if omitted, is copied from the first
--- (for instance 'overflow').
-reduceDefaultingToFirst :: Declaration -> Values -> Inheritance -> Declaration
-reduceDefaultingToFirst d@(Declaration _ vs _ _) initVals inhs =
-    case valuesToList vs of
-      [v1,v2] -> if v1 == v2
-                    then reduceDeclaration (d { valueList = (mkValues [v1]) }) initVals inhs
-                    else d
-      _       -> reduceDeclaration d initVals inhs
+  where
+    decValues               = valuesToList vs
+    (tfValues, otherValues) = splitValues decValues
+    splitValues = splitValues' (mempty, mempty)
+      where
+        splitValues' :: (Seq TransformFunction, Seq Value) -> [Value]
+                     -> (Seq TransformFunction, Seq Value)
+        splitValues' (ts, os) (TransformV x:xs) = splitValues' (ts |> x, os) xs
+        splitValues' (ts, os) (x:xs)            = splitValues' (ts, os |> x) xs
+        splitValues' (ts, os) []                = (ts, os)
 
 -- Function to reduce the great mayority of properties. Requires that:
 -- 1. The order between values doesn't matter, which is true for most
 --    properties because they take only one value.
--- 2. Any default value may be removed, which tends to hold for shorthands
---    because the default value is used when it isn't present. An example of a
---    property that qualifies is border-bottom, and one that doesn't is
---    font-synthesis (because it isn't a shorthand).
+-- 2. Any default value may be removed until a single one remains, which tends
+--    to hold for shorthands because the default value is used when it isn't
+--    present. An example of a property that qualifies is border-bottom, and
+--    one that doesn't is font-synthesis (because it isn't a shorthand).
 reduceDeclaration :: Declaration -> Values -> Inheritance -> Declaration
 reduceDeclaration d@(Declaration _ vs _ _) initVals inhs =
     case analyzeValueDifference vs initVals of
       Just v  -> d {valueList = shortestEquiv v shortestInitialValue inhs}
       Nothing -> d {valueList = minVal inhs shortestInitialValue}
-  where comparator x y = compare (textualLength x) (textualLength y)
-        shortestInitialValue = mkValues [minimumBy comparator (valuesToList initVals)]
+  where
+    charLen x y = compare (textualLength x) (textualLength y)
+    shortestInitialValue = mkValues [minimumBy charLen (valuesToList initVals)]
 
 -- If the value was a css-wide keyword, return the shortest between css-wide
 -- keywords and the shortest initial value for the property.
 -- Otherwise, no property specific reduction could be done, so just return the
 -- values.
 shortestEquiv :: Values -> Values -> Inheritance -> Values
-shortestEquiv vs siv inhs
-    | inhs == Inherited && vs == inherit = unset
-    | inhs == NonInherited && vs == unset || vs == initial = minVal inhs siv
+shortestEquiv vs siv i
+    | i == Inherited && vs == inherit = unset
+    | i == NonInherited && vs == unset || vs == initial = minVal i siv
     | otherwise = vs
 
 -- Returns the minimum value (in character length) between the shortest initial
@@ -404,10 +410,11 @@ minVal inhs vs
     | otherwise                                       = vs
   where globalKeyword = mkValues [if inhs == NonInherited then Unset else Initial]
 
--- Substract declaration values to the property's initial value list.
--- If nothing remains (i.e. every value declared was an initial one and may be
--- left implicit), then just replace it with whatever initial value is the
--- shortest, otherwise whatever remains is the shortest equivalent declaration.
+-- Substract the property's initial value list from the declaration values.
+-- If nothing remains (i.e. every value declared was an initial one, thus all of
+-- them could be left implicit), then just replace it with whatever initial
+-- value is the shortest, otherwise whatever remains is the shortest equivalent
+-- declaration.
 analyzeValueDifference :: Values -> Values -> Maybe Values
 analyzeValueDifference vs initVals =
     case valuesDifference of
