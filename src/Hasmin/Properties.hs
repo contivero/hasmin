@@ -290,6 +290,9 @@ propertiesTraits = Map.fromList $ processTuples
     ,("overflow-wrap",                      "normal", Inherited, mempty, mempty) -- also called word-wrap
     ,("overflow-x",                         "visible", NonInherited, ["overflow"], mempty) -- experimental
     ,("overflow-y",                         "visible", NonInherited, ["overflow"], mempty) -- experimental
+    ,("overscroll-behavior",                "auto", NonInherited, mempty, ["overscroll-behavior-x", "overscroll-behavior-y"]) -- experimental, shorthand
+    ,("overscroll-behavior-x",              "auto", NonInherited, ["overscroll-behavior"], mempty) -- experimental
+    ,("overscroll-behavior-y",              "auto", NonInherited, ["overscroll-behavior"], mempty) -- experimental
     ,("padding",                            mempty {-shorthand-}, NonInherited, mempty, ["padding-top", "padding-right", "padding-bottom", "padding-left"])
     -- ,("padding-block*",          ("0", NonInherited)) -- experimental
     ,("padding-bottom",                     "0", NonInherited, ["padding"], mempty)

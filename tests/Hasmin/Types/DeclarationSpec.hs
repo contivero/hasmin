@@ -148,6 +148,15 @@ propertySpecificTestsInfo =
   ,("overflow:clip visible",    "overflow:clip visible")
   ,("overflow:visible clip",    "overflow:visible clip")
   ,("overflow:clip clip",       "overflow:clip")
+
+  ,("overscroll-behavior:unset",           "overscroll-behavior:auto")
+  ,("overscroll-behavior:initial",         "overscroll-behavior:auto")
+  ,("overscroll-behavior:auto",            "overscroll-behavior:auto")
+  ,("overscroll-behavior:auto auto",       "overscroll-behavior:auto")
+  ,("overscroll-behavior:none auto",       "overscroll-behavior:none auto")
+  ,("overscroll-behavior:auto none",       "overscroll-behavior:auto none")
+  ,("overscroll-behavior:contain contain", "overscroll-behavior:contain")
+  ,("overscroll-behavior:none none",       "overscroll-behavior:none")
   ]
 
 
