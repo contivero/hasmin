@@ -74,9 +74,9 @@ config = Config
                     <> help "Disable minification of An+B microsyntax")
   <*> flag True False (long "no-@kfsel-min"
                     <> short 'k'
-                    <> help "Disable transform function minification")
-  <*> flag True False (long "no-transform-function-min"
                     <> help "Disable @keyframe selectors minification")
+  <*> flag True False (long "no-transform-function-min"
+                    <> help "Disable transform function minification")
   <*> switch (long "convert-escaped-characters"
            <> help "Convert escaped characters to their UTF-8 equivalent")
   <*> flag True False (long "no-null-percentage-conversion"
