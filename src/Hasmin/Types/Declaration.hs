@@ -325,6 +325,7 @@ declarationExceptions = Map.fromList $ map (first T.toCaseFold)
   [("background-size",         backgroundSizeReduce)
   ,("-webkit-background-size", backgroundSizeReduce)
   ,("font-synthesis",          fontSynthesisReduce)
+  ,("overflow",                reduceDefaultingToFirst)
   -- Needed because otherwise the reducer replaces commas by spaces.
   -- i.e. text-shadow: 1px 1px red,2px 2px blue ==>
   --      text-shadow: 1px 1px red 2px 2px blue.
@@ -358,6 +359,17 @@ fontSynthesisReduce d@(Declaration _ vs _ _) initVals inhs =
     case valuesToList initVals \\ valuesToList vs of
       [] -> d {valueList = initial} -- "initial" is shorter than "weight style"
       _  -> d {valueList = shortestEquiv vs initVals inhs}
+
+
+-- For properties whose second value, if omitted, is copied from the first
+-- (for instance 'overflow').
+reduceDefaultingToFirst :: Declaration -> Values -> Inheritance -> Declaration
+reduceDefaultingToFirst d@(Declaration _ vs _ _) initVals inhs =
+    case valuesToList vs of
+      [v1,v2] -> if v1 == v2
+                    then reduceDeclaration (d { valueList = (mkValues [v1]) }) initVals inhs
+                    else d
+      _       -> reduceDeclaration d initVals inhs
 
 -- Function to reduce the great mayority of properties. Requires that:
 -- 1. The order between values doesn't matter, which is true for most

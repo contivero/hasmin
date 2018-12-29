@@ -288,8 +288,8 @@ propertiesTraits = Map.fromList $ processTuples
     ,("outline-width",                      "medium", NonInherited, ["outline"], mempty)
     ,("overflow",                           "visible", NonInherited, mempty, mempty)
     ,("overflow-wrap",                      "normal", Inherited, mempty, mempty) -- also called word-wrap
-    ,("overflow-x",                         "visible", NonInherited, mempty, mempty) -- experimental
-    ,("overflow-y",                         "visible", NonInherited, mempty, mempty) -- experimental
+    ,("overflow-x",                         "visible", NonInherited, ["overflow"], mempty) -- experimental
+    ,("overflow-y",                         "visible", NonInherited, ["overflow"], mempty) -- experimental
     ,("padding",                            mempty {-shorthand-}, NonInherited, mempty, ["padding-top", "padding-right", "padding-bottom", "padding-left"])
     -- ,("padding-block*",          ("0", NonInherited)) -- experimental
     ,("padding-bottom",                     "0", NonInherited, ["padding"], mempty)

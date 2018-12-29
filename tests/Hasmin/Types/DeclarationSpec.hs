@@ -140,6 +140,14 @@ propertySpecificTestsInfo =
   ,("transform-origin:right center 1px",    "transform-origin:100% 50% 1px")
   ,("transform-origin:center left 1px",     "transform-origin:0 50% 1px")
   ,("transform-origin:left center 1px",     "transform-origin:0 50% 1px")
+
+  ,("overflow:unset",           "overflow:unset")
+  ,("overflow:initial",         "overflow:unset")
+  ,("overflow:visible",         "overflow:unset")
+  ,("overflow:visible visible", "overflow:unset")
+  ,("overflow:clip visible",    "overflow:clip visible")
+  ,("overflow:visible clip",    "overflow:visible clip")
+  ,("overflow:clip clip",       "overflow:clip")
   ]
 
 
