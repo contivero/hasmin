@@ -310,7 +310,6 @@ propertiesTraits = Map.fromList $ processTuples
     ,("quotes",                             mempty {-UA dependent-}, Inherited, mempty, mempty)
     ,("resize",                             "none", NonInherited, mempty, mempty)
     ,("right",                              "auto", NonInherited, mempty, mempty)
-    ,("right",                              "auto", NonInherited, mempty, mempty)
     -- ,("ruby-*", -- experimental
     ,("scroll-behavior",                    "auto", NonInherited, mempty, mempty)
     -- ,("scroll-snap-coordinate", ("none", NonInherited)) -- experimental
