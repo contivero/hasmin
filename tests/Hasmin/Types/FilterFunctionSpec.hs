@@ -15,7 +15,7 @@ filterTests =
 
 quickcheckFilter :: Spec
 quickcheckFilter =
-    describe "Quickcheck <filter-function> tests" $
+    describe "Quickcheck <filter-function> tests" .
       it "Minified <filter-function> maintains semantical equivalence" $
         property (prop_minificationEq :: FilterFunction -> Bool)
 

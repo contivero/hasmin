@@ -46,8 +46,7 @@ rotate3d = functionParser $ do
     x  <-  number <* comma
     y  <-  number <* comma
     z  <-  number <* comma
-    a  <-  angle
-    pure $ Rotate3d x y z a
+    Rotate3d x y z <$> angle
 
 -- | Parser of scale() function. Assumes "scale(" has been already parsed
 scale :: Parser TransformFunction
@@ -78,4 +77,3 @@ translate3d = functionParser $
     Translate3d <$> percentageLength <* comma
                 <*> percentageLength <* comma
                 <*> distance
-

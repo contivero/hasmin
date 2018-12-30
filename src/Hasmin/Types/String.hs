@@ -102,7 +102,7 @@ unquote p s = case parse p s of
 -- functions? Apart from being cleaner, doing so would simplify other functions.
 -- | Parse and convert any escaped unicode to its underlying Char.
 convertEscaped :: Parser Text
-convertEscaped = (TL.toStrict . B.toLazyText) <$> go
+convertEscaped = TL.toStrict . B.toLazyText <$> go
   where
     go = do
         nonescapedText <- B.fromText <$> A.takeWhile (/= '\\')

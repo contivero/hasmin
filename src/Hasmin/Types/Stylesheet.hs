@@ -291,9 +291,9 @@ instance Minifiable SupportsCondition where
                               ParensCond o@Or{}     -> pure o
                               ParensCond n@Not{}    -> pure n
                               ParensCond (Parens c) -> Parens <$> pure c
-                              ParensDec d           -> (Parens . ParensDec) <$> pure d
-      ParensCond y       -> (Not . ParensCond) <$> pure y
-      ParensDec y        -> (Not . ParensDec) <$> pure y
+                              ParensDec d           -> Parens . ParensDec <$> pure d
+      ParensCond y       -> Not . ParensCond <$> pure y
+      ParensDec y        -> Not . ParensDec <$> pure y
 
 appendWith :: Builder -> SupportsCondInParens -> NonEmpty SupportsCondInParens -> Builder
 appendWith s x y = toBuilder x <> s <> mconcatIntersperse toBuilder s (toList y)

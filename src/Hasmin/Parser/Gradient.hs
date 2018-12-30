@@ -35,13 +35,12 @@ radialgradient = functionParser $ do
     _  <- if def && isNothing p
              then pure '*' -- do nothing
              else comma
-    cs <- colorStopList
-    pure $ c p cs
+    c p <$>  colorStopList
   where circle = A.asciiCI "circle" $> Just Circle <* skipComments
         ellipse = A.asciiCI "ellipse" $> Just Ellipse <* skipComments
         endingShapeAndSize = r1 <|> r2 <|> r3
           where r1 = permute (RadialGradient <$?> (Nothing, ellipse) <||> (Just <$> (PL <$> percentageLength <*> lexeme percentageLength)))
-                r2 = permute (RadialGradient <$?> (Nothing, circle) <||> ((Just . SL) <$> distance <* skipComments))
+                r2 = permute (RadialGradient <$?> (Nothing, circle) <||> (Just . SL <$> distance <* skipComments))
                 r3 = permute (RadialGradient <$?> (Nothing, circle <|> ellipse) <||> extentKeyword)
                    <|> permute (RadialGradient <$$> (circle <|> ellipse) <|?> (Nothing, extentKeyword))
                 extentKeyword = Just <$>

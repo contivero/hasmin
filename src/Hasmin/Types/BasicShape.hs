@@ -150,7 +150,7 @@ instance Minifiable BasicShape where
           minifyMSR Nothing   = pure Nothing
           minifyMSR (Just sr) =
               case sr of
-                SRLength l    -> (Just . SRLength) <$> minify l
+                SRLength l    -> Just . SRLength <$> minify l
                 SRClosestSide -> pure Nothing
                 _             -> pure (Just sr)
   minify (Ellipse sr2 mp) = do
@@ -163,7 +163,7 @@ instance Minifiable BasicShape where
     where minifySR2 (One x) =
               case x of
                 SRClosestSide -> pure None
-                SRLength l    -> (One . SRLength) <$> minify l
+                SRLength l    -> One . SRLength <$> minify l
                 _             -> pure (One x)
           minifySR2 (Two x SRClosestSide) = minifySR2 (One x)
           minifySR2 t@Two{}               = traverse minifySR t

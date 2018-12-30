@@ -116,7 +116,7 @@ atNamespace :: Parser Rule
 atNamespace = do
     i   <- skipComments *> A.option mempty ident
     ret <- if T.null i
-              then (AtNamespace i . Left) <$> stringtype
+              then AtNamespace i . Left <$> stringtype
               else decideBasedOn i
     _ <- skipComments <* char ';'
     pure ret

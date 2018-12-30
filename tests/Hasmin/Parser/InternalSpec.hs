@@ -47,7 +47,7 @@ declarationTestInfo =
 
 declarationParsersTests :: Spec
 declarationParsersTests =
-    describe "Declaration parsers tests" $
+    describe "Declaration parsers tests" .
       it "Parses valid font-style values, and fails with invalids" $ do
         fontStyle `shouldSucceedOn` ("normal" :: Text)
         fontStyle `shouldSucceedOn` ("italic" :: Text)

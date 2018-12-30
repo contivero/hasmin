@@ -181,7 +181,7 @@ cleaningTests :: Spec
 cleaningTests =
     describe "cleaning function" $
       mapM_ (matchSpecWithDesc f) cleaningTestsInfo
-  where f = (Declarations . clean) <$> declarations
+  where f = Declarations . clean <$> declarations
 
 cleaningTestsInfo :: [(String, Text, Text)]
 cleaningTestsInfo =

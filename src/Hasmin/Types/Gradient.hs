@@ -260,7 +260,7 @@ minifyAngleOrSide :: Maybe (Either Angle SideOrCorner)
 minifyAngleOrSide Nothing  = pure Nothing
 minifyAngleOrSide (Just (Left a))
     | a == defaultGradientAngle = pure Nothing
-    | otherwise                 = (Just . Left) <$> minify a
+    | otherwise                 = Just . Left <$> minify a
   where defaultGradientAngle = Angle 180 Deg
 minifyAngleOrSide (Just (Right b))
     | b == defaultGradientSideOrCorner = pure Nothing

@@ -73,7 +73,7 @@ atImportTestInfo =
 mergeRulesTest :: Spec
 mergeRulesTest =
     describe "Rules merging" $
-      mapM_ (matchSpecWithDesc ((f . minifyWithTestConfig) <$> rules)) mergeRulesTestsInfo
+      mapM_ (matchSpecWithDesc (f . minifyWithTestConfig <$> rules)) mergeRulesTestsInfo
   where f = mconcat . map toText
 
 mergeRulesTestsInfo :: [(String, Text, Text)]
@@ -198,7 +198,7 @@ collapseLonghandTests :: Spec
 collapseLonghandTests =
     describe "TRBL Longhand collapsing" $
       mapM_ (matchSpec f) collapseLonghandsTestsInfo
-  where f = (Declarations . collapse) <$> declarations
+  where f = Declarations . collapse <$> declarations
 
 collapseLonghandsTestsInfo :: [(Text, Text)]
 collapseLonghandsTestsInfo =

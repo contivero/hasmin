@@ -60,7 +60,7 @@ position = perLen <|> keyword
     startsWithCenter = skipComments *>
         (followsWithPL <|> followsWithAKeyword <|> pure (posTillNow Nothing Nothing))
       where
-        followsWithPL = (posTillNow Nothing . Just) <$> percentageLength
+        followsWithPL = posTillNow Nothing . Just <$> percentageLength
         followsWithAKeyword = do
             i <- ident <* skipComments
             let f x = posTillNow (Just x) <$> maybePL
