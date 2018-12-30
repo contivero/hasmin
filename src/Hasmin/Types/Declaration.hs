@@ -332,19 +332,23 @@ declarationExceptions = Map.fromList $ map (first T.toCaseFold)
     ,("border-bottom-right-radius", reduceDefaultingToFirst)
     ,("border-top-left-radius",     reduceDefaultingToFirst)
     ,("border-top-right-radius",    reduceDefaultingToFirst)
-    ,("font-synthesis",             fontSynthesisReduce)
+    ,("font-synthesis",             reduceTwoKeywordInitial)
     ,("overflow",                   reduceDefaultingToFirst)
     ,("overscroll-behavior",        reduceDefaultingToFirst)
+    ,("text-emphasis-position",     reduceTwoKeywordInitial)
     -- Needed because otherwise the reducer replaces commas by spaces.
     -- i.e. text-shadow: 1px 1px red,2px 2px blue ==>
     --      text-shadow: 1px 1px red 2px 2px blue.
     ,("text-shadow",             \d _ _ -> d)
     ]
   where
-    fontSynthesisReduce :: Declaration -> Values -> Inheritance -> Declaration
-    fontSynthesisReduce d@(Declaration _ vs _ _) initVals inhs =
+    -- For properties that take two keywords as initial value, such as:
+    -- * font-synthesis: weight style
+    -- * text-emphasis-position: right over
+    reduceTwoKeywordInitial :: Declaration -> Values -> Inheritance -> Declaration
+    reduceTwoKeywordInitial d@(Declaration _ vs _ _) initVals inhs =
         case valuesToList initVals \\ valuesToList vs of
-          [] -> d {valueList = initial} -- "initial" is shorter than "weight style"
+          [] -> d {valueList = shortestEquiv initial initVals inhs}
           _  -> d {valueList = shortestEquiv vs initVals inhs}
 
     -- For properties whose second value, if omitted, is copied from the first
@@ -353,7 +357,7 @@ declarationExceptions = Map.fromList $ map (first T.toCaseFold)
     reduceDefaultingToFirst d@(Declaration _ vs _ _) initVals inhs =
         case valuesToList vs of
           [v1,v2] -> if v1 == v2
-                        then reduceDeclaration (d { valueList = (mkValues [v1]) }) initVals inhs
+                        then reduceDeclaration (d { valueList = mkValues [v1] }) initVals inhs
                         else d
           _       -> reduceDeclaration d initVals inhs
 

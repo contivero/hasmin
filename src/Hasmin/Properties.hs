@@ -332,7 +332,7 @@ propertiesTraits = Map.fromList $ processTuples
     ,("text-decoration-style",              "solid", NonInherited, ["text-decoration"], mempty)
     ,("text-emphasis",                      "none currentcolor", NonInherited, mempty, ["text-emphasis-color", "text-emphasis-style"]) -- shorthand
     ,("text-emphasis-color",                "currentcolor", NonInherited, ["text-emphasis"], mempty)
-    ,("text-emphasis-position",             mempty {-"over right"-}, NonInherited, mempty, mempty)
+    ,("text-emphasis-position",             "over right", NonInherited, mempty, mempty)
     ,("text-emphasis-style",                "none", NonInherited, ["text-emphasis"], mempty)
     ,("text-indent",                        "0", Inherited, mempty, mempty)
     ,("text-orientation",                   "mixed", Inherited, mempty, mempty) -- experimental

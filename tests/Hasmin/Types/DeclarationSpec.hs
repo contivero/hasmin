@@ -162,6 +162,12 @@ propertySpecificTestsInfo =
   ,("border-bottom-right-radius:0 0",     "border-bottom-right-radius:0")
   ,("border-top-left-radius:initial",     "border-top-left-radius:0")
   ,("border-top-right-radius:5px 6px",    "border-top-right-radius:5px 6px")
+
+  ,("text-emphasis-position:right over",  "text-emphasis-position:unset")
+  ,("text-emphasis-position:over right",  "text-emphasis-position:unset")
+  ,("text-emphasis-position:initial",     "text-emphasis-position:unset")
+  ,("text-emphasis-position:over left",   "text-emphasis-position:over left")
+  ,("text-emphasis-position:right under", "text-emphasis-position:right under")
   ]
 
 
