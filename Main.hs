@@ -30,15 +30,14 @@ import Hasmin
 
 type Instructions = (Commands, Config)
 
-data Commands = Commands { shouldBeautify :: Bool
-                         , shouldCompress :: Bool
-                         , file :: FilePath
-                         } deriving (Show)
+data Commands = Commands
+    { shouldCompress :: Bool
+    , file :: FilePath
+    } deriving (Show)
 
 command :: Parser Commands
 command = Commands
-    <$> switch (long "beautify" <> short 'b' <> help "Beautify output")
-    <*> switch (long "zopfli" <> short 'z' <> help "Compress result using zopfli")
+    <$> switch (long "zopfli" <> short 'z' <> help "Compress result using zopfli")
     <*> argument str (metavar "FILE")
 
 config :: Parser Config
@@ -113,6 +112,5 @@ main = do
       Left e   -> die e
   where process :: Text -> Commands -> IO ()
         process ts comm
-          | shouldBeautify comm = error "Currently unsupported"
           | shouldCompress comm = B.writeFile "output.gz" . compressWith defaultCompressOptions GZIP . TE.encodeUtf8 $ ts
           | otherwise           = TIO.putStr ts
