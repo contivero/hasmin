@@ -157,6 +157,11 @@ propertySpecificTestsInfo =
   ,("overscroll-behavior:auto none",       "overscroll-behavior:auto none")
   ,("overscroll-behavior:contain contain", "overscroll-behavior:contain")
   ,("overscroll-behavior:none none",       "overscroll-behavior:none")
+
+  ,("border-bottom-left-radius:40% 40%",  "border-bottom-left-radius:40%")
+  ,("border-bottom-right-radius:0 0",     "border-bottom-right-radius:0")
+  ,("border-top-left-radius:initial",     "border-top-left-radius:0")
+  ,("border-top-right-radius:5px 6px",    "border-top-right-radius:5px 6px")
   ]
 
 

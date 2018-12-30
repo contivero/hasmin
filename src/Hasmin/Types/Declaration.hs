@@ -326,11 +326,15 @@ inherit = Values Inherit mempty
 -- normal declaration minification scheme and need special treatment.
 declarationExceptions :: Map Text (Declaration -> Values -> Inheritance -> Declaration)
 declarationExceptions = Map.fromList $ map (first T.toCaseFold)
-    [("background-size",         backgroundSizeReduce)
-    ,("-webkit-background-size", backgroundSizeReduce)
-    ,("font-synthesis",          fontSynthesisReduce)
-    ,("overflow",                reduceDefaultingToFirst)
-    ,("overscroll-behavior",     reduceDefaultingToFirst)
+    [("background-size",            backgroundSizeReduce)
+    ,("-webkit-background-size",    backgroundSizeReduce)
+    ,("border-bottom-left-radius",  reduceDefaultingToFirst)
+    ,("border-bottom-right-radius", reduceDefaultingToFirst)
+    ,("border-top-left-radius",     reduceDefaultingToFirst)
+    ,("border-top-right-radius",    reduceDefaultingToFirst)
+    ,("font-synthesis",             fontSynthesisReduce)
+    ,("overflow",                   reduceDefaultingToFirst)
+    ,("overscroll-behavior",        reduceDefaultingToFirst)
     -- Needed because otherwise the reducer replaces commas by spaces.
     -- i.e. text-shadow: 1px 1px red,2px 2px blue ==>
     --      text-shadow: 1px 1px red 2px 2px blue.
