@@ -338,6 +338,7 @@ propertyValueParsersMap = Map.fromList
     ,("-webkit-perspective-origin", singleValue positionvalue)
     ,("mask-position",              positionList)
     ,("-webkit-mask-position",      positionList)
+    ,("object-position",            singleValue positionvalue)
     -- ,("transform-origin",           transformOrigin)
     -- ,("-ms-transform-origin",       transformOrigin)
     -- ,("-webkit-transform-origin",   transformOrigin)
