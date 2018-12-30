@@ -1,9 +1,43 @@
 # Changelog
 This project adheres to [PVP](https://pvp.haskell.org).
 
+## 1.0.3
+### Fixed
+* `overflow: visible hidden` minifying as `overflow:hidden`. Now it's left
+  untouched. It's possible that there where other instances of this, which sould
+  now be fixed.
+* quickcheck-instances upper bound not admitting version 0.3.19
+  ([#5](https://github.com/contivero/hasmin/issues/5))
+* Incorrect description for two flags in the usage info (when running `--help`).
+  The descriptions for `-no-@kfsel-min` and `-no-transform-function-min` were
+  swapped.
+
+### Added
+* Minification for properties with a pair of values whose second one defaults to
+  the first when missing. For example: `overflow: clip clip` is minified to
+  `overflow: clip`. This also properly interacts with property traits, i.e.
+  `overflow: visible visible` is properly minified to `overflow: unset` (since
+  `visible visible` is equivalent to `visible`, and `visible` is the initial
+  value and overflow doesn't inherit, thus `unset`).
+  Among the properties for which this is now done are:
+
+  - `border-bottom-left-radius`
+  - `border-bottom-right-radius`
+  - `border-top-left-radius`
+  - `border-top-right-radius`
+  - `overscroll-behavior`
+
+* Property traits for `overscroll-behavior` and its longhands,
+  `overscroll-behavior-x` and `overscroll-behavior-y`.
+* Minification for `object-position`. This property's value is now parsed as a
+  `<position>`, allowing to apply all the minifications a `<position>` allows.
+* Minification for `text-emphasis-position`. This property now correctly
+  utilizes its traits, e.g. `text-emphasis-position: right over` minifies to
+  `text-emphasis-position: unset`.
+
 ## 1.0.2.1
 ### Fixed
-* Parser not supporting CSS variables. #3
+* Parser choking on CSS variables. ([#3](https://github.com/contivero/hasmin/issues/3))
 
 ## 1.0.2
 ### Added
@@ -96,7 +130,7 @@ This project adheres to [PVP](https://pvp.haskell.org).
 This version introduced a non-exhaustive pattern bug. Don't use it.
 
 ### Added
-Added a simple merging of adjacent media queries (`@media` rules), e.g.:
+* Simple merging of adjacent media queries (`@media` rules), e.g.:
 ```css
 @media all and (min-width: 24rem) {
   a { font-size: 1.2rem; }
@@ -111,6 +145,7 @@ Gets merged into into:
   a { font-size: 1.2rem; }
   b { padding-left: .25rem; padding-right: .25rem; }
 }
+This closes [#2](https://github.com/contivero/hasmin/issues/2).
 ```
 
 ## 0.3.2.4
@@ -126,19 +161,24 @@ Gets merged into into:
 * Relaxed optparse-applicative upper bound.
 
 ## 0.3.2
-* Fixed some dimensions minifying incorrectly.
-* Fixed some Eq instances.
+### Fixed
+* Some dimensions minifying incorrectly.
+* Some Eq instances.
 * <An+B> values data type modified to disallow invalid values. This makes the
   data type safer, also simplifying the Quickcheck Arbitrary instance.
-* Improved test coverage.
+### Improved
+* Test coverage.
 
 ## 0.3.1.3
-* Added support for `@supports` rules, and a slight minification for them: it
+### Added
+* Support for `@supports` rules, and a slight minification for them: it
   removes adjacent negations, i.e.: @supports not (not ...) gets turn into
   @supports ....
-* Fixed a small bug with `:lang()` where spaces before the right parenthesis
+### Fixed
+* A small bug with `:lang()` where spaces before the right parenthesis
   weren't being removed.
-* Improved test coverage.
+### Improved
+* Test coverage.
 
 ## 0.3.0.1
 Initial release

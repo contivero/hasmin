@@ -1,8 +1,9 @@
 name:                hasmin
-version:             1.0.2.1
+version:             1.0.3
 license:             BSD3
 license-file:        LICENSE
-author:              (c) 2017 Cristian Adrián Ontivero <cristianontivero@gmail.com>
+copyright:           © 2016-2018 Cristian Adrián Ontivero
+author:              Cristian Adrián Ontivero
 maintainer:          Cristian Adrián Ontivero <cristianontivero@gmail.com>
 synopsis:            CSS Minifier
 homepage:            https://github.com/contivero/hasmin#readme
