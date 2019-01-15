@@ -18,3 +18,4 @@
 # Hasmin specific
 - warn: {lhs: skipComments *> x <* skipComments, rhs: lexeme x}
 - warn: {lhs: "option Nothing (Just <$> p)", rhs: optional p}
+- ignore: {name: Use String}
