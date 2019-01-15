@@ -31,9 +31,8 @@ source-repository head
 
 executable hasmin
   default-language:    Haskell2010
-  ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints -Werror=incomplete-patterns
   main-is:             Main.hs
-  other-modules:       Paths_hasmin
+  ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints -Werror=incomplete-patterns
   build-depends:       base                 >=4.10       && <5.0
                      , optparse-applicative >=0.11       && <0.16
                      , text                 >=1.2        && <1.3
@@ -41,11 +40,20 @@ executable hasmin
                      , bytestring           >=0.10.2.0   && <0.11
                      , gitrev               >=1.0.0      && <1.4
                      , hasmin
+  other-modules:       Paths_hasmin
 
 library
   default-language:    Haskell2010
   hs-source-dirs:      src
   ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints -Werror=incomplete-patterns
+  build-depends:       base            >=4.10       && <5.0
+                     , attoparsec      >=0.12       && <0.14
+                     , containers      >=0.5        && <0.7
+                     , matrix          >=0.3.4      && <0.4
+                     , mtl             >=2.2.1      && <2.3
+                     , numbers         >=3000.2.0.0 && <3000.3
+                     , parsers         >=0.12.3     && <0.13
+                     , text            >=1.2        && <1.3
   exposed-modules:     Hasmin
                      , Hasmin.Config
                      , Hasmin.Class
@@ -87,14 +95,6 @@ library
                      , Hasmin.Types.Selector
                      , Hasmin.Types.Gradient
                      , Hasmin.Types.Shadow
-  build-depends:       base            >=4.10       && <5.0
-                     , attoparsec      >=0.12       && <0.14
-                     , containers      >=0.5        && <0.7
-                     , matrix          >=0.3.4      && <0.4
-                     , mtl             >=2.2.1      && <2.3
-                     , numbers         >=3000.2.0.0 && <3000.3
-                     , parsers         >=0.12.3     && <0.13
-                     , text            >=1.2        && <1.3
 
 test-suite spec
   default-language:    Haskell2010
@@ -102,6 +102,15 @@ test-suite spec
   hs-source-dirs:      tests
   main-is:             Spec.hs
   ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints -Werror=incomplete-patterns
+  build-depends:       base                 >=4.10    && <5.0
+                     , attoparsec           >=0.12    && <0.14
+                     , hspec                >=2.2     && <3.0
+                     , hspec-attoparsec     >=0.1.0.0 && <0.2
+                     , mtl                  >=2.2.1   && <2.3
+                     , QuickCheck           >=2.8     && <3.0
+                     , quickcheck-instances >=0.3.16  && <0.4
+                     , text                 >=1.2     && <1.3
+                     , hasmin
   default-extensions:  OverloadedStrings
   other-modules:       Hasmin.Parser.InternalSpec
                      , Hasmin.Parser.ValueSpec
@@ -122,15 +131,6 @@ test-suite spec
                      , Hasmin.Types.TimingFunctionSpec
                      , Hasmin.Types.TransformFunctionSpec
                      , Hasmin.Types.ValueSpec
-  build-depends:       base                 >=4.10    && <5.0
-                     , attoparsec           >=0.12    && <0.14
-                     , hspec                >=2.2     && <3.0
-                     , hspec-attoparsec     >=0.1.0.0 && <0.2
-                     , mtl                  >=2.2.1   && <2.3
-                     , QuickCheck           >=2.8     && <3.0
-                     , quickcheck-instances >=0.3.16  && <0.4
-                     , text                 >=1.2     && <1.3
-                     , hasmin
 
 test-suite doctest
   default-language:    Haskell2010
