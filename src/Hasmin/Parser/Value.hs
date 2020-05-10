@@ -34,12 +34,12 @@ module Hasmin.Parser.Value
 
 import Control.Applicative ((<|>), many, optional)
 import Control.Arrow (first)
-import Control.Monad (mzero)
+import Control.Monad (mzero, when)
 import Data.Functor (($>))
 import Data.Monoid ((<>))
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
-import Data.Char (isAscii)
+import Data.Char (isAscii, isHexDigit)
 import Text.Parser.Permutation ((<|?>), (<$$>), (<$?>), (<||>), permute)
 import qualified Data.Set as Set
 import Data.Attoparsec.Text (asciiCI, char, option, Parser, skipSpace, string)
@@ -297,6 +297,11 @@ backgroundSize = parseCommaSeparated (BgSizeV <$> bgSize)
 auto :: Parser Auto
 auto = asciiCI "auto" $> Auto
 
+unicodeRange :: Parser Value
+unicodeRange = mkOther <$> do
+    _ <- string "u+" <|> string "U+"
+    ("u+" <>) <$> A.takeWhile1 (\c -> isHexDigit c || c == '-' || c == '?')
+
 propertyValueParsersMap :: Map Text (Parser Values)
 propertyValueParsersMap = Map.fromList
     [--("color",           (:[]) <$> colorvalue)
@@ -304,7 +309,7 @@ propertyValueParsersMap = Map.fromList
     ,("font",                       singleValue font)
     ,("font-size",                  singleValue fontSize)
     ,("font-style",                 singleValue fontStyle)
-    ,("font-weight",                singleValue numberOrText)
+    ,("font-weight",                parseSpaceSeparated numberOrText)
     ,("font-family",                fontFamilyValues)
     ,("background",                 background)
     ,("background-repeat",          parseCommaSeparated (RepeatStyleV <$> repeatStyle))
@@ -339,6 +344,7 @@ propertyValueParsersMap = Map.fromList
     ,("mask-position",              positionList)
     ,("-webkit-mask-position",      positionList)
     ,("object-position",            singleValue positionvalue)
+    ,("unicode-range",              parseCommaSeparated unicodeRange)
     -- ,("transform-origin",           transformOrigin)
     -- ,("-ms-transform-origin",       transformOrigin)
     -- ,("-webkit-transform-origin",   transformOrigin)
@@ -667,6 +673,11 @@ parseCommaSeparated p = do
                     then pure $ Values v vs
                     else mzero
       Nothing -> pure $ Values v vs
+
+parseSpaceSeparated :: Parser Value -> Parser Values
+parseSpaceSeparated p = do
+    v : vs <- A.sepBy1 p (A.many1 A.space)
+    pure $ Values v $ map (Space,) vs
 
 
 shadow :: Parser Shadow
