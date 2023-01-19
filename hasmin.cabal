@@ -1,156 +1,189 @@
-name:                hasmin
-version:             1.0.3
-license:             BSD3
-license-file:        LICENSE
-copyright:           © 2016-2018 Cristian Adrián Ontivero
-author:              Cristian Adrián Ontivero
-maintainer:          Cristian Adrián Ontivero <cristianontivero@gmail.com>
-synopsis:            CSS Minifier
-homepage:            https://github.com/contivero/hasmin#readme
-bug-reports:         https://github.com/contivero/hasmin/issues
-category:            Text
-build-type:          Simple
-extra-source-files:  README.md
-                     CHANGELOG.md
-cabal-version:       >=1.10
+name:               hasmin
+version:            1.0.4
+license:            BSD3
+license-file:       LICENSE
+copyright:          © 2016-2018 Cristian Adrián Ontivero
+author:             Cristian Adrián Ontivero
+maintainer:         Cristian Adrián Ontivero <cristianontivero@gmail.com>
+synopsis:           CSS Minifier
+homepage:           https://github.com/contivero/hasmin#readme
+bug-reports:        https://github.com/contivero/hasmin/issues
+category:           Text
+build-type:         Simple
+extra-source-files:
+  CHANGELOG.md
+  README.md
+
+cabal-version:      >=1.10
 description:
-    A CSS minifier which not only aims at reducing the amount of bytes of the
-    output, but also at improving gzip compression. It may be used as a library,
-    or a stand-alone executable. For the library, refer to the Hasmin module
-    documentation. For the program: the output is the minified CSS file, but
-    hasmin allows also its compression into gzip using Google's Zopfli library.
-    .
-    To use it: ./hasmin input.css > output.css
-    .
-    By default, most minification techniques are enabled. For a list of
-    available flags, do: ./hasmin --help
+  A CSS minifier which not only aims at reducing the amount of bytes of the
+  output, but also at improving gzip compression. It may be used as a library,
+  or a stand-alone executable. For the library, refer to the Hasmin module
+  documentation. For the program: the output is the minified CSS file, but
+  hasmin allows also its compression into gzip using Google's Zopfli library.
+  .
+  To use it: ./hasmin input.css > output.css
+  .
+  By default, most minification techniques are enabled. For a list of
+  available flags, do: ./hasmin --help
 
 source-repository head
-  type: git
+  type:     git
   location: https://github.com/contivero/hasmin.git
 
 executable hasmin
-  default-language:    Haskell2010
-  main-is:             Main.hs
-  ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints -Werror=incomplete-patterns
-  build-depends:       base                 >=4.10       && <5.0
-                     , optparse-applicative >=0.11       && <0.16
-                     , text                 >=1.2        && <1.3
-                     , hopfli               >=0.2        && <0.4
-                     , bytestring           >=0.10.2.0   && <0.11
-                     , gitrev               >=1.0.0      && <1.4
-                     , hasmin
-  other-modules:       Paths_hasmin
+  default-language: Haskell2010
+  main-is:          Main.hs
+  ghc-options:
+    -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind
+    -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat
+    -Wnoncanonical-monad-instances -Wredundant-constraints
+    -Werror=incomplete-patterns
+
+  build-depends:
+      base                  >=4.10     && <5.0
+    , bytestring            >=0.10.2.0 && <0.12
+    , gitrev                >=1.0.0    && <1.4
+    , hasmin
+    , hopfli                >=0.2      && <0.4
+    , optparse-applicative  >=0.11     && <0.17
+    , text                  >=1.2      && <1.3
+
+  other-modules:    Paths_hasmin
 
 library
-  default-language:    Haskell2010
-  hs-source-dirs:      src
-  ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints -Werror=incomplete-patterns
-  build-depends:       base            >=4.10       && <5.0
-                     , attoparsec      >=0.12       && <0.14
-                     , containers      >=0.5        && <0.7
-                     , matrix          >=0.3.4      && <0.4
-                     , mtl             >=2.2.1      && <2.3
-                     , numbers         >=3000.2.0.0 && <3000.3
-                     , parsers         >=0.12.3     && <0.13
-                     , text            >=1.2        && <1.3
-  exposed-modules:     Hasmin
-                     , Hasmin.Config
-                     , Hasmin.Class
-                     , Hasmin.Types.Stylesheet
-                     -- exposed because it is needed by tests:
-                     , Hasmin.Parser.BasicShape
-                     , Hasmin.Parser.BorderRadius
-                     , Hasmin.Parser.Color
-                     , Hasmin.Parser.Dimension
-                     , Hasmin.Parser.Gradient
-                     , Hasmin.Parser.Internal
-                     , Hasmin.Parser.Numeric
-                     , Hasmin.Parser.PercentageLength
-                     , Hasmin.Parser.Position
-                     , Hasmin.Parser.Primitives
-                     , Hasmin.Parser.Selector
-                     , Hasmin.Parser.String
-                     , Hasmin.Parser.TimingFunction
-                     , Hasmin.Parser.TransformFunction
-                     , Hasmin.Parser.Value
-                     , Hasmin.Types.BasicShape
-                     , Hasmin.Types.BgSize
-                     , Hasmin.Types.BorderRadius
-                     , Hasmin.Types.Color
-                     , Hasmin.Types.Declaration
-                     , Hasmin.Types.Dimension
-                     , Hasmin.Types.FilterFunction
-                     , Hasmin.Types.Numeric
-                     , Hasmin.Types.Position
-                     , Hasmin.Types.RepeatStyle
-                     , Hasmin.Types.String
-                     , Hasmin.Types.TimingFunction
-                     , Hasmin.Types.TransformFunction
-                     , Hasmin.Types.Value
-                     , Hasmin.Types.PercentageLength
-                     , Hasmin.Utils
-  other-modules:       Hasmin.Parser.Utils
-                     , Hasmin.Properties
-                     , Hasmin.Types.Selector
-                     , Hasmin.Types.Gradient
-                     , Hasmin.Types.Shadow
+  default-language: Haskell2010
+  hs-source-dirs:   src
+  ghc-options:
+    -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind
+    -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat
+    -Wnoncanonical-monad-instances -Wredundant-constraints
+    -Werror=incomplete-patterns
+
+  build-depends:
+      attoparsec  >=0.12       && <0.15
+    , base        >=4.10       && <5.0
+    , containers  >=0.5        && <0.7
+    , matrix      >=0.3.4      && <0.4
+    , mtl         >=2.2.1      && <2.3
+    , numbers     >=3000.2.0.0 && <3000.3
+    , parsers     >=0.12.3     && <0.13
+    , text        >=1.2        && <1.3
+
+  -- 'Hasmin.Parser.BasicShape' is exposed because it is needed by tests:
+  exposed-modules:
+    Hasmin
+    Hasmin.Class
+    Hasmin.Config
+    Hasmin.Parser.BasicShape
+    Hasmin.Parser.BorderRadius
+    Hasmin.Parser.Color
+    Hasmin.Parser.Dimension
+    Hasmin.Parser.Gradient
+    Hasmin.Parser.Internal
+    Hasmin.Parser.Numeric
+    Hasmin.Parser.PercentageLength
+    Hasmin.Parser.Position
+    Hasmin.Parser.Primitives
+    Hasmin.Parser.Selector
+    Hasmin.Parser.String
+    Hasmin.Parser.TimingFunction
+    Hasmin.Parser.TransformFunction
+    Hasmin.Parser.Value
+    Hasmin.Types.BasicShape
+    Hasmin.Types.BgSize
+    Hasmin.Types.BorderRadius
+    Hasmin.Types.Color
+    Hasmin.Types.Declaration
+    Hasmin.Types.Dimension
+    Hasmin.Types.FilterFunction
+    Hasmin.Types.Numeric
+    Hasmin.Types.PercentageLength
+    Hasmin.Types.Position
+    Hasmin.Types.RepeatStyle
+    Hasmin.Types.String
+    Hasmin.Types.Stylesheet
+    Hasmin.Types.TimingFunction
+    Hasmin.Types.TransformFunction
+    Hasmin.Types.Value
+    Hasmin.Utils
+
+  other-modules:
+    Hasmin.Parser.Utils
+    Hasmin.Properties
+    Hasmin.Types.Gradient
+    Hasmin.Types.Selector
+    Hasmin.Types.Shadow
 
 test-suite spec
-  default-language:    Haskell2010
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      tests
-  main-is:             Spec.hs
-  ghc-options:         -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances -Wredundant-constraints -Werror=incomplete-patterns
-  build-depends:       base                 >=4.10    && <5.0
-                     , attoparsec           >=0.12    && <0.14
-                     , hspec                >=2.2     && <3.0
-                     , hspec-attoparsec     >=0.1.0.0 && <0.2
-                     , mtl                  >=2.2.1   && <2.3
-                     , QuickCheck           >=2.8     && <3.0
-                     , quickcheck-instances >=0.3.16  && <0.4
-                     , text                 >=1.2     && <1.3
-                     , hasmin
-  default-extensions:  OverloadedStrings
-  other-modules:       Hasmin.Parser.InternalSpec
-                     , Hasmin.Parser.ValueSpec
-                     , Hasmin.TestUtils
-                     , Hasmin.Types.BasicShapeSpec
-                     , Hasmin.Types.BgSizeSpec
-                     , Hasmin.Types.ColorSpec
-                     , Hasmin.Types.DeclarationSpec
-                     , Hasmin.Types.DimensionSpec
-                     , Hasmin.Types.FilterFunctionSpec
-                     , Hasmin.Types.GradientSpec
-                     , Hasmin.Types.PositionSpec
-                     , Hasmin.Types.RepeatStyleSpec
-                     , Hasmin.Types.SelectorSpec
-                     , Hasmin.Types.ShadowSpec
-                     , Hasmin.Types.StringSpec
-                     , Hasmin.Types.StylesheetSpec
-                     , Hasmin.Types.TimingFunctionSpec
-                     , Hasmin.Types.TransformFunctionSpec
-                     , Hasmin.Types.ValueSpec
+  default-language:   Haskell2010
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     tests
+  main-is:            Spec.hs
+  ghc-options:
+    -O2 -Wall -fwarn-tabs -fwarn-unused-do-bind
+    -Wincomplete-uni-patterns -Wincomplete-record-updates -Wcompat
+    -Wnoncanonical-monad-instances -Wredundant-constraints
+    -Werror=incomplete-patterns
 
-test-suite doctest
-  default-language:    Haskell2010
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      tests
-  main-is:             DocTest.hs
-  ghc-options:         -threaded -Wall -fno-warn-orphans
-  build-depends:       base             >=4.10    && <5.0
-                     , doctest          >=0.11    && <0.17
-                     , doctest-discover >=0.1.0.0 && <0.3
-                     , hasmin
+  build-depends:
+      attoparsec            >=0.12
+    , base
+    , hasmin
+    , hspec                 >=2.2
+    , hspec-attoparsec      >=0.1.0.0
+    , mtl                   >=2.2.1
+    , QuickCheck            >=2.8
+    , quickcheck-instances  >=0.3.16
+    , text                  >=1.2
+
+  build-tool-depends: hspec-discover:hspec-discover -any
+  default-extensions: OverloadedStrings
+  other-modules:
+    Hasmin.Parser.InternalSpec
+    Hasmin.Parser.ValueSpec
+    Hasmin.TestUtils
+    Hasmin.Types.BasicShapeSpec
+    Hasmin.Types.BgSizeSpec
+    Hasmin.Types.ColorSpec
+    Hasmin.Types.DeclarationSpec
+    Hasmin.Types.DimensionSpec
+    Hasmin.Types.FilterFunctionSpec
+    Hasmin.Types.GradientSpec
+    Hasmin.Types.PositionSpec
+    Hasmin.Types.RepeatStyleSpec
+    Hasmin.Types.SelectorSpec
+    Hasmin.Types.ShadowSpec
+    Hasmin.Types.StringSpec
+    Hasmin.Types.StylesheetSpec
+    Hasmin.Types.TimingFunctionSpec
+    Hasmin.Types.TransformFunctionSpec
+    Hasmin.Types.ValueSpec
+
+-- 'doctest-discover' is unmaintained:
+--
+-- test-suite doctest
+--   default-language:   Haskell2010
+--   type:               exitcode-stdio-1.0
+--   hs-source-dirs:     tests
+--   main-is:            DocTest.hs
+--   ghc-options:        -threaded -Wall -fno-warn-orphans
+--   build-depends:
+--       base     >=4.10
+--     , doctest  >=0.11
+--     , hasmin
+--
+--   build-tool-depends: doctest-discover:doctest-discover >=0.1.0.0
 
 benchmark bench
-  default-language:    Haskell2010
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      benchmarks
-  main-is:             Benchmarks.hs
-  ghc-options:         -threaded -Wall -fno-warn-orphans
-  build-depends:       base             >=4.10    && <5.0
-                     , criterion        >=0.11    && <1.6
-                     , directory        >=1.3.0.0 && <1.4
-                     , text             >=1.2     && <1.3
-                     , hasmin
+  default-language: Haskell2010
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   benchmarks
+  main-is:          Benchmarks.hs
+  ghc-options:      -threaded -Wall -fno-warn-orphans
+  build-depends:
+      base       >=4.10
+    , criterion  >=0.11
+    , directory  >=1.3.0.0
+    , hasmin
+    , text       >=1.2
