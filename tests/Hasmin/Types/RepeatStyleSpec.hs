@@ -11,7 +11,7 @@ repeatStyleTests :: Spec
 repeatStyleTests =
     describe "<repeat-style> minification tests" $ do
       it "Minified <repeat-style> maintains semantic equivalence" $
-        property (prop_minificationEq :: RepeatStyle -> Bool)
+        property (prop_minificationEq :: RepeatStyle -> Property)
       mapM_ (matchSpec f) repeatStyleTestsInfo
   where f = minifyWithTestConfig <$> repeatStyle
 

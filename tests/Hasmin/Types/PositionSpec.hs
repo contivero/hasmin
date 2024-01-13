@@ -15,7 +15,7 @@ positionMinificationTests =
     describe "<position> minification" $ do
       mapM_ (matchSpec f) positionMinificationTestsInfo
       modifyMaxSuccess (const 200000) . it "Minified <position> maintains semantical equivalence" $
-        property (prop_minificationEq :: Position -> Bool)
+        property (prop_minificationEq :: Position -> Property)
   where f = minifyWithTestConfig <$> position
 
 positionMinificationTestsInfo :: [(Text, Text)]

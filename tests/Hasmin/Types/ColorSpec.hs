@@ -15,7 +15,7 @@ colorTests :: Spec
 colorTests =
   describe "<color> tests" .
     it "minified color is semantically equivalent" $
-      property (prop_minificationEq :: Color -> Bool)
+      property (prop_minificationEq :: Color -> Property)
 
 colorParserTests :: Spec
 colorParserTests =

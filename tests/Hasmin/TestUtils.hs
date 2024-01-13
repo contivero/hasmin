@@ -40,8 +40,8 @@ minifyWithTestConfig x = runReader (minify x) cfg
   where cfg = defaultConfig { dimensionSettings = DimMinOn }
 
 -- | Check that a color is equivalent to their minified representation form
-prop_minificationEq :: (Minifiable a, Eq a) => a -> Bool
-prop_minificationEq d = minifyWithTestConfig d == d
+prop_minificationEq :: (Minifiable a, Eq a, Show a) => a -> Property
+prop_minificationEq d = minifyWithTestConfig d === d
 
 -- Given a parser and a 3-tuple, prints a test description,
 -- applies the parser, and compares its result with the expected result
