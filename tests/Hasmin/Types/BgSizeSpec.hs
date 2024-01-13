@@ -11,7 +11,7 @@ quickcheckBgSize :: Spec
 quickcheckBgSize =
     describe "Quickcheck tests for <bg-size>" .
       it "Minified <bg-size> maintains semantical equivalence" $
-        property (prop_minificationEq :: BgSize -> Bool)
+        property (prop_minificationEq :: BgSize -> Property)
 
 bgSizeTests :: Spec
 bgSizeTests =

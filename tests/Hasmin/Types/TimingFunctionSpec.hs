@@ -19,7 +19,7 @@ quickcheckTimingFunction :: Spec
 quickcheckTimingFunction =
     describe "<timing-function> quickcheck tests" .
       it "Minified <timing-function> maintains semantical equivalence" $
-        property (prop_minificationEq :: TimingFunction -> Bool)
+        property (prop_minificationEq :: TimingFunction -> Property)
 
 timingFunctionTestsInfo :: [(Text, Text)]
 timingFunctionTestsInfo =

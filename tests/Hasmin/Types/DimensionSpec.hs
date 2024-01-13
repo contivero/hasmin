@@ -9,15 +9,15 @@ dimensionTests :: Spec
 dimensionTests =
     describe "Dimension tests with quickcheck" $ do
       it "Minified <length>s are equivalent to the original ones" $
-        property (prop_minificationEq :: Length -> Bool)
+        property (prop_minificationEq :: Length -> Property)
       it "Minified <angle>s are equivalent to the original ones" $
-        property (prop_minificationEq :: Angle -> Bool)
+        property (prop_minificationEq :: Angle -> Property)
       it "Minified <time>s are equivalent to the original ones" $
-        property (prop_minificationEq :: Time -> Bool)
+        property (prop_minificationEq :: Time -> Property)
       it "Minified <frequency>s are equivalent to the original ones" $
-        property (prop_minificationEq :: Frequency -> Bool)
+        property (prop_minificationEq :: Frequency -> Property)
       it "Minified <resolution>s are equivalent to the original ones" $
-        property (prop_minificationEq :: Resolution -> Bool)
+        property (prop_minificationEq :: Resolution -> Property)
 
 spec :: Spec
 spec = do
